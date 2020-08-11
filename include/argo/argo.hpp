@@ -16,23 +16,17 @@
 
 namespace argo {
 
-namespace details {
-
-template <typename T> void visit(T &argument_struct, std::vector<std::string> && arguments) {
-  argo::details::argument_parser argument_parser;
-  argument_parser.arguments = std::move(arguments);
-  visit_struct::for_each(argument_struct, argument_parser);
-}
-
-}
-
 template <typename T> T parse(int argc, char *argv[]) {
   T argument_struct;
   std::vector<std::string> arguments;
   for (std::size_t i = 0; i < argc; i++) {
     arguments.push_back(std::string(argv[i]));
   }
-  details::visit(argument_struct, std::move(arguments));
+
+  argo::details::argument_parser argument_parser;
+  argument_parser.arguments = std::move(arguments);
+  visit_struct::for_each(argument_struct, argument_parser);
+
   return argument_struct;
 }
 
