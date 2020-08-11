@@ -1,6 +1,5 @@
 
 #pragma once
-#include <argo/third_party/json/json.hpp>
 #include <argo/third_party/visit_struct/visit_struct.hpp>
 #include <argo/is_stl_container.hpp>
 #include <argo/parser.hpp>
@@ -10,19 +9,13 @@
 #include <type_traits>
 #include <vector>
 
-#define ARGO_SUBCOMMAND VISITABLE_STRUCT
-#define ARGO_COMMAND VISITABLE_STRUCT
+#define ARGO_STRUCT VISITABLE_STRUCT
 
 namespace argo {
 
-template <typename T> T parse(int argc, char *argv[]) {
+template <typename T> T parse(const std::vector<std::string> & arguments) {
   T argument_struct;
-
-  std::vector<std::string> arguments;
-  for (std::size_t i = 0; i < argc; i++) {
-    arguments.push_back(std::string(argv[i]));
-  }
-
+  
   argo::details::parser parser;
   parser.arguments = std::move(arguments);
 
@@ -32,6 +25,11 @@ template <typename T> T parse(int argc, char *argv[]) {
   }
 
   return argument_struct;
+}
+
+template <typename T> T parse(int argc, char *argv[]) {
+  std::vector<std::string> arguments;
+  std::copy(argv, argv + argc, std::back_inserter(arguments));
 }
 
 } // namespace argo
@@ -52,3 +50,10 @@ template <typename T> T parse(int argc, char *argv[]) {
 //   2. visit each struct field
 //   3. does value start with `-` or `--` and match an optional field name? ok cool parse optional field and save value
 //   4. no? it is the value of the next positional argument
+
+// ./main 1 3.14 true a b c --blah 1 2 3 --verbose true
+// foo[int] bar[float] baz[bool] chars[3] blah[3] verbose[bool]
+// 1 = foo
+// 3.14 = bar
+// true = baz
+// a = 

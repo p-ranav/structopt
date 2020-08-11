@@ -16,7 +16,7 @@ struct Foo {
   // --blah 1 2 3
   std::optional<std::array<int, 3>> blah;
 };
-ARGO_COMMAND(Foo, foo, bar, baz, chars, verbose, blah);
+ARGO_STRUCT(Foo, foo, bar, baz, chars, verbose, blah);
 
 int main(int argc, char *argv[]) {
   auto foo = argo::parse<Foo>(argc, argv);

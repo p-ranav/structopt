@@ -129,6 +129,12 @@ struct parser {
   }
 };
 
+// Specialization for std::string
+template <>
+inline std::string parser::parse_single_argument<std::string>(const char * name) {
+  return arguments[next_index];
+}
+
 // Specialization for bool
 // yes, YES, on, 1, true, TRUE, etc. = true
 // no, NO, off, 0, false, FALSE, etc. = false

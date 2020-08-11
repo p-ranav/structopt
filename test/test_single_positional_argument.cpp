@@ -23,11 +23,11 @@ struct SingleStringArgument {
   std::string value = "";
 };
 
-ARGO_COMMAND(SingleIntArgument, value);
-ARGO_COMMAND(SingleFloatArgument, value);
-ARGO_COMMAND(SingleCharArgument, value);
-ARGO_COMMAND(SingleBoolArgument, value);
-ARGO_COMMAND(SingleStringArgument, value);
+ARGO_STRUCT(SingleIntArgument, value);
+ARGO_STRUCT(SingleFloatArgument, value);
+ARGO_STRUCT(SingleCharArgument, value);
+ARGO_STRUCT(SingleBoolArgument, value);
+ARGO_STRUCT(SingleStringArgument, value);
 
 TEST_CASE("Argo can parse single positional argument" * test_suite("single_positional")) {
   // Int
