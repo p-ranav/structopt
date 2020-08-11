@@ -1,7 +1,11 @@
 #pragma once
+#include <argo/array_size.hpp>
+#include <array>
 #include <algorithm>
+#include <iostream>
 #include <sstream>
 #include <string>
+#include <tuple>
 #include <type_traits>
 #include <vector>
 
@@ -37,25 +41,51 @@ struct parser {
     return result;
   }
 
+  // Array argument
+  template <typename T, std::size_t N>
+  std::array<T, N> parse_array_argument(const char * name) {
+    std::cout << "Parsing array\n";
+    std::array<T, N> result;
+    for (std::size_t i = 0; i < N; i++) {
+      // TODO: check index to see if N arguments are available to parse
+      result[i] = parse_single_argument<T>(name);
+      index += 1;
+    }
+    return result;
+  }
+
   template <typename T> void operator()(const char *name, T &value) {
     if (index < arguments.size()) {
       // more arguments available
-      if (!is_stl_container<T>::value) {
+      if constexpr (!is_stl_container<T>::value) {
         value = parse_single_argument<T>(name);
+        index += 1;
       }
-      index += 1;
+      else if constexpr (argo::is_array<T>::value) {
+        constexpr std::size_t N = argo::array_size<T>::size;
+        value = parse_array_argument<typename T::value_type, N>(name);
+      } else {
+        // std::cout << "Container but not std::array\n";
+      }
     }
   }
 };
 
 // Specialization for bool
-// yes, YES, on, 1, true = true
-// no, NO, off, 0, false = false
+// yes, YES, on, 1, true, TRUE, etc. = true
+// no, NO, off, 0, false, FALSE, etc. = false
+// Converts argument to lower case before check
 template <>
-bool parser::parse_single_argument<bool>(const char * name) {
-  const std::vector<std::string> true_strings{"on", "ON", "yes", "YES", "1", "true", "TRUE"};
-  const std::vector<std::string> false_strings{"off", "OFF", "no", "NO", "0", "false", "FALSE"};
-  const auto current_argument = arguments[index];
+inline bool parser::parse_single_argument<bool>(const char * name) {
+  const std::vector<std::string> true_strings{"on", "yes", "1", "true"};
+  const std::vector<std::string> false_strings{"off", "no", "0", "false"};
+  std::string current_argument = arguments[index];
+
+  // Convert argument to lower case
+  std::transform(current_argument.begin(), current_argument.end(), current_argument.begin(),
+                  ::tolower);
+
+  // Detect if argument is true or false
   if (std::find(true_strings.begin(), true_strings.end(), current_argument) != true_strings.end()) {
     return true;
   } 

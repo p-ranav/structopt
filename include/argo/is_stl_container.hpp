@@ -36,6 +36,20 @@ namespace is_stl_container_impl{
   template <typename... Args> struct is_stl_container<std::priority_queue    <Args...>>:std::true_type{};
 }
 
+namespace argo {
+  template<class T>
+  struct is_array:std::is_array<T>{};
+  template<class T, std::size_t N>
+  struct is_array<std::array<T,N>>:std::true_type{};
+  // optional:
+  template<class T>
+  struct is_array<T const>:is_array<T>{};
+  template<class T>
+  struct is_array<T volatile>:is_array<T>{};
+  template<class T>
+  struct is_array<T volatile const>:is_array<T>{};
+}
+
 //type trait to utilize the implementation type traits as well as decay the type
 template <typename T> struct is_stl_container {
   static constexpr bool const value = is_stl_container_impl::is_stl_container<std::decay_t<T>>::value;

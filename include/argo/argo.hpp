@@ -1,7 +1,7 @@
 
 #pragma once
-#include <argo/json/json.hpp>
-#include <argo/visit_struct/visit_struct.hpp>
+#include <argo/third_party/json/json.hpp>
+#include <argo/third_party/visit_struct/visit_struct.hpp>
 #include <argo/is_stl_container.hpp>
 #include <argo/parser.hpp>
 #include <cstdlib>
