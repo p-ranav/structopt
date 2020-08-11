@@ -1,5 +1,6 @@
 #pragma once
 #include <argo/array_size.hpp>
+#include <argo/is_specialization.hpp>
 #include <array>
 #include <algorithm>
 #include <iostream>
@@ -7,14 +8,45 @@
 #include <string>
 #include <tuple>
 #include <type_traits>
+#include <utility>
 #include <vector>
 
 namespace argo {
 
 namespace details {
 
+struct argument_properties {
+
+  enum class type {
+    positional_single,
+    positional_array,
+    optional
+  };
+
+  std::unordered_map<std::string, type> properties;
+
+  template <typename T> void operator()(const char *name, T &value) {
+    if constexpr (argo::is_specialization<T, std::optional>::value) {
+      // optional argument
+      std::cout << name << " is optional" << "\n";
+      properties.insert(std::make_pair(std::string{name}, type::optional));
+    }
+    else if constexpr (!is_stl_container<T>::value) {
+      std::cout << name << " is positional_single" << "\n";
+      properties.insert(std::make_pair(std::string{name}, type::positional_single));
+    }
+    else if constexpr (argo::is_array<T>::value) {
+      std::cout << name << " is positional_array" << "\n";
+      properties.insert(std::make_pair(std::string{name}, type::positional_array));
+    } else {
+      // TODO: other types
+    }
+  }
+};
+
 struct parser {
   std::vector<std::string> arguments;
+  argument_properties properties;
   std::size_t index{1};
 
 //   // Subcommand - Nested struct
@@ -29,6 +61,16 @@ struct parser {
 //   _get_argument(const char *name, T &value) {
 //     std::cout << name << " " << value << "\n";
 //   }
+
+  template <typename T>
+  std::optional<T> parse_optional_argument(const char * name) {
+    index += 1;
+    std::optional<T> result;
+    if (index < arguments.size()) {
+      result = parse_single_argument<T>(name);
+    }
+    return result;
+  }
 
   // Any field that can be constructed using std::stringstream
   // Not container type
@@ -56,15 +98,21 @@ struct parser {
 
   template <typename T> void operator()(const char *name, T &value) {
     if (index < arguments.size()) {
-      // more arguments available
-      if constexpr (!is_stl_container<T>::value) {
+      const auto next = arguments[index];
+
+      if constexpr (argo::is_specialization<T, std::optional>::value) {
+        value = parse_optional_argument<typename T::value_type>(name);
+        index += 1;
+      }
+      else if constexpr (!is_stl_container<T>::value) { 
         value = parse_single_argument<T>(name);
         index += 1;
       }
-      else if constexpr (argo::is_array<T>::value) {
+      else if constexpr (argo::is_array<T>::value) { 
         constexpr std::size_t N = argo::array_size<T>::size;
         value = parse_array_argument<typename T::value_type, N>(name);
-      } else {
+      }
+      else {
         // std::cout << "Container but not std::array\n";
       }
     }

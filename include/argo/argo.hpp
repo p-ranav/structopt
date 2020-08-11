@@ -6,7 +6,6 @@
 #include <argo/parser.hpp>
 #include <cstdlib>
 #include <iostream>
-#include <map>
 #include <string>
 #include <type_traits>
 #include <vector>
@@ -18,6 +17,10 @@ namespace argo {
 
 template <typename T> T parse(int argc, char *argv[]) {
   T argument_struct;
+
+  details::argument_properties properties;
+  visit_struct::for_each(argument_struct, properties);
+
   std::vector<std::string> arguments;
   for (std::size_t i = 0; i < argc; i++) {
     arguments.push_back(std::string(argv[i]));
@@ -25,6 +28,7 @@ template <typename T> T parse(int argc, char *argv[]) {
 
   argo::details::parser parser;
   parser.arguments = std::move(arguments);
+  parser.properties = std::move(properties);
   visit_struct::for_each(argument_struct, parser);
 
   return argument_struct;
