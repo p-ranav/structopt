@@ -26,6 +26,7 @@ endif()
 file(GLOB ARGO_TEST_SOURCES
     main.cpp
     test_single_positional_argument.cpp
+    test_array_positional_argument.cpp
 )
 set_source_files_properties(main.cpp
     PROPERTIES
