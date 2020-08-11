@@ -16,6 +16,8 @@
 
 namespace argo {
 
+namespace details {
+
 template <typename T> void visit(T &config);
 
 struct get_argument {
@@ -40,9 +42,17 @@ struct get_argument {
   }
 };
 
-template <typename T> void visit(T &config) {
+template <typename T> void visit(T &argument_struct) {
   get_argument argument_visitor;
-  visit_struct::for_each(config, argument_visitor);
+  visit_struct::for_each(argument_struct, argument_visitor);
+}
+
+}
+
+template <typename T> T parse() {
+  T result;
+  details::visit(result);
+  return result;
 }
 
 } // namespace argo
