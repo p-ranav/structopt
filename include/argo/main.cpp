@@ -20,15 +20,17 @@ ARGO_COMMAND(Foo, foo, bar, baz, chars, verbose, blah);
 
 int main(int argc, char *argv[]) {
   auto foo = argo::parse<Foo>(argc, argv);
-  std::cout << foo.foo << " " << foo.bar << " " << std::boolalpha << foo.baz << "\n";
+  std::cout << "foo, bar, baz: " << foo.foo << " " << foo.bar << " " << std::boolalpha << foo.baz << "\n";
 
+  std::cout << "chars: ";
   for (auto& c : foo.chars) {
     std::cout << c << " ";
   }
 
-  std::cout << "\nVerbose? " << std::boolalpha << foo.verbose.value_or(false) << "\n";
+  std::cout << "\nverbose? " << std::boolalpha << foo.verbose.value_or(false) << "\n";
 
   if (foo.blah.has_value()) {
+    std::cout << "Blah: ";
     auto blah = foo.blah.value();
     for (auto& v : blah) {
       std::cout << v << " ";

@@ -34,7 +34,7 @@ struct parser {
 //   }
 
   template <typename T>
-  auto parse_optional_argument(const char * name) -> std::optional<T> {
+  std::optional<T> parse_optional_argument(const char * name) {
     next_index += 1;
     std::optional<T> result;
     if (next_index < arguments.size()) {
@@ -78,25 +78,21 @@ struct parser {
       !argo::is_specialization<T, std::optional>::value,
       void>::type
   operator()(const char *name, T &value) {
-
-    std::cout << "[Positional] Indices: " << current_index << " " << next_index << "\n";
-
     if (next_index > current_index) {
       current_index = next_index;
     }
 
     if (current_index < arguments.size()) {
       const auto next = arguments[current_index];
-      std::cout << next << " " << name << "\n";
-
       const auto field_name = std::string{name};
+
       if ((next.size() >= 1 and next[0] == '-') or (next.size() >= 2 and next[0] == '-' and next[1] == '-')) {
         return;
       }
 
       if constexpr (!is_stl_container<T>::value) { 
         value = parse_single_argument<T>(name);
-        // next_index += 1;
+        next_index += 1;
       }
       else if constexpr (argo::is_array<T>::value) { 
         constexpr std::size_t N = argo::array_size<T>::size;
@@ -111,17 +107,12 @@ struct parser {
       argo::is_specialization<T, std::optional>::value,
       void>::type
   operator()(const char *name, T &value) {
-    std::cout << "[Optional] Indices: " << current_index << " " << next_index << "\n";
-
     if (next_index > current_index) {
       current_index = next_index;
     }
 
     if (current_index < arguments.size()) {
       const auto next = arguments[current_index];
-
-      std::cout << next << " " << name << "\n";
-
       const auto field_name = std::string{name};
 
       // if `next` looks like an optional argument
@@ -130,7 +121,6 @@ struct parser {
 
       // check if the current argument looks like it could be this optional field
       if (next == "--" + field_name or next == "-" + std::string(field_name[0], 1)) {
-        std::cout << "Optional field detected!!!! " << field_name << "\n";
         // this is an optional argument matching the current struct field
         value = parse_optional_argument<typename T::value_type>(name);
       }
@@ -145,7 +135,9 @@ struct parser {
 // Converts argument to lower case before check
 template <>
 inline bool parser::parse_single_argument<bool>(const char * name) {
-  std::cout << "Parsing boolean single arg\n";
+  if (next_index > current_index) {
+    current_index = next_index;
+  }
 
   if (current_index < arguments.size()) {
     const std::vector<std::string> true_strings{"on", "yes", "1", "true"};
