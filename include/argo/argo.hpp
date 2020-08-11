@@ -3,10 +3,10 @@
 #include <argo/json/json.hpp>
 #include <argo/visit_struct/visit_struct.hpp>
 #include <argo/is_stl_container.hpp>
+#include <argo/argument_parser.hpp>
 #include <cstdlib>
 #include <iostream>
 #include <map>
-#include <sstream>
 #include <string>
 #include <type_traits>
 #include <vector>
@@ -18,41 +18,22 @@ namespace argo {
 
 namespace details {
 
-template <typename T> void visit(T &config);
-
-struct get_argument {
-
-  // Subcommand - Nested struct
-  template <typename T>
-  inline typename std::enable_if<std::is_class<T>::value, void>::type
-  _get_argument(const char *name, T &value) {
-    std::cout << "Class type " << name << "\n";
-    visit(value);
-  }
-
-  template <typename T>
-  inline typename std::enable_if<!std::is_class<T>::value, void>::type
-  _get_argument(const char *name, T &value) {
-    std::cout << name << " " << value << "\n";
-  }
-
-  template <typename T> void operator()(const char *name, T &value) {
-    // std::string field_name = name;
-    _get_argument(name, value);
-  }
-};
-
-template <typename T> void visit(T &argument_struct) {
-  get_argument argument_visitor;
-  visit_struct::for_each(argument_struct, argument_visitor);
+template <typename T> void visit(T &argument_struct, std::vector<std::string> && arguments) {
+  argo::details::argument_parser argument_parser;
+  argument_parser.arguments = std::move(arguments);
+  visit_struct::for_each(argument_struct, argument_parser);
 }
 
 }
 
-template <typename T> T parse() {
-  T result;
-  details::visit(result);
-  return result;
+template <typename T> T parse(int argc, char *argv[]) {
+  T argument_struct;
+  std::vector<std::string> arguments;
+  for (std::size_t i = 0; i < argc; i++) {
+    arguments.push_back(std::string(argv[i]));
+  }
+  details::visit(argument_struct, std::move(arguments));
+  return argument_struct;
 }
 
 } // namespace argo
