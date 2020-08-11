@@ -20,7 +20,8 @@ struct argument_properties {
   enum class type {
     positional_single,
     positional_array,
-    optional
+    optional_single,
+    optional_array
   };
 
   std::unordered_map<std::string, type> properties;
@@ -28,18 +29,31 @@ struct argument_properties {
   template <typename T> void operator()(const char *name, T &value) {
     if constexpr (argo::is_specialization<T, std::optional>::value) {
       // optional argument
-      std::cout << name << " is optional" << "\n";
-      properties.insert(std::make_pair(std::string{name}, type::optional));
+      if constexpr (!is_stl_container<typename T::value_type>::value) {
+        // single 
+        std::cout << name << " is optional" << "\n";
+        properties.insert(std::make_pair(std::string{name}, type::optional_single));
+      }
+      else if constexpr (argo::is_array<typename T::value_type>::value) {
+        // array
+        properties.insert(std::make_pair(std::string{name}, type::optional_array));
+      }
     }
-    else if constexpr (!is_stl_container<T>::value) {
-      std::cout << name << " is positional_single" << "\n";
-      properties.insert(std::make_pair(std::string{name}, type::positional_single));
-    }
-    else if constexpr (argo::is_array<T>::value) {
-      std::cout << name << " is positional_array" << "\n";
-      properties.insert(std::make_pair(std::string{name}, type::positional_array));
-    } else {
-      // TODO: other types
+    else {
+      // positional
+      if constexpr (!is_stl_container<T>::value) {
+        // single
+        std::cout << name << " is positional_single" << "\n";
+        properties.insert(std::make_pair(std::string{name}, type::positional_single));
+      }
+      else if constexpr (argo::is_array<T>::value) {
+        // array
+        std::cout << name << " is positional_array" << "\n";
+        properties.insert(std::make_pair(std::string{name}, type::positional_array));
+      }
+      else {
+        // TODO: other types
+      }
     }
   }
 };
@@ -63,11 +77,17 @@ struct parser {
 //   }
 
   template <typename T>
-  std::optional<T> parse_optional_argument(const char * name) {
+  auto parse_optional_argument(const char * name) -> std::optional<T> {
     index += 1;
     std::optional<T> result;
     if (index < arguments.size()) {
-      result = parse_single_argument<T>(name);
+      if constexpr (!is_stl_container<T>::value) { 
+        result = parse_single_argument<T>(name);
+      }
+      else if constexpr (argo::is_array<T>::value) { 
+        constexpr std::size_t N = argo::array_size<T>::size;
+        result = parse_array_argument<typename T::value_type, N>(name);
+      }
     }
     return result;
   }
@@ -86,7 +106,6 @@ struct parser {
   // Array argument
   template <typename T, std::size_t N>
   std::array<T, N> parse_array_argument(const char * name) {
-    std::cout << "Parsing array\n";
     std::array<T, N> result;
     for (std::size_t i = 0; i < N; i++) {
       // TODO: check index to see if N arguments are available to parse
