@@ -15,53 +15,10 @@ namespace argo {
 
 namespace details {
 
-struct argument_properties {
-
-  enum class type {
-    positional_single,
-    positional_array,
-    optional_single,
-    optional_array
-  };
-
-  std::unordered_map<std::string, type> properties;
-
-  template <typename T> void operator()(const char *name, T &value) {
-    if constexpr (argo::is_specialization<T, std::optional>::value) {
-      // optional argument
-      if constexpr (!is_stl_container<typename T::value_type>::value) {
-        // single 
-        std::cout << name << " is optional" << "\n";
-        properties.insert(std::make_pair(std::string{name}, type::optional_single));
-      }
-      else if constexpr (argo::is_array<typename T::value_type>::value) {
-        // array
-        properties.insert(std::make_pair(std::string{name}, type::optional_array));
-      }
-    }
-    else {
-      // positional
-      if constexpr (!is_stl_container<T>::value) {
-        // single
-        std::cout << name << " is positional_single" << "\n";
-        properties.insert(std::make_pair(std::string{name}, type::positional_single));
-      }
-      else if constexpr (argo::is_array<T>::value) {
-        // array
-        std::cout << name << " is positional_array" << "\n";
-        properties.insert(std::make_pair(std::string{name}, type::positional_array));
-      }
-      else {
-        // TODO: other types
-      }
-    }
-  }
-};
-
 struct parser {
   std::vector<std::string> arguments;
-  argument_properties properties;
-  std::size_t index{1};
+  std::size_t current_index{1};
+  std::size_t next_index{1};
 
 //   // Subcommand - Nested struct
 //   template <typename T>
@@ -78,9 +35,9 @@ struct parser {
 
   template <typename T>
   auto parse_optional_argument(const char * name) -> std::optional<T> {
-    index += 1;
+    next_index += 1;
     std::optional<T> result;
-    if (index < arguments.size()) {
+    if (next_index < arguments.size()) {
       if constexpr (!is_stl_container<T>::value) { 
         result = parse_single_argument<T>(name);
       }
@@ -96,7 +53,7 @@ struct parser {
   // Not container type
   template <typename T>
   T parse_single_argument(const char * name) {
-    const std::string argument = arguments[index];
+    const std::string argument = arguments[next_index];
     std::istringstream ss(argument);
     T result;
     ss >> result;
@@ -110,30 +67,74 @@ struct parser {
     for (std::size_t i = 0; i < N; i++) {
       // TODO: check index to see if N arguments are available to parse
       result[i] = parse_single_argument<T>(name);
-      index += 1;
+      next_index += 1;
     }
     return result;
   }
 
-  template <typename T> void operator()(const char *name, T &value) {
-    if (index < arguments.size()) {
-      const auto next = arguments[index];
+  // Visitor function for any positional field (not std::optional)
+  template <typename T>
+  inline typename std::enable_if<
+      !argo::is_specialization<T, std::optional>::value,
+      void>::type
+  operator()(const char *name, T &value) {
 
-      if constexpr (argo::is_specialization<T, std::optional>::value) {
-        value = parse_optional_argument<typename T::value_type>(name);
-        index += 1;
+    std::cout << "[Positional] Indices: " << current_index << " " << next_index << "\n";
+
+    if (next_index > current_index) {
+      current_index = next_index;
+    }
+
+    if (current_index < arguments.size()) {
+      const auto next = arguments[current_index];
+      std::cout << next << " " << name << "\n";
+
+      const auto field_name = std::string{name};
+      if ((next.size() >= 1 and next[0] == '-') or (next.size() >= 2 and next[0] == '-' and next[1] == '-')) {
+        return;
       }
-      else if constexpr (!is_stl_container<T>::value) { 
+
+      if constexpr (!is_stl_container<T>::value) { 
         value = parse_single_argument<T>(name);
-        index += 1;
+        // next_index += 1;
       }
       else if constexpr (argo::is_array<T>::value) { 
         constexpr std::size_t N = argo::array_size<T>::size;
         value = parse_array_argument<typename T::value_type, N>(name);
       }
-      else {
-        // std::cout << "Container but not std::array\n";
+    }
+  }
+
+  // Visitor function for std::optional field
+  template <typename T>
+  inline typename std::enable_if<
+      argo::is_specialization<T, std::optional>::value,
+      void>::type
+  operator()(const char *name, T &value) {
+    std::cout << "[Optional] Indices: " << current_index << " " << next_index << "\n";
+
+    if (next_index > current_index) {
+      current_index = next_index;
+    }
+
+    if (current_index < arguments.size()) {
+      const auto next = arguments[current_index];
+
+      std::cout << next << " " << name << "\n";
+
+      const auto field_name = std::string{name};
+
+      // if `next` looks like an optional argument
+      // i.e., starts with `-` or `--`
+      // see if you can find an optional field in the struct with a matching name
+
+      // check if the current argument looks like it could be this optional field
+      if (next == "--" + field_name or next == "-" + std::string(field_name[0], 1)) {
+        std::cout << "Optional field detected!!!! " << field_name << "\n";
+        // this is an optional argument matching the current struct field
+        value = parse_optional_argument<typename T::value_type>(name);
       }
+
     }
   }
 };
@@ -144,23 +145,29 @@ struct parser {
 // Converts argument to lower case before check
 template <>
 inline bool parser::parse_single_argument<bool>(const char * name) {
-  const std::vector<std::string> true_strings{"on", "yes", "1", "true"};
-  const std::vector<std::string> false_strings{"off", "no", "0", "false"};
-  std::string current_argument = arguments[index];
+  std::cout << "Parsing boolean single arg\n";
 
-  // Convert argument to lower case
-  std::transform(current_argument.begin(), current_argument.end(), current_argument.begin(),
-                  ::tolower);
+  if (current_index < arguments.size()) {
+    const std::vector<std::string> true_strings{"on", "yes", "1", "true"};
+    const std::vector<std::string> false_strings{"off", "no", "0", "false"};
+    std::string current_argument = arguments[current_index];
 
-  // Detect if argument is true or false
-  if (std::find(true_strings.begin(), true_strings.end(), current_argument) != true_strings.end()) {
-    return true;
-  } 
-  else if (std::find(false_strings.begin(), false_strings.end(), current_argument) != false_strings.end()) {
-    return false;
-  }
-  else {
-    // TODO: report error? Invalid argument, bool expected
+    // Convert argument to lower case
+    std::transform(current_argument.begin(), current_argument.end(), current_argument.begin(),
+                    ::tolower);
+
+    // Detect if argument is true or false
+    if (std::find(true_strings.begin(), true_strings.end(), current_argument) != true_strings.end()) {
+      return true;
+    } 
+    else if (std::find(false_strings.begin(), false_strings.end(), current_argument) != false_strings.end()) {
+      return false;
+    }
+    else {
+      // TODO: report error? Invalid argument, bool expected
+      return false;
+    }
+  } else {
     return false;
   }
 }

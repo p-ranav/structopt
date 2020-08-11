@@ -1,4 +1,5 @@
 #include <argo/argo.hpp>
+#include <utility>
 
 struct Foo {
   // positional arguments
@@ -12,6 +13,7 @@ struct Foo {
   std::optional<bool> verbose;
 
   // optional "flag" ARRAY argument
+  // --blah 1 2 3
   std::optional<std::array<int, 3>> blah;
 };
 ARGO_COMMAND(Foo, foo, bar, baz, chars, verbose, blah);
