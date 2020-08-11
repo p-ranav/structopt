@@ -1,4 +1,5 @@
 #pragma once
+#include <algorithm>
 #include <sstream>
 #include <string>
 #include <type_traits>
@@ -8,7 +9,7 @@ namespace argo {
 
 namespace details {
 
-struct argument_parser {
+struct parser {
   std::vector<std::string> arguments;
   std::size_t index{1};
 
@@ -46,6 +47,26 @@ struct argument_parser {
     }
   }
 };
+
+// Specialization for bool
+// yes, YES, on, 1, true = true
+// no, NO, off, 0, false = false
+template <>
+bool parser::parse_single_argument<bool>(const char * name) {
+  const std::vector<std::string> true_strings{"on", "ON", "yes", "YES", "1", "true", "TRUE"};
+  const std::vector<std::string> false_strings{"off", "OFF", "no", "NO", "0", "false", "FALSE"};
+  const auto current_argument = arguments[index];
+  if (std::find(true_strings.begin(), true_strings.end(), current_argument) != true_strings.end()) {
+    return true;
+  } 
+  else if (std::find(false_strings.begin(), false_strings.end(), current_argument) != false_strings.end()) {
+    return false;
+  }
+  else {
+    // TODO: report error? Invalid argument, bool expected
+    return false;
+  }
+}
 
 }
 

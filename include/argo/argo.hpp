@@ -3,7 +3,7 @@
 #include <argo/json/json.hpp>
 #include <argo/visit_struct/visit_struct.hpp>
 #include <argo/is_stl_container.hpp>
-#include <argo/argument_parser.hpp>
+#include <argo/parser.hpp>
 #include <cstdlib>
 #include <iostream>
 #include <map>
@@ -23,9 +23,9 @@ template <typename T> T parse(int argc, char *argv[]) {
     arguments.push_back(std::string(argv[i]));
   }
 
-  argo::details::argument_parser argument_parser;
-  argument_parser.arguments = std::move(arguments);
-  visit_struct::for_each(argument_struct, argument_parser);
+  argo::details::parser parser;
+  parser.arguments = std::move(arguments);
+  visit_struct::for_each(argument_struct, parser);
 
   return argument_struct;
 }
