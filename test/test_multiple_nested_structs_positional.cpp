@@ -56,7 +56,7 @@ struct Git {
   struct Config {
     std::optional<bool> global = false;
     std::optional<bool> local  = true;
-    std::array<std::string, 2> name_value_pair;
+    std::array<std::string, 2> name_value_pair{};
   };
   Config config;
 
@@ -76,10 +76,18 @@ TEST_CASE("structopt can parse multiple nested struct arguments - Git example" *
     REQUIRE(arguments.config.global == false);
     REQUIRE(arguments.config.local == true);
     REQUIRE(arguments.config.name_value_pair == std::array<std::string, 2>{"user.name", "Foobar"});
+    REQUIRE(arguments.init.name == "");
   }
   {
     auto arguments = structopt::parse<Git>(std::vector<std::string>{"./main", "config", "--global", "user.name", "Foobar"});
     REQUIRE(arguments.config.global == true);
     REQUIRE(arguments.config.name_value_pair == std::array<std::string, 2>{"user.name", "Foobar"});
+    REQUIRE(arguments.init.name == "");
+  }
+  {
+    auto arguments = structopt::parse<Git>(std::vector<std::string>{"./main", "init", "my_repo"});
+    REQUIRE(arguments.config.global == false);
+    REQUIRE(arguments.config.name_value_pair == std::array<std::string, 2>{});
+    REQUIRE(arguments.init.name == "my_repo");
   }
 }
