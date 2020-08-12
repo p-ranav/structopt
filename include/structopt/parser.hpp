@@ -33,6 +33,8 @@ struct parser {
       } else if constexpr (structopt::is_array<T>::value) {
         constexpr std::size_t N = structopt::array_size<T>::size;
         result = parse_array_argument<typename T::value_type, N>(name);
+      } else if constexpr (structopt::is_specialization<T, std::pair>::value) {
+        result = parse_pair_argument<typename T::first_type, typename T::second_type>(name);
       }
     }
     return result;
@@ -88,6 +90,39 @@ struct parser {
     return argument_struct;
   }
 
+  // Pair argument
+  template <typename T1, typename T2> std::pair<T1, T2> parse_pair_argument(const char *name) {
+    std::pair<T1, T2> result;
+
+    // Pair first
+    {
+      if constexpr (!is_stl_container<T1>::value) {
+        result.first = parse_single_argument<T1>(name);
+        next_index += 1;
+      } else if constexpr (structopt::is_array<T1>::value) {
+        constexpr std::size_t NESTED_N = structopt::array_size<T1>::size;
+        result.first = parse_array_argument<typename T1::value_type, NESTED_N>(name);
+      } else if constexpr (structopt::is_specialization<T1, std::pair>::value) {
+        result.first = parse_pair_argument<typename T1::first_type, typename T1::second_type>(name);
+      }
+    }
+
+    // Pair second
+    {
+      if constexpr (!is_stl_container<T2>::value) {
+        result.second = parse_single_argument<T2>(name);
+        next_index += 1;
+      } else if constexpr (structopt::is_array<T2>::value) {
+        constexpr std::size_t NESTED_N = structopt::array_size<T2>::size;
+        result.second = parse_array_argument<typename T2::value_type, NESTED_N>(name);
+      } else if constexpr (structopt::is_specialization<T2, std::pair>::value) {
+        result.second = parse_pair_argument<typename T2::first_type, typename T2::second_type>(name);
+      }
+    }
+
+    return result;
+  }
+
   // Array argument
   template <typename T, std::size_t N> std::array<T, N> parse_array_argument(const char *name) {
     std::array<T, N> result;
@@ -99,6 +134,8 @@ struct parser {
       } else if constexpr (structopt::is_array<T>::value) {
         constexpr std::size_t NESTED_N = structopt::array_size<T>::size;
         result[i] = parse_array_argument<typename T::value_type, NESTED_N>(name);
+      } else if constexpr (structopt::is_specialization<T, std::pair>::value) {
+        result[i] = parse_pair_argument<typename T::first_type, typename T::second_type>(name);
       }
     }
     return result;
@@ -159,6 +196,9 @@ struct parser {
         // visitable nested struct
         value = parse_nested_struct<T>(name);
       } 
+      else if constexpr (structopt::is_specialization<T, std::pair>::value) {
+        value = parse_pair_argument<typename T::first_type, typename T::second_type>(name);
+      }
       else if constexpr (!is_stl_container<T>::value) {
         value = parse_single_argument<T>(name);
         next_index += 1;
