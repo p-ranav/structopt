@@ -7,6 +7,7 @@
 #include <structopt/array_size.hpp>
 #include <structopt/is_specialization.hpp>
 #include <structopt/third_party/visit_struct/visit_struct.hpp>
+#include <structopt/visitor.hpp>
 #include <tuple>
 #include <type_traits>
 #include <utility>
@@ -17,6 +18,7 @@ namespace structopt {
 namespace details {
 
 struct parser {
+  structopt::details::visitor visitor;
   std::vector<std::string> arguments;
   std::size_t current_index{1};
   std::size_t next_index{1};
@@ -54,26 +56,34 @@ struct parser {
   template <typename T>
   inline typename std::enable_if<visit_struct::traits::is_visitable<T>::value, T>::type
   parse_nested_struct(const char *name) {
+    std::cout << "Parsing nested struct\n";
     T argument_struct;
+
+    // Save struct field names 
+    structopt::details::visitor visitor;
+    visit_struct::for_each(argument_struct, visitor);
 
     structopt::details::parser parser;
     parser.next_index = 0;
     parser.current_index = 0;
+    parser.visitor = std::move(visitor);
+
     std::copy(arguments.begin() + next_index, arguments.end(), std::back_inserter(parser.arguments));
 
-    // std::cout << "Nested struct " << name << " arguments:\n";
-    // for (auto& v : parser.arguments) {
-    //   std::cout << v << " ";
-    // }
-    // std::cout << "\n";
+    std::cout << "Nested struct " << name << " arguments:\n";
+    for (auto& v : parser.arguments) {
+      std::cout << v << " ";
+    }
+    std::cout << "\n";
+
+    std::cout << "BEFORE: " <<  current_index << " " << next_index << "\n";
 
     for (std::size_t i = 0; i < parser.arguments.size(); i++) {
       parser.current_index = i;
       visit_struct::for_each(argument_struct, parser);
-      // if (parser.current_index + 1 == parser.arguments.size()) {
-      //   break;
-      // }
     }
+
+    std::cout << "AFTER: " <<  parser.current_index << " " << parser.next_index << "\n";
 
     return argument_struct;
   }
@@ -94,9 +104,33 @@ struct parser {
     return result;
   }
 
+  // Visitor function for nested struct
+  template <typename T>
+  inline typename std::enable_if<visit_struct::traits::is_visitable<T>::value, void>::type
+  operator()(const char *name, T &value) {
+    std::cout << "Parssing nested struct" << std::endl;
+    if (next_index > current_index) {
+      current_index = next_index;
+    }
+
+    if (current_index < arguments.size()) {
+      const auto next = arguments[current_index];
+      const auto field_name = std::string{name};
+
+      std::cout << "Next: " << next << "; Name: " << name << "\n";
+
+      // Check if `next` is the start of a subcommand
+      if (visitor.is_field_name(next) && next == field_name) {
+        next_index += 1;
+        value = parse_nested_struct<T>(name);
+      }
+
+    }
+  }
+
   // Visitor function for any positional field (not std::optional)
   template <typename T>
-  inline typename std::enable_if<!structopt::is_specialization<T, std::optional>::value, void>::type
+  inline typename std::enable_if<!structopt::is_specialization<T, std::optional>::value && !visit_struct::traits::is_visitable<T>::value, void>::type
   operator()(const char *name, T &value) {
     if (next_index > current_index) {
       current_index = next_index;
@@ -114,7 +148,12 @@ struct parser {
         return;
       }
 
-      // std::cout << "Next: " << next << "; Name: " << name << "\n";
+      // This will be parsed as a subcommand (nested struct)
+      if (visitor.is_field_name(next) && next == field_name) {
+        return;
+      }
+
+      std::cout << "Next: " << next << "; Name: " << name << "\n";
 
       if constexpr (visit_struct::traits::is_visitable<T>::value) {
         // visitable nested struct
