@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.6)
-project(argo)
+project(structopt)
 
 if(MSVC)
   # Force to always compile with W4
@@ -22,8 +22,8 @@ if (WIN32)
 	add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
 endif()
 
-# ARGO executable
-file(GLOB ARGO_TEST_SOURCES
+# structopt executable
+file(GLOB structopt_TEST_SOURCES
     main.cpp
     test_single_positional_argument.cpp
     test_array_positional_argument.cpp
@@ -35,10 +35,10 @@ file(GLOB ARGO_TEST_SOURCES
 set_source_files_properties(main.cpp
     PROPERTIES
     COMPILE_DEFINITIONS DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN)
-ADD_EXECUTABLE(ARGO ${ARGO_TEST_SOURCES})
+ADD_EXECUTABLE(structopt ${structopt_TEST_SOURCES})
 INCLUDE_DIRECTORIES("../include" ".")
-set_target_properties(ARGO PROPERTIES OUTPUT_NAME tests)
-set_property(TARGET ARGO PROPERTY CXX_STANDARD 17)
+set_target_properties(structopt PROPERTIES OUTPUT_NAME tests)
+set_property(TARGET structopt PROPERTY CXX_STANDARD 17)
 
 # Set ${PROJECT_NAME} as the startup project
-set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ARGO)
+set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT structopt)
