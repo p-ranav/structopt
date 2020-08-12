@@ -126,7 +126,7 @@ struct parser {
       // see if you can find an optional field in the struct with a matching name
 
       // check if the current argument looks like it could be this optional field
-      if (next == "--" + field_name or next == "-" + std::string(field_name[0], 1)) {
+      if (next == "--" + field_name or next == "-" + std::string(1, field_name[0])) {
         // this is an optional argument matching the current struct field
         value = parse_optional_argument<typename T::value_type>(name);
       }
