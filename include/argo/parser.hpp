@@ -66,8 +66,14 @@ struct parser {
     std::array<T, N> result;
     for (std::size_t i = 0; i < N; i++) {
       // TODO: check index to see if N arguments are available to parse
-      result[i] = parse_single_argument<T>(name);
-      next_index += 1;
+      if constexpr (!is_stl_container<T>::value) { 
+        result[i] = parse_single_argument<T>(name);
+        next_index += 1;
+      }
+      else if constexpr (argo::is_array<T>::value) { 
+        constexpr std::size_t NESTED_N = argo::array_size<T>::size;
+        result[i] = parse_array_argument<typename T::value_type, NESTED_N>(name);
+      }
     }
     return result;
   }
