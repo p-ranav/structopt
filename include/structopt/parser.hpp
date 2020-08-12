@@ -35,6 +35,8 @@ struct parser {
         result = parse_array_argument<typename T::value_type, N>(name);
       } else if constexpr (structopt::is_specialization<T, std::pair>::value) {
         result = parse_pair_argument<typename T::first_type, typename T::second_type>(name);
+      } else if constexpr (structopt::is_specialization<T, std::vector>::value) {
+        result = parse_vector_argument<typename T::value_type>(name);
       }
     }
     return result;
@@ -104,6 +106,8 @@ struct parser {
         result.first = parse_array_argument<typename T1::value_type, NESTED_N>(name);
       } else if constexpr (structopt::is_specialization<T1, std::pair>::value) {
         result.first = parse_pair_argument<typename T1::first_type, typename T1::second_type>(name);
+      } else if constexpr (structopt::is_specialization<T1, std::vector>::value) {
+        result.first = parse_vector_argument<typename T1::value_type>(name);
       }
     }
 
@@ -117,6 +121,8 @@ struct parser {
         result.second = parse_array_argument<typename T2::value_type, NESTED_N>(name);
       } else if constexpr (structopt::is_specialization<T2, std::pair>::value) {
         result.second = parse_pair_argument<typename T2::first_type, typename T2::second_type>(name);
+      } else if constexpr (structopt::is_specialization<T2, std::vector>::value) {
+        result.second = parse_vector_argument<typename T2::value_type>(name);
       }
     }
 
@@ -136,6 +142,28 @@ struct parser {
         result[i] = parse_array_argument<typename T::value_type, NESTED_N>(name);
       } else if constexpr (structopt::is_specialization<T, std::pair>::value) {
         result[i] = parse_pair_argument<typename T::first_type, typename T::second_type>(name);
+      } else if constexpr (structopt::is_specialization<T, std::vector>::value) {
+        result[i] = parse_vector_argument<typename T::value_type>(name);
+      }
+    }
+    return result;
+  }
+
+  // Vector argument
+  template <typename T> std::vector<T> parse_vector_argument(const char *name) {
+    std::vector<T> result;
+    // Parse from current till end
+    for (std::size_t i = next_index; i < arguments.size(); i++) {
+      if constexpr (!is_stl_container<T>::value) {
+        result.push_back(parse_single_argument<T>(name));
+        next_index += 1;
+      } else if constexpr (structopt::is_array<T>::value) {
+        constexpr std::size_t NESTED_N = structopt::array_size<T>::size;
+        result.push_back(parse_array_argument<typename T::value_type, NESTED_N>(name));
+      } else if constexpr (structopt::is_specialization<T, std::pair>::value) {
+        result.push_back(parse_pair_argument<typename T::first_type, typename T::second_type>(name));
+      } else if constexpr (structopt::is_specialization<T, std::vector>::value) {
+        result.push_back(parse_vector_argument<typename T::value_type>(name));
       }
     }
     return result;
@@ -205,6 +233,8 @@ struct parser {
       } else if constexpr (structopt::is_array<T>::value) {
         constexpr std::size_t N = structopt::array_size<T>::size;
         value = parse_array_argument<typename T::value_type, N>(name);
+      } else if constexpr (structopt::is_specialization<T, std::vector>::value) {
+        value = parse_vector_argument<typename T::value_type>(name);
       }
     }
   }
