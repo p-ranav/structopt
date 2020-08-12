@@ -20,7 +20,7 @@ struct parser {
   std::vector<std::string> arguments;
   std::size_t current_index{1};
   std::size_t next_index{1};
-  
+
   template <typename T> std::optional<T> parse_optional_argument(const char *name) {
     next_index += 1;
     std::optional<T> result;
@@ -70,6 +70,9 @@ struct parser {
     for (std::size_t i = 0; i < parser.arguments.size(); i++) {
       parser.current_index = i;
       visit_struct::for_each(argument_struct, parser);
+      // if (parser.current_index + 1 == parser.arguments.size()) {
+      //   break;
+      // }
     }
 
     return argument_struct;
