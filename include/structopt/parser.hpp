@@ -6,6 +6,7 @@
 #include <string>
 #include <structopt/array_size.hpp>
 #include <structopt/is_specialization.hpp>
+#include <structopt/third_party/magic_enum/magic_enum.hpp>
 #include <structopt/third_party/visit_struct/visit_struct.hpp>
 #include <structopt/visitor.hpp>
 #include <tuple>
@@ -62,7 +63,11 @@ struct parser {
     next_index += 1;
     std::optional<T> result;
     if (next_index < arguments.size()) {
-      if constexpr (!is_stl_container<T>::value) {
+      if constexpr (std::is_enum<T>::value) {
+        result = parse_enum_argument<T>(name);
+        next_index += 1;
+      }
+      else if constexpr (!is_stl_container<T>::value) {
         result = parse_single_argument<T>(name);
         next_index += 1;
       } else if constexpr (structopt::is_array<T>::value) {
@@ -133,7 +138,11 @@ struct parser {
 
     // Pair first
     {
-      if constexpr (!is_stl_container<T1>::value) {
+      if constexpr (std::is_enum<T1>::value) {
+        result.first = parse_enum_argument<T1>(name);
+        next_index += 1;
+      }
+      else if constexpr (!is_stl_container<T1>::value) {
         result.first = parse_single_argument<T1>(name);
         next_index += 1;
       } else if constexpr (structopt::is_array<T1>::value) {
@@ -148,7 +157,11 @@ struct parser {
 
     // Pair second
     {
-      if constexpr (!is_stl_container<T2>::value) {
+      if constexpr (std::is_enum<T2>::value) {
+        result.second = parse_enum_argument<T2>(name);
+        next_index += 1;
+      }
+      else if constexpr (!is_stl_container<T2>::value) {
         result.second = parse_single_argument<T2>(name);
         next_index += 1;
       } else if constexpr (structopt::is_array<T2>::value) {
@@ -169,7 +182,11 @@ struct parser {
     std::array<T, N> result;
     for (std::size_t i = 0; i < N; i++) {
       // TODO: check index to see if N arguments are available to parse
-      if constexpr (!is_stl_container<T>::value) {
+      if constexpr (std::is_enum<T>::value) {
+        result[i] = parse_enum_argument<T>(name);
+        next_index += 1;
+      }
+      else if constexpr (!is_stl_container<T>::value) {
         result[i] = parse_single_argument<T>(name);
         next_index += 1;
       } else if constexpr (structopt::is_array<T>::value) {
@@ -189,7 +206,11 @@ struct parser {
     std::vector<T> result;
     // Parse from current till end
     for (std::size_t i = next_index; i < arguments.size(); i++) {
-      if constexpr (!is_stl_container<T>::value) {
+      if constexpr (std::is_enum<T>::value) {
+        result.push_back(parse_enum_argument<T>(name));
+        next_index += 1;
+      }
+      else if constexpr (!is_stl_container<T>::value) {
         const auto next = arguments[next_index];
         // check if next is an optional argument
         // e.g., ./foo 1 2 3           --verbose
@@ -210,6 +231,18 @@ struct parser {
       } else if constexpr (structopt::is_specialization<T, std::vector>::value) {
         result.push_back(parse_vector_argument<typename T::value_type>(name));
       }
+    }
+    return result;
+  }
+
+  // Enum class
+  template <typename T> T parse_enum_argument(const char *name) {
+    T result;
+    auto maybe_enum_value = magic_enum::enum_cast<T>(arguments[next_index]);
+    if (maybe_enum_value.has_value()) {
+      result = maybe_enum_value.value();
+    } else {
+      // TODO: Throw error invalid enum option
     }
     return result;
   }
@@ -269,6 +302,10 @@ struct parser {
         // visitable nested struct
         value = parse_nested_struct<T>(name);
       } 
+      else if constexpr (std::is_enum<T>::value) {
+        value = parse_enum_argument<T>(name);
+        next_index += 1;
+      }
       else if constexpr (structopt::is_specialization<T, std::pair>::value) {
         value = parse_pair_argument<typename T::first_type, typename T::second_type>(name);
       }
