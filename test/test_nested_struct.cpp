@@ -3,22 +3,31 @@
 
 using doctest::test_suite;
 
-struct Command {
-  int foo;
-  /*  
+struct TopLevelCommand {
   struct SubCommand {
     int bar;
+    std::optional<bool> local;
   };
   SubCommand foo;
-  */
 };
-// STRUCTOPT(Command::SubCommand, bar);
-STRUCTOPT(Command, foo);
 
-TEST_CASE("structopt can parse nested struct arguments" * test_suite("nested_struct")) {
+STRUCTOPT(TopLevelCommand::SubCommand, bar, local);
+STRUCTOPT(TopLevelCommand, foo);
+
+TEST_CASE("structopt can parse nested structs" * test_suite("nested_struct")) {
   {
-    // std::vector<std::string> args = {"./main", "15"};
-    // auto arguments = structopt::parse<Command>(args);
-    // REQUIRE(arguments.foo.bar == 15);
+    auto arguments = structopt::parse<TopLevelCommand>(std::vector<std::string>{"./main", "foo", "15"});
+    REQUIRE(arguments.foo.bar == 15);
+    REQUIRE(arguments.foo.local.has_value() == false);
+  }
+  {
+    auto arguments = structopt::parse<TopLevelCommand>(std::vector<std::string>{"./main", "foo", "--local", "true", "15"});
+    REQUIRE(arguments.foo.bar == 15);
+    REQUIRE(arguments.foo.local.has_value() == true);
+  }
+  {
+    auto arguments = structopt::parse<TopLevelCommand>(std::vector<std::string>{"./main", "foo", "15", "--local", "true"});
+    REQUIRE(arguments.foo.bar == 15);
+    REQUIRE(arguments.foo.local.has_value() == true);
   }
 }
