@@ -13,7 +13,7 @@ struct Options {
 };
 STRUCTOPT(Options, input_file, output_file, verbose);
 
-// Usage examples:
+// Usage:
 // ./main foo.txt bar.csv --verbose
 // ./main -v abc.json def.py
 ```
