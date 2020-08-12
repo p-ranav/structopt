@@ -8,8 +8,8 @@ struct Options {
   std::string input;
   std::string output;
 
-  // optional arguments
-  std::optional<bool> verbose;
+  // -v or --verbose will set this to true
+  std::optional<bool> verbose = false;
 };
 STRUCTOPT(Options, input_file, output_file, verbose);
 
