@@ -40,6 +40,7 @@ struct parser {
     if (next_index < arguments.size()) {
       if constexpr (!is_stl_container<T>::value) { 
         result = parse_single_argument<T>(name);
+        next_index += 1;
       }
       else if constexpr (argo::is_array<T>::value) { 
         constexpr std::size_t N = argo::array_size<T>::size;
@@ -92,6 +93,7 @@ struct parser {
       const auto next = arguments[current_index];
       const auto field_name = std::string{name};
 
+      // TODO: Deal with negative numbers - these are not optional arguments
       if ((next.size() >= 1 and next[0] == '-') or (next.size() >= 2 and next[0] == '-' and next[1] == '-')) {
         return;
       }
