@@ -72,3 +72,28 @@ TEST_CASE("structopt can parse single positional and optional array arguments" *
     REQUIRE(arguments.bar.value() == std::array<float, 3>{1.1, 2.2, 3.3});
   }
 }
+
+struct ArrayVectorArgument {
+  std::optional<std::array<float, 3>> point;
+  std::vector<int> value = {};
+};
+
+STRUCTOPT(ArrayVectorArgument, point, value);
+
+TEST_CASE("structopt can parse single positional and optional arguments" * test_suite("vector_positional")) {
+  {
+    auto arguments = structopt::parse<ArrayVectorArgument>(std::vector<std::string>{"./main", "1", "2", "3"});
+    REQUIRE(arguments.point.has_value() == false);
+    REQUIRE(arguments.value == std::vector<int>{1, 2, 3});
+  }
+  {
+    auto arguments = structopt::parse<ArrayVectorArgument>(std::vector<std::string>{"./main", "--point", "1.1", "2.2", "3.3", "1", "2", "3"});
+    REQUIRE(arguments.point == std::array<float, 3>{1.1, 2.2, 3.3});
+    REQUIRE(arguments.value == std::vector<int>{1, 2, 3});
+  }
+  {
+    auto arguments = structopt::parse<ArrayVectorArgument>(std::vector<std::string>{"./main", "-p", "1.1", "2.2", "3.3", "1", "2", "3"});
+    REQUIRE(arguments.point == std::array<float, 3>{1.1, 2.2, 3.3});
+    REQUIRE(arguments.value == std::vector<int>{1, 2, 3});
+  }
+}
