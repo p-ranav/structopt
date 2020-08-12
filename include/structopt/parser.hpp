@@ -56,7 +56,7 @@ struct parser {
   template <typename T>
   inline typename std::enable_if<visit_struct::traits::is_visitable<T>::value, T>::type
   parse_nested_struct(const char *name) {
-    std::cout << "Parsing nested struct\n";
+    // std::cout << "Parsing nested struct\n";
     T argument_struct;
 
     // Save struct field names 
@@ -70,20 +70,20 @@ struct parser {
 
     std::copy(arguments.begin() + next_index, arguments.end(), std::back_inserter(parser.arguments));
 
-    std::cout << "Nested struct " << name << " arguments:\n";
-    for (auto& v : parser.arguments) {
-      std::cout << v << " ";
-    }
-    std::cout << "\n";
+    // std::cout << "Nested struct " << name << " arguments:\n";
+    // for (auto& v : parser.arguments) {
+    //   std::cout << v << " ";
+    // }
+    // std::cout << "\n";
 
-    std::cout << "BEFORE: " <<  current_index << " " << next_index << "\n";
+    // std::cout << "BEFORE: " <<  current_index << " " << next_index << "\n";
 
     for (std::size_t i = 0; i < parser.arguments.size(); i++) {
       parser.current_index = i;
       visit_struct::for_each(argument_struct, parser);
     }
 
-    std::cout << "AFTER: " <<  parser.current_index << " " << parser.next_index << "\n";
+    // std::cout << "AFTER: " <<  parser.current_index << " " << parser.next_index << "\n";
 
     return argument_struct;
   }
@@ -108,7 +108,7 @@ struct parser {
   template <typename T>
   inline typename std::enable_if<visit_struct::traits::is_visitable<T>::value, void>::type
   operator()(const char *name, T &value) {
-    std::cout << "Parssing nested struct" << std::endl;
+    // std::cout << "Parssing nested struct" << std::endl;
     if (next_index > current_index) {
       current_index = next_index;
     }
@@ -117,7 +117,7 @@ struct parser {
       const auto next = arguments[current_index];
       const auto field_name = std::string{name};
 
-      std::cout << "Next: " << next << "; Name: " << name << "\n";
+      // std::cout << "Next: " << next << "; Name: " << name << "\n";
 
       // Check if `next` is the start of a subcommand
       if (visitor.is_field_name(next) && next == field_name) {
@@ -153,7 +153,7 @@ struct parser {
         return;
       }
 
-      std::cout << "Next: " << next << "; Name: " << name << "\n";
+      // std::cout << "Next: " << next << "; Name: " << name << "\n";
 
       if constexpr (visit_struct::traits::is_visitable<T>::value) {
         // visitable nested struct
