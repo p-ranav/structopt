@@ -31,6 +31,7 @@ file(GLOB structopt_TEST_SOURCES
     test_single_optional_argument.cpp
     test_array_optional_argument.cpp
     test_single_positional_and_optional.cpp
+    test_nested_struct.cpp
 )
 set_source_files_properties(main.cpp
     PROPERTIES

@@ -6,6 +6,7 @@
 #include <string>
 #include <structopt/array_size.hpp>
 #include <structopt/is_specialization.hpp>
+#include <structopt/third_party/visit_struct/visit_struct.hpp>
 #include <tuple>
 #include <type_traits>
 #include <utility>
@@ -19,20 +20,7 @@ struct parser {
   std::vector<std::string> arguments;
   std::size_t current_index{1};
   std::size_t next_index{1};
-
-  //   // Subcommand - Nested struct
-  //   template <typename T>
-  //   inline typename std::enable_if<std::is_class<T>::value, void>::type
-  //   _get_argument(const char *name, T &value) {
-  //     std::cout << "Class type " << name << "\n";
-  //   }
-
-  //   template <typename T>
-  //   inline typename std::enable_if<!std::is_class<T>::value, void>::type
-  //   _get_argument(const char *name, T &value) {
-  //     std::cout << name << " " << value << "\n";
-  //   }
-
+  
   template <typename T> std::optional<T> parse_optional_argument(const char *name) {
     next_index += 1;
     std::optional<T> result;
@@ -50,12 +38,41 @@ struct parser {
 
   // Any field that can be constructed using std::stringstream
   // Not container type
-  template <typename T> T parse_single_argument(const char *name) {
+  // Not a visitable type, i.e., a nested struct
+  template <typename T> 
+  inline typename std::enable_if<!visit_struct::traits::is_visitable<T>::value, T>::type
+  parse_single_argument(const char *name) {
+    // std::cout << "Parsing single argument for field " << name << "\n";
     const std::string argument = arguments[next_index];
     std::istringstream ss(argument);
     T result;
     ss >> result;
     return result;
+  }
+
+  // Nested visitable struct
+  template <typename T>
+  inline typename std::enable_if<visit_struct::traits::is_visitable<T>::value, T>::type
+  parse_nested_struct(const char *name) {
+    T argument_struct;
+
+    structopt::details::parser parser;
+    parser.next_index = 0;
+    parser.current_index = 0;
+    std::copy(arguments.begin() + next_index, arguments.end(), std::back_inserter(parser.arguments));
+
+    // std::cout << "Nested struct " << name << " arguments:\n";
+    // for (auto& v : parser.arguments) {
+    //   std::cout << v << " ";
+    // }
+    // std::cout << "\n";
+
+    for (std::size_t i = 0; i < parser.arguments.size(); i++) {
+      parser.current_index = i;
+      visit_struct::for_each(argument_struct, parser);
+    }
+
+    return argument_struct;
   }
 
   // Array argument
@@ -82,6 +99,8 @@ struct parser {
       current_index = next_index;
     }
 
+    // std::cout << "current_index: " << current_index << "; next_index: " << next_index << "\n";
+
     if (current_index < arguments.size()) {
       const auto next = arguments[current_index];
       const auto field_name = std::string{name};
@@ -92,7 +111,13 @@ struct parser {
         return;
       }
 
-      if constexpr (!is_stl_container<T>::value) {
+      // std::cout << "Next: " << next << "; Name: " << name << "\n";
+
+      if constexpr (visit_struct::traits::is_visitable<T>::value) {
+        // visitable nested struct
+        value = parse_nested_struct<T>(name);
+      } 
+      else if constexpr (!is_stl_container<T>::value) {
         value = parse_single_argument<T>(name);
         next_index += 1;
       } else if constexpr (structopt::is_array<T>::value) {
