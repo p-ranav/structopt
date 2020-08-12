@@ -23,6 +23,41 @@ struct parser {
   std::size_t current_index{1};
   std::size_t next_index{1};
 
+  bool is_optional(const std::string& name) {
+    bool result = false;
+    if (name.size() >= 2) {
+      // e.g., -b, -v
+      if (name[0] == '-') {
+        result = true;
+
+        // TODO: check if rest of name is NOT a decimal literal - this could be a negative number
+        // if (name is a decimal literal) {
+        //   result = false;
+        // }
+
+        if (name[1] == '-') {
+          result = true;
+        }
+      }
+    }
+    return result;
+  }
+
+  bool is_optional_field(const std::string &next) {
+    if (!is_optional(next)) {
+      return false;
+    }
+
+    bool result = false;
+    for (auto& field_name : visitor.field_names) {
+      if (next == "--" + field_name or next == "-" + std::string(1, field_name[0])) {
+        // okay `next` matches _a_ field name (which is an optional field)
+        result = true;
+      }
+    }
+    return result;
+  }
+
   template <typename T> std::optional<T> parse_optional_argument(const char *name) {
     next_index += 1;
     std::optional<T> result;
@@ -155,8 +190,18 @@ struct parser {
     // Parse from current till end
     for (std::size_t i = next_index; i < arguments.size(); i++) {
       if constexpr (!is_stl_container<T>::value) {
-        result.push_back(parse_single_argument<T>(name));
-        next_index += 1;
+        const auto next = arguments[next_index];
+        // check if next is an optional argument
+        // e.g., ./foo 1 2 3           --verbose
+        //             ^^^^^ vector    ^^^^^^^^^ optional field stopping vector parsing
+        if (is_optional_field(next)) {
+          // this marks the end of the vector (break here)
+          break;         
+        }
+        else {
+          result.push_back(parse_single_argument<T>(name));
+          next_index += 1;
+        }
       } else if constexpr (structopt::is_array<T>::value) {
         constexpr std::size_t NESTED_N = structopt::array_size<T>::size;
         result.push_back(parse_array_argument<typename T::value_type, NESTED_N>(name));
@@ -197,6 +242,7 @@ struct parser {
   template <typename T>
   inline typename std::enable_if<!structopt::is_specialization<T, std::optional>::value && !visit_struct::traits::is_visitable<T>::value, void>::type
   operator()(const char *name, T &value) {
+    // std::cout << "Parsing positional: " << name << std::endl;
     if (next_index > current_index) {
       current_index = next_index;
     }
@@ -208,8 +254,7 @@ struct parser {
       const auto field_name = std::string{name};
 
       // TODO: Deal with negative numbers - these are not optional arguments
-      if ((next.size() >= 1 and next[0] == '-') or
-          (next.size() >= 2 and next[0] == '-' and next[1] == '-')) {
+      if (is_optional(next)) {
         return;
       }
 
@@ -243,6 +288,7 @@ struct parser {
   template <typename T>
   inline typename std::enable_if<structopt::is_specialization<T, std::optional>::value, void>::type
   operator()(const char *name, T &value) {
+    // std::cout << "Parsing optional " << name << std::endl;
     if (next_index > current_index) {
       current_index = next_index;
     }
