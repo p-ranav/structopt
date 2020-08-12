@@ -13,7 +13,7 @@ struct Options {
   // -v or --verbose
   std::optional<bool> verbose;  
 };
-ARGO_STRUCT(Opts, config_file, input_file, output_file, verbose);
+ARGO_STRUCT(Options, config_file, input_file, output_file, verbose);
 ```
 
 Use `argo::parse<T>` to parse command line arguments into the `Options` struct:
