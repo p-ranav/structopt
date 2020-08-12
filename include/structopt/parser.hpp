@@ -188,7 +188,27 @@ struct parser {
       // check if the current argument looks like it could be this optional field
       if (next == "--" + field_name or next == "-" + std::string(1, field_name[0])) {
         // this is an optional argument matching the current struct field
-        value = parse_optional_argument<typename T::value_type>(name);
+        if constexpr (std::is_same<typename T::value_type, bool>::value) {
+          // It is a boolean optional argument
+          // Does it have a default value?
+          // If yes, this is a FLAG argument, e.g,, "--verbose" will set it to true if the default value is false
+          // No need to write "--verbose true"
+          if (value.has_value()) {
+            // The field already has a default value!
+            value = !value.value(); // simply toggle it
+            next_index += 1;
+          }
+          else {
+            // boolean optional argument doesn't have a default value
+            // expect one
+            value = parse_optional_argument<typename T::value_type>(name);
+          }
+        }
+        else {
+          // Not std::optional<bool>
+          // Parse the argument type <T>
+          value = parse_optional_argument<typename T::value_type>(name);
+        }
       }
     }
   }

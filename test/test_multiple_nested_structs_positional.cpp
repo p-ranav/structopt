@@ -50,3 +50,36 @@ TEST_CASE("structopt can parse multiple nested struct arguments" * test_suite("n
     REQUIRE(arguments.config.global == false);
   }
 }
+
+struct Git {
+  // Subcommand: git config
+  struct Config {
+    std::optional<bool> global = false;
+    std::optional<bool> local  = true;
+    std::array<std::string, 2> name_value_pair;
+  };
+  Config config;
+
+  // Subcommand: git init
+  struct Init {
+    std::string name;
+  };
+  Init init;
+};
+STRUCTOPT(Git::Config, global, local, name_value_pair);
+STRUCTOPT(Git::Init, name);
+STRUCTOPT(Git, config, init);
+
+TEST_CASE("structopt can parse multiple nested struct arguments - Git example" * test_suite("nested_struct")) {
+  {
+    auto arguments = structopt::parse<Git>(std::vector<std::string>{"./main", "config", "user.name", "Foobar"});
+    REQUIRE(arguments.config.global == false);
+    REQUIRE(arguments.config.local == true);
+    REQUIRE(arguments.config.name_value_pair == std::array<std::string, 2>{"user.name", "Foobar"});
+  }
+  {
+    auto arguments = structopt::parse<Git>(std::vector<std::string>{"./main", "config", "--global", "user.name", "Foobar"});
+    REQUIRE(arguments.config.global == true);
+    REQUIRE(arguments.config.name_value_pair == std::array<std::string, 2>{"user.name", "Foobar"});
+  }
+}
