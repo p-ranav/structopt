@@ -13,12 +13,12 @@ struct Options {
 };
 STRUCTOPT(Options, input_file, output_file, verbose);
 
-// Example usage:
+// Usage examples:
 // ./main foo.txt bar.csv --verbose
 // ./main -v abc.json def.py
 ```
 
-Use `structopt::parse<T>` to parse command line arguments into the `Options` struct:
+Simply call `structopt::parse<T>` to parse command line arguments into the `Options` struct:
 
 ```cpp
 int main(int argc, char *argv[]) {
