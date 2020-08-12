@@ -5,14 +5,17 @@ Parse command line arguments by defining a struct
 
 struct Options {
   // positional arguments
-  std::string input  = "input.txt";
-  std::string output = "output.csv";
+  std::string input;
+  std::string output;
 
   // optional arguments
-  // -v or --verbose
   std::optional<bool> verbose;
 };
 ARGO_STRUCT(Options, input_file, output_file, verbose);
+
+// Example usage:
+// ./main foo.txt bar.csv --verbose
+// ./main -v abc.json def.py
 ```
 
 Use `argo::parse<T>` to parse command line arguments into the `Options` struct:
