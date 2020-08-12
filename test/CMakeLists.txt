@@ -34,6 +34,7 @@ file(GLOB structopt_TEST_SOURCES
     test_nested_struct.cpp
     test_multiple_nested_structs_positional.cpp
     test_vector_positional_argument.cpp
+    test_optional_flag_argument.cpp
 )
 set_source_files_properties(main.cpp
     PROPERTIES
