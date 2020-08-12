@@ -37,3 +37,38 @@ TEST_CASE("Argo can parse single positional and optional arguments" * test_suite
     REQUIRE(arguments.bar == true);
   }
 }
+
+struct PositionalAndOptionalArrayArgument {
+  std::array<int, 2> foo = {};
+  std::optional<std::array<float, 3>> bar;
+};
+
+ARGO_STRUCT(PositionalAndOptionalArrayArgument, foo, bar);
+
+TEST_CASE("Argo can parse single positional and optional array arguments" * test_suite("single_positional_and_optional")) {
+  {
+    auto arguments = argo::parse<PositionalAndOptionalArrayArgument>(std::vector<std::string>{"./main", "1", "2"});
+    REQUIRE(arguments.foo == std::array<int, 2>{1, 2});
+    REQUIRE(not arguments.bar.has_value());
+  }
+  {
+    auto arguments = argo::parse<PositionalAndOptionalArrayArgument>(std::vector<std::string>{"./main", "1", "5", "--bar", "1.1", "2.2", "3.3"});
+    REQUIRE(arguments.foo == std::array<int, 2>{1, 5});
+    REQUIRE(arguments.bar.value() == std::array<float, 3>{1.1, 2.2, 3.3});
+  }
+  {
+    auto arguments = argo::parse<PositionalAndOptionalArrayArgument>(std::vector<std::string>{"./main", "1", "5", "-b", "1.1", "2.2", "3.3"});
+    REQUIRE(arguments.foo == std::array<int, 2>{1, 5});
+    REQUIRE(arguments.bar.value() == std::array<float, 3>{1.1, 2.2, 3.3});
+  }
+  {
+    auto arguments = argo::parse<PositionalAndOptionalArrayArgument>(std::vector<std::string>{"./main", "--bar", "1.1", "2.2", "3.3", "1", "5"});
+    REQUIRE(arguments.foo == std::array<int, 2>{1, 5});
+    REQUIRE(arguments.bar.value() == std::array<float, 3>{1.1, 2.2, 3.3});
+  }
+  {
+    auto arguments = argo::parse<PositionalAndOptionalArrayArgument>(std::vector<std::string>{"./main", "-b", "1.1", "2.2", "3.3", "1", "5"});
+    REQUIRE(arguments.foo == std::array<int, 2>{1, 5});
+    REQUIRE(arguments.bar.value() == std::array<float, 3>{1.1, 2.2, 3.3});
+  }
+}
