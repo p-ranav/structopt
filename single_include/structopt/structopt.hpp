@@ -1934,6 +1934,12 @@ struct parser {
       or structopt::is_specialization<T, std::unordered_set>::value
       or structopt::is_specialization<T, std::unordered_multiset>::value) {
       result = parse_set_argument<T>(name);
+    } else if constexpr (
+      structopt::is_specialization<T, std::map>::value 
+      or structopt::is_specialization<T, std::multimap>::value
+      or structopt::is_specialization<T, std::unordered_map>::value
+      or structopt::is_specialization<T, std::unordered_multimap>::value) {
+      result = parse_map_argument<T>(name);
     } else {
       success = false;
     }
@@ -2040,6 +2046,21 @@ struct parser {
       if (success) {
         result[i] = value;
       }
+    }
+    return result;
+  }
+
+  // Map, Unordered_Map Argument
+  template <typename T> T parse_map_argument(const char *name) {
+    T result;
+    // Parse from current till end
+    for (std::size_t i = next_index; i < arguments.size(); i++) {
+      const auto next = arguments[next_index];
+      if (is_optional_field(next)) {
+        // this marks the end of the container (break here)
+        break;
+      }
+      result.insert(parse_pair_argument<typename T::key_type, typename T::mapped_type>(name));
     }
     return result;
   }
