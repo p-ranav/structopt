@@ -100,6 +100,16 @@ user         = Pranav Kumar<pranav.kumar@foo.com>
 files        = { file1.txt file3.txt file4.txt }
 ```
 
+## Building Samples
+
+```bash
+git clone https://github.com/p-ranav/structopt
+cd structopt
+mkdir build && cd build
+cmake -DSTRUCTOPT_SAMPLES=ON -DSTRUCTOPT_TESTS=ON ..
+make
+```
+
 ## Generating Single Header
 
 ```bash

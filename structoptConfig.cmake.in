@@ -1,0 +1,7 @@
+@PACKAGE_INIT@
+
+include(CMakeFindDependencyMacro)
+
+if (NOT TARGET structopt::structopt)
+  include(${CMAKE_CURRENT_LIST_DIR}/structoptTargets.cmake)
+endif ()
