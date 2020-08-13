@@ -37,7 +37,6 @@ TEST_CASE("structopt can parse vector positional argument" * test_suite("vector_
   }
   {
     auto arguments = structopt::app("test").parse<VectorIntArgumentWithOtherFlags>(std::vector<std::string>{"./main", "1", "2", "--foo", "3"});
-    // When the parser sees 3, it'll restart parsing for the positional std::vector field `value`
     REQUIRE(arguments.value == std::vector<int>{1, 2});
     REQUIRE(arguments.foo == true);
   }
