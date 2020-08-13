@@ -83,8 +83,7 @@ log_level    = 3
 user         = not provided
 files        = { file1.txt file2.txt }
 
-▶ ./demo config.csv --bind-address localhost:9000 -v -log-level error file1.txt file3.txt \
-  file4.txt --user "Pranav Kumar" "pranav.kumar@foo.com"
+▶ ./demo config.csv --bind-address localhost:9000 -v -log-level error file1.txt file3.txt file4.txt --user "Pranav Kumar" "pranav.kumar@foo.com"
 config_file  = config.csv
 bind_address = localhost:9000
 verbose      = true
