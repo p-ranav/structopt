@@ -7,6 +7,10 @@ struct SingleIntArgument {
   int value = 0;
 };
 
+struct SingleNegativeIntArgument {
+  int value = 0;
+};
+
 struct SingleFloatArgument {
   float value = 0.0f;
 };
@@ -28,6 +32,7 @@ struct SinglePairArgument {
 };
 
 STRUCTOPT(SingleIntArgument, value);
+STRUCTOPT(SingleNegativeIntArgument, value);
 STRUCTOPT(SingleFloatArgument, value);
 STRUCTOPT(SingleCharArgument, value);
 STRUCTOPT(SingleBoolArgument, value);
@@ -42,6 +47,16 @@ TEST_CASE("structopt can parse single positional argument" * test_suite("single_
   }
   {
     auto arguments = structopt::app("test").parse<SingleIntArgument>(std::vector<std::string>{"./main", "10"});
+    REQUIRE(arguments.value == 10);
+  }
+
+  // Negative Int
+  {
+    auto arguments = structopt::app("test").parse<SingleNegativeIntArgument>(std::vector<std::string>{"./main", "-5"});
+    REQUIRE(arguments.value == -5);
+  }
+  {
+    auto arguments = structopt::app("test").parse<SingleNegativeIntArgument>(std::vector<std::string>{"./main", "+10"});
     REQUIRE(arguments.value == 10);
   }
 

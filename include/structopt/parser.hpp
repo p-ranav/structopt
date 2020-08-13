@@ -7,6 +7,7 @@
 #include <sstream>
 #include <string>
 #include <structopt/array_size.hpp>
+#include <structopt/is_number.hpp>
 #include <structopt/is_specialization.hpp>
 #include <structopt/third_party/magic_enum/magic_enum.hpp>
 #include <structopt/third_party/visit_struct/visit_struct.hpp>
@@ -34,6 +35,8 @@ struct parser {
       return false;
     } else if (name == "--") {
       double_dash_encountered = true;
+      return false;
+    } else if (is_valid_number(name)) {
       return false;
     }
 
