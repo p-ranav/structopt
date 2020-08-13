@@ -1,3 +1,7 @@
+<p align="center">
+  <img height="70" src="img/logo.png"/>  
+</p>
+
 Parse command line arguments by defining a struct
 
 ```cpp
