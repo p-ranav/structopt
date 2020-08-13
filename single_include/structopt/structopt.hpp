@@ -1924,10 +1924,16 @@ struct parser {
     } else if constexpr (structopt::is_array<T>::value) {
       constexpr std::size_t N = structopt::array_size<T>::size;
       result = parse_array_argument<typename T::value_type, N>(name);
-    } else if constexpr (structopt::is_specialization<T, std::deque>::value) {
-      result = parse_deque_argument<typename T::value_type>(name);
-    } else if constexpr (structopt::is_specialization<T, std::vector>::value) {
-      result = parse_vector_argument<typename T::value_type>(name);
+    } else if constexpr (structopt::is_specialization<T, std::deque>::value 
+      or structopt::is_specialization<T, std::list>::value
+      or structopt::is_specialization<T, std::vector>::value) {
+      result = parse_vector_like_argument<T>(name);
+    } else if constexpr (
+      structopt::is_specialization<T, std::set>::value 
+      or structopt::is_specialization<T, std::multiset>::value
+      or structopt::is_specialization<T, std::unordered_set>::value
+      or structopt::is_specialization<T, std::unordered_multiset>::value) {
+      result = parse_set_argument<T>(name);
     } else {
       success = false;
     }
@@ -2068,17 +2074,17 @@ struct parser {
     return result;
   }
 
-  // Deque argument
-  template <typename T> std::deque<T> parse_deque_argument(const char *name) {
-    std::deque<T> result;
+  // Vector, deque
+  template <typename T> T parse_vector_like_argument(const char *name) {
+    T result;
     // Parse from current till end
     for (std::size_t i = next_index; i < arguments.size(); i++) {
       const auto next = arguments[next_index];
       if (is_optional_field(next)) {
-        // this marks the end of the vector (break here)
+        // this marks the end of the container (break here)
         break;
       }
-      auto [value, success] = parse_argument<T>(name);
+      auto [value, success] = parse_argument<typename T::value_type>(name);
       if (success) {
         result.push_back(value);
       }
@@ -2086,19 +2092,19 @@ struct parser {
     return result;
   }
 
-  // Vector argument
-  template <typename T> std::vector<T> parse_vector_argument(const char *name) {
-    std::vector<T> result;
+  // Set, multiset, unordered_set, unordered_multiset
+  template <typename T> T parse_set_argument(const char *name) {
+    T result;
     // Parse from current till end
     for (std::size_t i = next_index; i < arguments.size(); i++) {
       const auto next = arguments[next_index];
       if (is_optional_field(next)) {
-        // this marks the end of the vector (break here)
+        // this marks the end of the container (break here)
         break;
       }
-      auto [value, success] = parse_argument<T>(name);
+      auto [value, success] = parse_argument<typename T::value_type>(name);
       if (success) {
-        result.push_back(value);
+        result.insert(value);
       }
     }
     return result;

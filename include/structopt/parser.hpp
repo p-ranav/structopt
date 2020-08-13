@@ -93,6 +93,7 @@ struct parser {
       constexpr std::size_t N = structopt::array_size<T>::size;
       result = parse_array_argument<typename T::value_type, N>(name);
     } else if constexpr (structopt::is_specialization<T, std::deque>::value 
+      or structopt::is_specialization<T, std::list>::value
       or structopt::is_specialization<T, std::vector>::value) {
       result = parse_vector_like_argument<T>(name);
     } else if constexpr (
