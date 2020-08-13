@@ -1,4 +1,4 @@
-#include <structopt/structopt.hpp>
+#include <structopt/app.hpp>
 #include <doctest.hpp>
 
 using doctest::test_suite;
@@ -12,7 +12,7 @@ TEST_CASE("structopt can parse fixed 3D array positional argument" *
           test_suite("3d_array_positional")) {
   // 3D array
   {
-    auto arguments = structopt::parse<Array3dArgument>(std::vector<std::string>{
+    auto arguments = structopt::app("test").parse<Array3dArgument>(std::vector<std::string>{
         "./main", "0", "0.51", "0.35", "0", "0.51", "0.35", "0", "0.51",
         "0.35",   "0", "0.51", "0.35", "0", "0.51", "0.35", "0", "0.51",
         "0.35",   "0", "0.51", "0.35", "0", "0.51", "0.35", "0", "0.51",

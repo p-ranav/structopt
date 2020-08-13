@@ -1762,20 +1762,28 @@ template <typename T> struct is_stl_container {
 
 namespace structopt {
 
+class app;
+
 namespace details {
 
 struct visitor {
   std::vector<std::string> field_names;
   std::deque<std::string> positional_field_names;
+  std::deque<std::string> flag_field_names;
   std::deque<std::string> optional_field_names;
   std::deque<std::string> nested_struct_field_names;
 
+  // Visitor function for std::optional - could be an option or a flag
   template <typename T>
   inline typename std::enable_if<structopt::is_specialization<T, std::optional>::value,
                                  void>::type
   operator()(const char *name, T &value) {
     field_names.push_back(name);
-    optional_field_names.push_back(name);
+    if constexpr (std::is_same<typename T::value_type, bool>::value) {
+      flag_field_names.push_back(name);
+    } else {
+      optional_field_names.push_back(name);
+    }
   }
 
   // Visitor function for any positional field (not std::optional)
@@ -1788,6 +1796,7 @@ struct visitor {
     positional_field_names.push_back(name);
   }
 
+  // Visitor function for nested structs
   template <typename T>
   inline typename std::enable_if<visit_struct::traits::is_visitable<T>::value,
                                  void>::type
@@ -1920,13 +1929,16 @@ struct parser {
     T argument_struct;
 
     // Save struct field names
-    structopt::details::visitor visitor;
-    visit_struct::for_each(argument_struct, visitor);
+    structopt::details::visitor nested_visitor;
+    visit_struct::for_each(argument_struct, nested_visitor);
+
+    // TODO: pass along program name, version etc. (info from `app` object)
+    // to the nested parser so that it can correctly report help() msgs
 
     structopt::details::parser parser;
     parser.next_index = 0;
     parser.current_index = 0;
-    parser.visitor = std::move(visitor);
+    parser.visitor = std::move(nested_visitor);
 
     std::copy(arguments.begin() + next_index, arguments.end(),
               std::back_inserter(parser.arguments));
@@ -2291,7 +2303,9 @@ template <> inline bool parser::parse_single_argument<bool>(const char *name) {
 #pragma once
 #include <cstdlib>
 #include <iostream>
+#include <memory>
 #include <string>
+// #include <structopt/app.hpp>
 // #include <structopt/is_stl_container.hpp>
 // #include <structopt/parser.hpp>
 // #include <structopt/third_party/visit_struct/visit_struct.hpp>
@@ -2302,30 +2316,68 @@ template <> inline bool parser::parse_single_argument<bool>(const char *name) {
 
 namespace structopt {
 
-template <typename T> T parse(const std::vector<std::string> &arguments) {
-  T argument_struct;
+class app {
+  std::string name_;
+  std::string version_;
+  details::visitor visitor;
 
-  // Save struct field names
-  structopt::details::visitor visitor;
-  visit_struct::for_each(argument_struct, visitor);
+public:
+  explicit app(const std::string name, const std::string version = "")
+      : name_(name), version_(version) {}
 
-  // Construct the argument parser
-  structopt::details::parser parser;
-  parser.visitor = std::move(visitor);
-  parser.arguments = arguments;
+  std::string get_name() const { return name_; }
 
-  for (std::size_t i = 1; i < parser.arguments.size(); i++) {
-    parser.current_index = i;
-    visit_struct::for_each(argument_struct, parser);
+  std::string get_version() const { return version_; }
+
+  template <typename T>
+  T parse(const std::vector<std::string> &arguments) {
+    T argument_struct;
+
+    // Visit the struct and save flag, optional and positional field names
+    visit_struct::for_each(argument_struct, visitor);
+
+    // Construct the argument parser
+    structopt::details::parser parser;
+    parser.visitor = visitor;
+    parser.arguments = arguments;
+
+    for (std::size_t i = 1; i < parser.arguments.size(); i++) {
+      parser.current_index = i;
+      visit_struct::for_each(argument_struct, parser);
+    }
+
+    return argument_struct;
   }
 
-  return argument_struct;
-}
+  template <typename T>
+  T parse(int argc, char *argv[]) {
+    std::vector<std::string> arguments;
+    std::copy(argv, argv + argc, std::back_inserter(arguments));
+    return parse<T>(arguments);
+  }
 
-template <typename T> T parse(int argc, char *argv[]) {
-  std::vector<std::string> arguments;
-  std::copy(argv, argv + argc, std::back_inserter(arguments));
-  return parse<T>(arguments);
-}
+  void generate_help(std::ostream& os) {
+    os << name_ << " [FLAGS] [OPTIONS] ";
+    for (auto& field : visitor.positional_field_names) {
+      os << field << " ";
+    }
+
+    os << "\n\nFLAGS:\n";
+    for (auto& flag : visitor.flag_field_names) {
+      os << "    -" << flag[0] << ", --" << flag << "\n";
+    }
+
+    os << "\nOPTIONS:\n";
+    for (auto& option : visitor.optional_field_names) {
+      os << "    -" << option[0] << ", --" << option << "\n";
+    }
+
+    os << "\nARGS:\n";
+    for (auto& arg : visitor.positional_field_names) {
+      os << "    " << arg << "\n";
+    }
+    os << "\n";
+  }
+};
 
 } // namespace structopt

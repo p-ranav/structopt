@@ -1,5 +1,5 @@
 #include <doctest.hpp>
-#include <structopt/structopt.hpp>
+#include <structopt/app.hpp>
 
 using doctest::test_suite;
 
@@ -43,7 +43,7 @@ STRUCTOPT(Options, config_file, bind_address, verbose, log_level, user, files);
 
 TEST_CASE("structopt can parse trailing positional arguments" * test_suite("single_optional")) {
   {
-    auto arguments = structopt::parse<Options>(std::vector<std::string>
+    auto arguments = structopt::app("test").parse<Options>(std::vector<std::string>
         {"./main", "--bind-address", "localhost:9000", "-v", "-log-level", "error", "--user", "Pranav Kumar", "pranav.kumar@foo.com", "config.csv"});
     REQUIRE(arguments.config_file == "config.csv");
     REQUIRE(arguments.bind_address == "localhost:9000");

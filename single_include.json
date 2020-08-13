@@ -9,7 +9,7 @@
         "include/structopt/is_stl_container.hpp",
         "include/structopt/visitor.hpp",
         "include/structopt/parser.hpp",
-        "include/structopt/structopt.hpp"
+        "include/structopt/app.hpp"
     ],
     "include_paths": ["include"]
 }

@@ -1,5 +1,5 @@
 #include <doctest.hpp>
-#include <structopt/structopt.hpp>
+#include <structopt/app.hpp>
 
 using doctest::test_suite;
 
@@ -15,7 +15,7 @@ STRUCTOPT(GrepOptions, v, search, pathspec);
 
 TEST_CASE("structopt can parse the '--' delimiter as end of optional arguments" * test_suite("single_optional")) {
   {
-    auto arguments = structopt::parse<GrepOptions>(std::vector<std::string>{"grep", "--", "-v", "file.csv"});
+    auto arguments = structopt::app("test").parse<GrepOptions>(std::vector<std::string>{"grep", "--", "-v", "file.csv"});
     REQUIRE(arguments.v.has_value() == false);
     REQUIRE(arguments.search == "-v");
     REQUIRE(arguments.pathspec == "file.csv");

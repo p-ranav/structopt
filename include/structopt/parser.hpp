@@ -115,13 +115,16 @@ struct parser {
     T argument_struct;
 
     // Save struct field names
-    structopt::details::visitor visitor;
-    visit_struct::for_each(argument_struct, visitor);
+    structopt::details::visitor nested_visitor;
+    visit_struct::for_each(argument_struct, nested_visitor);
+
+    // TODO: pass along program name, version etc. (info from `app` object)
+    // to the nested parser so that it can correctly report help() msgs
 
     structopt::details::parser parser;
     parser.next_index = 0;
     parser.current_index = 0;
-    parser.visitor = std::move(visitor);
+    parser.visitor = std::move(nested_visitor);
 
     std::copy(arguments.begin() + next_index, arguments.end(),
               std::back_inserter(parser.arguments));
