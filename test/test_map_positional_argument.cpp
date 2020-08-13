@@ -18,6 +18,9 @@ TEST_CASE("structopt can parse map positional argument" * test_suite("map_positi
   }
 }
 
+// This following one is a sanity check to see that recursive parsing works
+// I can't see this being a meaningful use-case.
+
 struct MapStringMapArgument {
   std::map<std::string, std::map<std::string, int>> value = {};
 };
