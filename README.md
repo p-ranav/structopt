@@ -2,7 +2,9 @@
   <img height="70" src="img/logo.png"/>  
 </p>
 
-Parse command line arguments by defining a struct
+<p align="center">
+  Parse command line arguments by defining a struct
+</p>
 
 ```cpp
 struct Options {
