@@ -53,10 +53,10 @@ file(GLOB structopt_TEST_SOURCES
 set_source_files_properties(main.cpp
     PROPERTIES
     COMPILE_DEFINITIONS DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN)
-ADD_EXECUTABLE(structopt ${structopt_TEST_SOURCES})
+ADD_EXECUTABLE(structopt_tests ${structopt_TEST_SOURCES})
 INCLUDE_DIRECTORIES("../include" ".")
-set_target_properties(structopt PROPERTIES OUTPUT_NAME tests)
-set_property(TARGET structopt PROPERTY CXX_STANDARD 17)
+set_target_properties(structopt_tests PROPERTIES OUTPUT_NAME structopt_tests)
+set_property(TARGET structopt_tests PROPERTY CXX_STANDARD 17)
 
 # Set ${PROJECT_NAME} as the startup project
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT structopt)
