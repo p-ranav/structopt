@@ -39,6 +39,7 @@ file(GLOB structopt_TEST_SOURCES
     test_enum_optional_argument.cpp
     test_optional_argument_naming.cpp
     test_double_dash_option_delimiter.cpp
+    test_trailing_positional_arguments.cpp
 )
 set_source_files_properties(main.cpp
     PROPERTIES

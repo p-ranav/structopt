@@ -13,6 +13,8 @@
 #include <type_traits>
 #include <utility>
 #include <vector>
+#include <algorithm>
+#include <iterator>
 
 namespace structopt {
 
@@ -74,15 +76,15 @@ struct parser {
       if constexpr (std::is_enum<T>::value) {
         result = parse_enum_argument<T>(name);
         next_index += 1;
+      } else if constexpr (structopt::is_specialization<T, std::pair>::value) {
+        result =
+            parse_pair_argument<typename T::first_type, typename T::second_type>(name);
       } else if constexpr (!is_stl_container<T>::value) {
         result = parse_single_argument<T>(name);
         next_index += 1;
       } else if constexpr (structopt::is_array<T>::value) {
         constexpr std::size_t N = structopt::array_size<T>::size;
         result = parse_array_argument<typename T::value_type, N>(name);
-      } else if constexpr (structopt::is_specialization<T, std::pair>::value) {
-        result =
-            parse_pair_argument<typename T::first_type, typename T::second_type>(name);
       } else if constexpr (structopt::is_specialization<T, std::vector>::value) {
         result = parse_vector_argument<typename T::value_type>(name);
       }
@@ -152,18 +154,19 @@ struct parser {
       if constexpr (std::is_enum<T1>::value) {
         result.first = parse_enum_argument<T1>(name);
         next_index += 1;
+      } else if constexpr (structopt::is_specialization<T1, std::pair>::value) {
+        result.first =
+            parse_pair_argument<typename T1::first_type, typename T1::second_type>(name);
       } else if constexpr (!is_stl_container<T1>::value) {
         result.first = parse_single_argument<T1>(name);
         next_index += 1;
       } else if constexpr (structopt::is_array<T1>::value) {
         constexpr std::size_t NESTED_N = structopt::array_size<T1>::size;
         result.first = parse_array_argument<typename T1::value_type, NESTED_N>(name);
-      } else if constexpr (structopt::is_specialization<T1, std::pair>::value) {
-        result.first =
-            parse_pair_argument<typename T1::first_type, typename T1::second_type>(name);
       } else if constexpr (structopt::is_specialization<T1, std::vector>::value) {
         result.first = parse_vector_argument<typename T1::value_type>(name);
       }
+      // TODO: add pair (nested case)
     }
 
     // Pair second
@@ -171,18 +174,19 @@ struct parser {
       if constexpr (std::is_enum<T2>::value) {
         result.second = parse_enum_argument<T2>(name);
         next_index += 1;
+      } else if constexpr (structopt::is_specialization<T2, std::pair>::value) {
+        result.second =
+            parse_pair_argument<typename T2::first_type, typename T2::second_type>(name);
       } else if constexpr (!is_stl_container<T2>::value) {
         result.second = parse_single_argument<T2>(name);
         next_index += 1;
       } else if constexpr (structopt::is_array<T2>::value) {
         constexpr std::size_t NESTED_N = structopt::array_size<T2>::size;
         result.second = parse_array_argument<typename T2::value_type, NESTED_N>(name);
-      } else if constexpr (structopt::is_specialization<T2, std::pair>::value) {
-        result.second =
-            parse_pair_argument<typename T2::first_type, typename T2::second_type>(name);
       } else if constexpr (structopt::is_specialization<T2, std::vector>::value) {
         result.second = parse_vector_argument<typename T2::value_type>(name);
       }
+      // TODO: add pair (nested case)
     }
 
     return result;
@@ -197,15 +201,15 @@ struct parser {
       if constexpr (std::is_enum<T>::value) {
         result[i] = parse_enum_argument<T>(name);
         next_index += 1;
+      } else if constexpr (structopt::is_specialization<T, std::pair>::value) {
+        result[i] =
+            parse_pair_argument<typename T::first_type, typename T::second_type>(name);
       } else if constexpr (!is_stl_container<T>::value) {
         result[i] = parse_single_argument<T>(name);
         next_index += 1;
       } else if constexpr (structopt::is_array<T>::value) {
         constexpr std::size_t NESTED_N = structopt::array_size<T>::size;
         result[i] = parse_array_argument<typename T::value_type, NESTED_N>(name);
-      } else if constexpr (structopt::is_specialization<T, std::pair>::value) {
-        result[i] =
-            parse_pair_argument<typename T::first_type, typename T::second_type>(name);
       } else if constexpr (structopt::is_specialization<T, std::vector>::value) {
         result[i] = parse_vector_argument<typename T::value_type>(name);
       }
@@ -221,6 +225,9 @@ struct parser {
       if constexpr (std::is_enum<T>::value) {
         result.push_back(parse_enum_argument<T>(name));
         next_index += 1;
+      } else if constexpr (structopt::is_specialization<T, std::pair>::value) {
+        result.push_back(
+            parse_pair_argument<typename T::first_type, typename T::second_type>(name));
       } else if constexpr (!is_stl_container<T>::value) {
         const auto next = arguments[next_index];
         // check if next is an optional argument
@@ -236,9 +243,6 @@ struct parser {
       } else if constexpr (structopt::is_array<T>::value) {
         constexpr std::size_t NESTED_N = structopt::array_size<T>::size;
         result.push_back(parse_array_argument<typename T::value_type, NESTED_N>(name));
-      } else if constexpr (structopt::is_specialization<T, std::pair>::value) {
-        result.push_back(
-            parse_pair_argument<typename T::first_type, typename T::second_type>(name));
       } else if constexpr (structopt::is_specialization<T, std::vector>::value) {
         result.push_back(parse_vector_argument<typename T::value_type>(name));
       }
@@ -297,37 +301,63 @@ struct parser {
 
     if (current_index < arguments.size()) {
       const auto next = arguments[current_index];
-      const auto field_name = std::string{name};
 
       // TODO: Deal with negative numbers - these are not optional arguments
       if (is_optional(next)) {
         return;
       }
 
-      // This will be parsed as a subcommand (nested struct)
-      if (visitor.is_field_name(next) && next == field_name) {
+      if (visitor.positional_field_names.empty()) {
+        // We're not looking to save any more positional fields
+        // all of them already have a value
+        // TODO: Report error, unexpected argument
         return;
       }
 
-      // std::cout << "Next: " << next << "; Name: " << name << "\n";
+      const auto field_name = visitor.positional_field_names.front();
+
+      // // This will be parsed as a subcommand (nested struct)
+      // if (visitor.is_field_name(next) && next == field_name) {
+      //   return;
+      // }
+
+      if (field_name != std::string{name}) {
+        // current field is not the one we want to parse 
+        return;
+      }
+
+      // Remove from the positional field list as it is about to be parsed
+      visitor.positional_field_names.pop_front();
+
+      // std::cout << "Next: " << next << "; Name: " << field_name << "\n";
 
       if constexpr (visit_struct::traits::is_visitable<T>::value) {
         // visitable nested struct
-        value = parse_nested_struct<T>(name);
+        // std::cout << "Parsing nested struct argument" << std::endl;
+        value = parse_nested_struct<T>(field_name.c_str());
       } else if constexpr (std::is_enum<T>::value) {
-        value = parse_enum_argument<T>(name);
+        // std::cout << "Parsing enum argument" << std::endl;
+        value = parse_enum_argument<T>(field_name.c_str());
         next_index += 1;
       } else if constexpr (structopt::is_specialization<T, std::pair>::value) {
+        // std::cout << "Parsing pair argument" << std::endl;
         value =
-            parse_pair_argument<typename T::first_type, typename T::second_type>(name);
+            parse_pair_argument<typename T::first_type, typename T::second_type>(field_name.c_str());
       } else if constexpr (!is_stl_container<T>::value) {
-        value = parse_single_argument<T>(name);
+        // std::cout << "Parsing single argument" << std::endl;
+        value = parse_single_argument<T>(field_name.c_str());
         next_index += 1;
       } else if constexpr (structopt::is_array<T>::value) {
+        // std::cout << "Parsing array argument" << std::endl;
         constexpr std::size_t N = structopt::array_size<T>::size;
-        value = parse_array_argument<typename T::value_type, N>(name);
+        value = parse_array_argument<typename T::value_type, N>(field_name.c_str());
       } else if constexpr (structopt::is_specialization<T, std::vector>::value) {
-        value = parse_vector_argument<typename T::value_type>(name);
+        // std::cout << "Parsing vector argument" << std::endl;
+        value = parse_vector_argument<typename T::value_type>(field_name.c_str());
+      } else {
+        // std::cout << "Positional field not parsed" << std::endl;
+        // positional field does not yet have a value
+        visitor.positional_field_names.push_front(field_name);
       }
     }
   }
@@ -370,6 +400,8 @@ struct parser {
                                             [](char c) { return !std::isalpha(c); }),
                              field_name_alpha.end());
 
+      // std::cout << "Trying to parse optional: " << field_name << " " << next << "\n";
+
       // if `next` looks like an optional argument
       // i.e., starts with `-` or `--`
       // see if you can find an optional field in the struct with a matching name
@@ -378,6 +410,9 @@ struct parser {
       if ((double_dash_encountered == false) and
           ((next == "--" + field_name or next == "-" + std::string(1, field_name[0])) or
            (next_alpha == field_name_alpha))) {
+
+        // std::cout << "Parsing optional: " << field_name << " " << next << "\n";
+
         // this is an optional argument matching the current struct field
         if constexpr (std::is_same<typename T::value_type, bool>::value) {
           // It is a boolean optional argument

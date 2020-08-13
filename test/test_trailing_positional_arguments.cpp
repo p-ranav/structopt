@@ -44,12 +44,12 @@ STRUCTOPT(Options, config_file, bind_address, verbose, log_level, user, files);
 TEST_CASE("structopt can parse trailing positional arguments" * test_suite("single_optional")) {
   {
     auto arguments = structopt::parse<Options>(std::vector<std::string>
-        {"./main", "--bind-address", "localhost:9000", "-v", "-log-level", "error", "--user", "Pranav Kumar", "panav.kumar@foo.com", "config.csv"});
+        {"./main", "--bind-address", "localhost:9000", "-v", "-log-level", "error", "--user", "Pranav Kumar", "pranav.kumar@foo.com", "config.csv"});
     REQUIRE(arguments.config_file == "config.csv");
     REQUIRE(arguments.bind_address == "localhost:9000");
     REQUIRE(arguments.verbose == true);
     REQUIRE(arguments.log_level == Options::LogLevel::error);
-    REQUIRE(arguments.user == std::pair<std::string, std::string>{"Pranav Kumar", "pranav.kuma@foo.com"});
+    REQUIRE(arguments.user == std::pair<std::string, std::string>{"Pranav Kumar", "pranav.kumar@foo.com"});
     REQUIRE(arguments.files == std::vector<std::string>{});
   }
 }
