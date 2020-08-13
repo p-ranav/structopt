@@ -44,6 +44,8 @@ Simply call `structopt::parse<T>` to parse command line arguments into the `Opti
 
 ```cpp
 int main(int argc, char *argv[]) {
+  
+  // Line of code that does all the work:
   auto options = structopt::parse<Options>(argc, argv);
 
   // Print out parsed arguments:
