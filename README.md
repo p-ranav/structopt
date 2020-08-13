@@ -31,9 +31,6 @@ struct Options {
  
    // You want a flag?
    // Use `std::optional<bool>` and provide a default value. 
-   //
-   // Passing this flag will set this 
-   // value to (!default_value), i.e., true
    //   e.g., -v
    //   e.g., --verbose
    std::optional<bool> verbose = false;
