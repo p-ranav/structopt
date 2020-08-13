@@ -22,7 +22,7 @@ struct Options {
    // value to (!default_value), i.e., true
    std::optional<bool> verbose = false;
 
-   // structopt also support defining enum classes
+   // structopt also supports defining enum classes
    // The argument (string) will be converted (if possible)
    // into the equivalent enum value
    //   e.g., --log-level debug
@@ -53,4 +53,15 @@ int main(int argc, char *argv[]) {
   std::copy(options.files.begin(), options.files.end(), std::ostream_iterator<std::string>(std::cout, " "));
   std::cout << "}" << std::endl; 
 }
+```
+
+Now let's pass some arguments to this program:
+
+```bash
+▶ ./main config.csv --bind-address localhost:9000 -v -log-level error file1.txt file2.txt
+config_file  = config.csv
+bind_address = localhost:9000
+verbose      = true
+log_level    = 3
+files        = {file1.txt file2.txt }
 ```
