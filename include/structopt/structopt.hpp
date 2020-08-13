@@ -16,7 +16,7 @@ namespace structopt {
 template <typename T> T parse(const std::vector<std::string> &arguments) {
   T argument_struct;
 
-  // Save struct field names 
+  // Save struct field names
   structopt::details::visitor visitor;
   visit_struct::for_each(argument_struct, visitor);
 

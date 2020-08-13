@@ -14,11 +14,11 @@ struct visitor {
     field_names.push_back(name);
   }
 
-  bool is_field_name(const std::string & name) {
+  bool is_field_name(const std::string &name) {
     return std::find(field_names.begin(), field_names.end(), name) != field_names.end();
   }
 };
 
-}
+} // namespace details
 
 } // namespace structopt
