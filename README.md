@@ -65,17 +65,10 @@ int main(int argc, char *argv[]) {
 
   // Print out parsed arguments:
 
-  std::cout << "config_file  = " << options.config_file << "\n";
-  std::cout << "bind_address = " << options.bind_address.value_or("not provided") << "\n";
-  std::cout << "verbose      = " << std::boolalpha << options.verbose.value() << "\n";
-  std::cout << "log_level    = " << static_cast<int>(options.log_level.value()) << "\n";
-  if (options.user.has_value())
-    std::cout << "user         = " << options.user.value().first << "<" << options.user.value().second << ">\n";
-  else
-    std::cout << "user         = " << "not provided\n";
-  std::cout << "files        = { ";
-  std::copy(options.files.begin(), options.files.end(), std::ostream_iterator<std::string>(std::cout, " "));
-  std::cout << "}" << std::endl; 
+  // std::cout << "config_file  = " << options.config_file << "\n";
+  // std::cout << "bind_address = " << options.bind_address.value_or("not provided") << "\n";
+  // std::cout << "verbose      = " << std::boolalpha << options.verbose.value() << "\n";
+  // ...
 }
 ```
 
