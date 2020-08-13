@@ -35,7 +35,7 @@ struct Options {
    //   e.g., --verbose
    std::optional<bool> verbose = false;
 
-   // structopt also support defining enum classes
+   // Directly define and use enum classes
    // The argument (string) will be converted (if possible)
    // into the equivalent enum value
    //   e.g., --log-level debug
