@@ -45,6 +45,7 @@ file(GLOB structopt_TEST_SOURCES
     test_tuple_optional_argument.cpp
     test_deque_positional_argument.cpp
     test_deque_optional_argument.cpp
+    test_set_positional_argument.cpp
 )
 set_source_files_properties(main.cpp
     PROPERTIES
