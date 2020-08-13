@@ -23,8 +23,17 @@ struct parser {
   std::vector<std::string> arguments;
   std::size_t current_index{1};
   std::size_t next_index{1};
+  bool double_dash_encountered{false}; // "--" option-argument delimiter
 
   bool is_optional(const std::string& name) {
+    if (double_dash_encountered) {
+      return false;
+    }
+    else if (name == "--") {
+      double_dash_encountered = true;
+      return false;
+    }
+
     bool result = false;
     if (name.size() >= 2) {
       // e.g., -b, -v
@@ -217,7 +226,7 @@ struct parser {
         //             ^^^^^ vector    ^^^^^^^^^ optional field stopping vector parsing
         if (is_optional_field(next)) {
           // this marks the end of the vector (break here)
-          break;         
+          break;
         }
         else {
           result.push_back(parse_single_argument<T>(name));
@@ -334,6 +343,12 @@ struct parser {
       const auto next = arguments[current_index];
       const auto field_name = std::string{name};
 
+      if (next == "--" and double_dash_encountered == false) {
+        double_dash_encountered = true;
+        next_index += 1;
+        return;
+      }
+
       // Remove special characters from argument
       // e.g., --verbose => verbose
       // e.g., -v => v
@@ -357,9 +372,12 @@ struct parser {
 
       // check if the current argument looks like it could be this optional field
       if (
-        (next == "--" + field_name or next == "-" + std::string(1, field_name[0]))
-        or
-        (next_alpha == field_name_alpha)
+          (double_dash_encountered == false) and 
+        (
+          (next == "--" + field_name or next == "-" + std::string(1, field_name[0]))
+          or
+          (next_alpha == field_name_alpha)
+        )
        ) {
         // this is an optional argument matching the current struct field
         if constexpr (std::is_same<typename T::value_type, bool>::value) {
