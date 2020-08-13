@@ -1,0 +1,15 @@
+{
+    "project": "Parse command line arguments by defining a struct",
+    "target": "single_include/structopt/structopt.hpp",
+    "sources": [
+        "include/structopt/third_party/visit_struct/visit_struct.hpp",
+        "include/structopt/third_party/magic_enum/magic_enum.hpp",
+        "include/structopt/array_size.hpp",
+        "include/structopt/is_specialization.hpp",
+        "include/structopt/is_stl_container.hpp",
+        "include/structopt/visitor.hpp",
+        "include/structopt/parser.hpp",
+        "include/structopt/structopt.hpp"
+    ],
+    "include_paths": ["include"]
+}
