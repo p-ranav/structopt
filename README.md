@@ -48,7 +48,8 @@ struct Options {
    std::optional<std::pair<std::string, std::string>> user;
 
    // You can use containers like std::vector
-   // to save variadic arguments of some type
+   // when you don't know the total number of arguments
+   // but want to collect them all into a list
    std::vector<std::string> files;
 };
 STRUCTOPT(Options, config_file, bind_address, verbose, log_level, user, files);
