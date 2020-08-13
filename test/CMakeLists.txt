@@ -34,6 +34,7 @@ file(GLOB structopt_TEST_SOURCES
     test_nested_struct.cpp
     test_multiple_nested_structs_positional.cpp
     test_vector_positional_argument.cpp
+    test_vector_optional_argument.cpp
     test_optional_flag_argument.cpp
     test_enum_positional_argument.cpp
     test_enum_optional_argument.cpp
@@ -42,6 +43,8 @@ file(GLOB structopt_TEST_SOURCES
     test_trailing_positional_arguments.cpp
     test_tuple_positional_argument.cpp
     test_tuple_optional_argument.cpp
+    test_deque_positional_argument.cpp
+    test_deque_optional_argument.cpp
 )
 set_source_files_properties(main.cpp
     PROPERTIES

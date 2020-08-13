@@ -1835,6 +1835,7 @@ struct visitor {
 #include <algorithm>
 #include <array>
 #include <iostream>
+#include <set>
 #include <sstream>
 #include <string>
 // #include <structopt/array_size.hpp>
@@ -1923,6 +1924,8 @@ struct parser {
     } else if constexpr (structopt::is_array<T>::value) {
       constexpr std::size_t N = structopt::array_size<T>::size;
       result = parse_array_argument<typename T::value_type, N>(name);
+    } else if constexpr (structopt::is_specialization<T, std::deque>::value) {
+      result = parse_deque_argument<typename T::value_type>(name);
     } else if constexpr (structopt::is_specialization<T, std::vector>::value) {
       result = parse_vector_argument<typename T::value_type>(name);
     } else {
@@ -2062,6 +2065,24 @@ struct parser {
     for_each(result, [&](auto&& arg) { 
       parse_tuple_element(name, arg);
     });
+    return result;
+  }
+
+  // Deque argument
+  template <typename T> std::deque<T> parse_deque_argument(const char *name) {
+    std::deque<T> result;
+    // Parse from current till end
+    for (std::size_t i = next_index; i < arguments.size(); i++) {
+      const auto next = arguments[next_index];
+      if (is_optional_field(next)) {
+        // this marks the end of the vector (break here)
+        break;
+      }
+      auto [value, success] = parse_argument<T>(name);
+      if (success) {
+        result.push_back(value);
+      }
+    }
     return result;
   }
 
