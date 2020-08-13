@@ -106,3 +106,15 @@ log_level    = 0
 user         = Pranav Kumar<pranav.kumar@foo.com>
 files        = { file1.txt file3.txt file4.txt }
 ```
+
+## Generating Single Header
+
+```bash
+python3 utils/amalgamate/amalgamate.py -c single_include.json -s .
+```
+
+## Contributing
+Contributions are welcome, have a look at the [CONTRIBUTING.md](CONTRIBUTING.md) document for more information.
+
+## License
+The project is available under the [MIT](https://opensource.org/licenses/MIT) license.
