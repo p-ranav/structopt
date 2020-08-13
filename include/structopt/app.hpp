@@ -25,10 +25,6 @@ public:
   explicit app(const std::string name, const std::string version = "")
       : name_(name), version_(version) {}
 
-  std::string get_name() const { return name_; }
-
-  std::string get_version() const { return version_; }
-
   template <typename T>
   T parse(const std::vector<std::string> &arguments) {
     T argument_struct;
