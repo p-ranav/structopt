@@ -84,7 +84,7 @@ struct parser {
       result =
           parse_pair_argument<typename T::first_type, typename T::second_type>(name);
     } else if constexpr (structopt::is_specialization<T, std::tuple>::value) {
-      result = parse_tuple_argument(name);
+      result = parse_tuple_argument<T>(name);
     } else if constexpr (!is_stl_container<T>::value) {
       result = parse_single_argument<T>(name);
       next_index += 1;
@@ -217,16 +217,16 @@ struct parser {
   // Parse single tuple element
   template <typename T>
   void parse_tuple_element(const char *name, T&& result) {
-    auto [value, success] = parse_argument<T>(name);
+    auto [value, success] = parse_argument<typename std::remove_reference<T>::type>(name);
     if (success) {
       result = value;
     }
   }
 
   // Tuple argument
-  template<typename... Ts>
-  std::tuple<Ts...> parse_tuple_argument(const char *name) {
-    std::tuple<Ts...> result;
+  template<typename Tuple>
+  Tuple parse_tuple_argument(const char *name) {
+    Tuple result;
     for_each(result, [&](auto&& arg) { 
       parse_tuple_element(name, arg);
     });
