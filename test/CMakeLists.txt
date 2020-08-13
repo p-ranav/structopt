@@ -41,6 +41,7 @@ file(GLOB structopt_TEST_SOURCES
     test_double_dash_option_delimiter.cpp
     test_trailing_positional_arguments.cpp
     test_tuple_positional_argument.cpp
+    test_tuple_optional_argument.cpp
 )
 set_source_files_properties(main.cpp
     PROPERTIES
