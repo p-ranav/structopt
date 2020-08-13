@@ -7,6 +7,7 @@
 #include <structopt/app.hpp>
 #include <structopt/is_stl_container.hpp>
 #include <structopt/parser.hpp>
+#include <structopt/string.hpp>
 #include <structopt/third_party/visit_struct/visit_struct.hpp>
 #include <type_traits>
 #include <vector>
@@ -68,7 +69,18 @@ public:
 
     os << "\nOPTIONS:\n";
     for (auto& option : visitor.optional_field_names) {
-      os << "    -" << option[0] << ", --" << option << "\n";
+
+      // Generate kebab case and present as option
+      auto kebab_case = option;
+      details::string_replace(kebab_case, "_", "-");
+      std::string long_form = "";
+      if (kebab_case != option) {
+        long_form = kebab_case;
+      } else {
+        long_form = option;
+      }
+
+      os << "    -" << option[0] << ", --" << long_form << " <" << option << ">" << "\n";
     }
 
     os << "\nARGS:\n";

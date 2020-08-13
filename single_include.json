@@ -7,6 +7,7 @@
         "include/structopt/array_size.hpp",
         "include/structopt/is_specialization.hpp",
         "include/structopt/is_stl_container.hpp",
+        "include/structopt/string.hpp",
         "include/structopt/visitor.hpp",
         "include/structopt/parser.hpp",
         "include/structopt/app.hpp"
