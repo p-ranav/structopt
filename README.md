@@ -28,13 +28,14 @@ struct Options {
    // The long option can be passed in kebab case
    //   e.g., --bind-address "192.168.5.3"
    std::optional<std::string> bind_address;
-
+ 
+   // You want a flag?
    // Use `std::optional<bool>` and provide a default value. 
-   // Now you have a flag!
-   //   e.g., -v
-   //   e.g., --verbose
+   //
    // Passing this flag will set this 
    // value to (!default_value), i.e., true
+   //   e.g., -v
+   //   e.g., --verbose
    std::optional<bool> verbose = false;
 
    // structopt also support defining enum classes
