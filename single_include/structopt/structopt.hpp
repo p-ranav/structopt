@@ -1940,6 +1940,11 @@ struct parser {
       or structopt::is_specialization<T, std::unordered_map>::value
       or structopt::is_specialization<T, std::unordered_multimap>::value) {
       result = parse_map_argument<T>(name);
+    } else if constexpr (
+      structopt::is_specialization<T, std::queue>::value 
+      or structopt::is_specialization<T, std::stack>::value
+      or structopt::is_specialization<T, std::priority_queue>::value) {
+      result = parse_container_adapter_argument<T>(name);
     } else {
       success = false;
     }
@@ -2095,7 +2100,7 @@ struct parser {
     return result;
   }
 
-  // Vector, deque
+  // Vector, deque, list
   template <typename T> T parse_vector_like_argument(const char *name) {
     T result;
     // Parse from current till end
@@ -2108,6 +2113,24 @@ struct parser {
       auto [value, success] = parse_argument<typename T::value_type>(name);
       if (success) {
         result.push_back(value);
+      }
+    }
+    return result;
+  }
+
+  // stack, queue, priority_queue
+  template <typename T> T parse_container_adapter_argument(const char *name) {
+    T result;
+    // Parse from current till end
+    for (std::size_t i = next_index; i < arguments.size(); i++) {
+      const auto next = arguments[next_index];
+      if (is_optional_field(next)) {
+        // this marks the end of the container (break here)
+        break;
+      }
+      auto [value, success] = parse_argument<typename T::value_type>(name);
+      if (success) {
+        result.push(value);
       }
     }
     return result;
