@@ -141,11 +141,27 @@ struct parser {
   template <typename T>
   inline typename std::enable_if<!visit_struct::traits::is_visitable<T>::value, T>::type
   parse_single_argument(const char *name) {
-    // std::cout << "Parsing single argument for field " << name << "\n";
-    const std::string argument = arguments[next_index];
+    std::string argument = arguments[next_index];
     std::istringstream ss(argument);
     T result;
-    ss >> result;
+
+    if constexpr (std::is_integral<T>::value) {
+      if (is_hex_notation(argument)) {
+        ss >> std::hex >> result;
+      }
+      else if (is_octal_notation(argument)) {
+        ss >> std::oct >> result;
+      }
+      else if (is_binary_notation(argument)) {
+        argument.erase(0, 2); // remove "0b"
+        result = std::stoi(argument, nullptr, 2);
+      }
+      else {
+        ss >> std::dec >> result;
+      }
+    } else {
+      ss >> result;
+    }
     return result;
   }
 

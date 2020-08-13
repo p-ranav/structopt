@@ -1779,7 +1779,29 @@ namespace structopt {
 
 namespace details {
 
+static const bool is_binary_notation(std::string const& input) {
+  return input.compare(0, 2, "0b") == 0
+      && input.size() > 2
+      && input.find_first_not_of("01", 2) == std::string::npos;
+}
+
+static const bool is_hex_notation(std::string const& input) {
+  return input.compare(0, 2, "0x") == 0
+      && input.size() > 2
+      && input.find_first_not_of("0123456789abcdefABCDEF", 2) == std::string::npos;
+}
+
+static const bool is_octal_notation(std::string const& input) {
+  return input.compare(0, 1, "0") == 0
+      && input.size() > 1
+      && input.find_first_not_of("01234567", 1) == std::string::npos;
+}
+
 static inline bool is_valid_number(const std::string & input) {
+  if (is_binary_notation(input) or is_hex_notation(input) or is_octal_notation(input)) {
+    return true;
+  }
+
   std::size_t i = 0, j = input.length() - 1;
 
   // Handling whitespaces
@@ -2057,11 +2079,27 @@ struct parser {
   template <typename T>
   inline typename std::enable_if<!visit_struct::traits::is_visitable<T>::value, T>::type
   parse_single_argument(const char *name) {
-    // std::cout << "Parsing single argument for field " << name << "\n";
-    const std::string argument = arguments[next_index];
+    std::string argument = arguments[next_index];
     std::istringstream ss(argument);
     T result;
-    ss >> result;
+
+    if constexpr (std::is_integral<T>::value) {
+      if (is_hex_notation(argument)) {
+        ss >> std::hex >> result;
+      }
+      else if (is_octal_notation(argument)) {
+        ss >> std::oct >> result;
+      }
+      else if (is_binary_notation(argument)) {
+        argument.erase(0, 2); // remove "0b"
+        result = std::stoi(argument, nullptr, 2);
+      }
+      else {
+        ss >> std::dec >> result;
+      }
+    } else {
+      ss >> result;
+    }
     return result;
   }
 

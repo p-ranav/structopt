@@ -49,6 +49,18 @@ TEST_CASE("structopt can parse single positional argument" * test_suite("single_
     auto arguments = structopt::app("test").parse<SingleIntArgument>(std::vector<std::string>{"./main", "10"});
     REQUIRE(arguments.value == 10);
   }
+  {
+    auto arguments = structopt::app("test").parse<SingleIntArgument>(std::vector<std::string>{"./main", "0x5B"});
+    REQUIRE(arguments.value == 0x5B);
+  }
+  {
+    auto arguments = structopt::app("test").parse<SingleIntArgument>(std::vector<std::string>{"./main", "051"});
+    REQUIRE(arguments.value == 051);
+  }
+  {
+    auto arguments = structopt::app("test").parse<SingleIntArgument>(std::vector<std::string>{"./main", "0b0101"});
+    REQUIRE(arguments.value == 0b0101);
+  }
 
   // Negative Int
   {

@@ -26,4 +26,8 @@ TEST_CASE("structopt can parse array optional argument" * test_suite("array_opti
     auto arguments = structopt::app("test").parse<ArrayOptionalArgument>(std::vector<std::string>{"./main", "--indices", "-1", "-2", "-3"});
     REQUIRE(arguments.indices == std::array<int, 3>{-1, -2, -3});
   }
+  {
+    auto arguments = structopt::app("test").parse<ArrayOptionalArgument>(std::vector<std::string>{"./main", "-i", "0x53", "071", "0b01101111"});
+    REQUIRE(arguments.indices == std::array<int, 3>{0x53, 071, 0b01101111});
+  }
 }
