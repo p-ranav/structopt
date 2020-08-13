@@ -9,7 +9,7 @@ struct ListIntArgument {
 
 STRUCTOPT(ListIntArgument, value);
 
-TEST_CASE("structopt can parse vector positional argument" * test_suite("list_positional")) {
+TEST_CASE("structopt can parse list positional argument" * test_suite("list_positional")) {
   // List of ints
   {
     auto arguments = structopt::app("test").parse<ListIntArgument>(std::vector<std::string>{"./main", "1", "2", "3"});
@@ -24,7 +24,7 @@ struct ListIntArgumentWithOtherFlags {
 
 STRUCTOPT(ListIntArgumentWithOtherFlags, value, foo);
 
-TEST_CASE("structopt can parse vector positional argument" * test_suite("list_positional")) {
+TEST_CASE("structopt can parse list positional argument" * test_suite("list_positional")) {
   {
     auto arguments = structopt::app("test").parse<ListIntArgumentWithOtherFlags>(std::vector<std::string>{"./main", "1", "2", "3", "--foo"});
     REQUIRE(arguments.value == std::list<int>{1, 2, 3});

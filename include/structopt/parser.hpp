@@ -263,7 +263,7 @@ struct parser {
     return result;
   }
 
-  // Vector, deque
+  // Vector, deque, list
   template <typename T> T parse_vector_like_argument(const char *name) {
     T result;
     // Parse from current till end
