@@ -37,6 +37,7 @@ file(GLOB structopt_TEST_SOURCES
     test_optional_flag_argument.cpp
     test_enum_positional_argument.cpp
     test_enum_optional_argument.cpp
+    test_optional_argument_naming.cpp
 )
 set_source_files_properties(main.cpp
     PROPERTIES

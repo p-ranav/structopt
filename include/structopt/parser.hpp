@@ -334,12 +334,33 @@ struct parser {
       const auto next = arguments[current_index];
       const auto field_name = std::string{name};
 
+      // Remove special characters from argument
+      // e.g., --verbose => verbose
+      // e.g., -v => v
+      // e.g., --input-file => inputfile
+      auto next_alpha = next;
+      next_alpha.erase(std::remove_if(next_alpha.begin(), next_alpha.end(),
+          [](char c) { return !std::isalpha(c); } ),
+          next_alpha.end());
+
+      // Remove special characters from field name
+      // e.g., verbose => verbose
+      // e.g., input_file => inputfile
+      auto field_name_alpha = field_name;
+      field_name_alpha.erase(std::remove_if(field_name_alpha.begin(), field_name_alpha.end(),
+          [](char c) { return !std::isalpha(c); } ),
+          field_name_alpha.end());
+
       // if `next` looks like an optional argument
       // i.e., starts with `-` or `--`
       // see if you can find an optional field in the struct with a matching name
 
       // check if the current argument looks like it could be this optional field
-      if (next == "--" + field_name or next == "-" + std::string(1, field_name[0])) {
+      if (
+        (next == "--" + field_name or next == "-" + std::string(1, field_name[0]))
+        or
+        (next_alpha == field_name_alpha)
+       ) {
         // this is an optional argument matching the current struct field
         if constexpr (std::is_same<typename T::value_type, bool>::value) {
           // It is a boolean optional argument
