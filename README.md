@@ -145,8 +145,6 @@ int main(int argc, char *argv[]) {
 }
 ```
 
-Now we can run our program like so:
-
 ```bash
 ▶ ./main foo.txt bar.csv
 
@@ -178,8 +176,6 @@ int main(int argc, char *argv[]) {
   }
 }
 ```
-
-Now we can run our program like so:
 
 ```bash
 ▶ ./main
