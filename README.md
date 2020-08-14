@@ -107,6 +107,7 @@ files        = { file1.txt file3.txt file4.txt }
 *    [Getting Started](#getting-started)
      *    [Positional Arguments](#positional-arguments)
      *    [Optional Arguments](#optional-arguments)
+     *    [Flag Arguments](#flag-arguments)
 *    [Building Samples](#building-samples)
 *    [Generating Single Header](#generating-single-header)
 *    [Contributing](#contributing)
