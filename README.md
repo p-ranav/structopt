@@ -175,9 +175,10 @@ Input file  : foo.txt
 Output file : bar.csv
 
 ▶ ./main foo.csv
-Error: expected positional argument output_file
+Error: expected value for positional argument `output_file`.
 
 USAGE: ./my_app input_file output_file
+
 
 ARGS:
     input_file

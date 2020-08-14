@@ -52,7 +52,7 @@ public:
           parser.visitor.vector_like_positional_field_names.end()) {
         // this positional argument is not a vector-like argument
         // it expects values
-        throw std::runtime_error("Error: expected positional argument " + front);
+        throw std::runtime_error("Error: expected value for positional argument `" + front + "`.");
       }
     }
 
