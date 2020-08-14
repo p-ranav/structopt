@@ -661,7 +661,7 @@ With `structopt`, you can define sub-commands, e.g., `git init args` or `git con
 * Simply create a nested structure that inherits from `structopt::sub_command`
 * You can use `<nested_struct_object>.has_value()` to check if it has been invoked. 
 
-Here's an example:
+The following program support two sub-commands: `config` and `init`:
 
 ```cpp
 struct Git {
