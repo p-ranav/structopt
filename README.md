@@ -667,13 +667,19 @@ Here's an example:
 struct Git {
   // Subcommand: git config
   struct Config : structopt::sub_command {
+    // flag argument `--global`
     std::optional<bool> global = false;
+
+    // key-value pair, e.g., `user.name "John Doe"`
     std::array<std::string, 2> name_value_pair{};
   };
   Config config;
 
   // Subcommand: git init
   struct Init : structopt::sub_command {
+
+    // required argument
+    // repository name
     std::string name;
   };
   Init init;
