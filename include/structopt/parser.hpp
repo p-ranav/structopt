@@ -9,6 +9,7 @@
 #include <structopt/array_size.hpp>
 #include <structopt/is_number.hpp>
 #include <structopt/is_specialization.hpp>
+#include <structopt/sub_command.hpp>
 #include <structopt/third_party/magic_enum/magic_enum.hpp>
 #include <structopt/third_party/visit_struct/visit_struct.hpp>
 #include <structopt/visitor.hpp>
@@ -173,32 +174,50 @@ struct parser {
   inline typename std::enable_if<visit_struct::traits::is_visitable<T>::value, T>::type
   parse_nested_struct(const char *name) {
     T argument_struct;
+    argument_struct.structopt_sub_command__name__ = name;
+
+    if constexpr (std::is_base_of<structopt::sub_command, T>::value) {
+      argument_struct.structopt_sub_command__invoked__ = true;
+    }
 
     // Save struct field names
-    structopt::details::visitor nested_visitor;
-    visit_struct::for_each(argument_struct, nested_visitor);
-
-    // TODO: pass along program name, version etc. (info from `app` object)
-    // to the nested parser so that it can correctly report help() msgs
+    visit_struct::for_each(argument_struct, argument_struct.structopt_sub_command__visitor__);
 
     structopt::details::parser parser;
     parser.next_index = 0;
     parser.current_index = 0;
-    parser.visitor = std::move(nested_visitor);
+    parser.visitor = argument_struct.structopt_sub_command__visitor__;
 
     std::copy(arguments.begin() + next_index, arguments.end(),
               std::back_inserter(parser.arguments));
+
+    // std::cout << "Nested structures:\n";
+    // for (auto& ns : parser.arguments) {
+    //   std::cout << ns << " ";
+    // }
 
     for (std::size_t i = 0; i < parser.arguments.size(); i++) {
       parser.current_index = i;
       visit_struct::for_each(argument_struct, parser);
     }
 
+    if (!parser.visitor.positional_field_names.empty()) {
+      // if all positional arguments were provided
+      // this list would be empty
+      auto front = parser.visitor.positional_field_names.front();
+      if (std::find(parser.visitor.vector_like_positional_field_names.begin(),
+                    parser.visitor.vector_like_positional_field_names.end(),
+                    front) == 
+          parser.visitor.vector_like_positional_field_names.end()) {
+        // this positional argument is not a vector-like argument
+        // it expects values
+        throw std::runtime_error("Error: expected value for positional argument `" + front + "`.");
+      }
+    }
+
     // update current and next
     current_index += parser.next_index;
     next_index += parser.next_index;
-
-    // TODO: Check and make sure current and next are not out of bounds here
 
     return argument_struct;
   }

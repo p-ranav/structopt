@@ -4,14 +4,14 @@
 using doctest::test_suite;
 
 struct Command {  
-  struct SubCommand1 {
+  struct SubCommand1 : structopt::sub_command {
     int bar{0};
     double value{0.0};
     std::optional<bool> verbose;
   };
   SubCommand1 foo;
 
-  struct SubCommand2 {
+  struct SubCommand2 : structopt::sub_command {
     std::optional<bool> global;
   };
   SubCommand2 config;
@@ -23,51 +23,61 @@ STRUCTOPT(Command, foo, config);
 TEST_CASE("structopt can parse multiple nested struct arguments" * test_suite("nested_struct")) {
   {
     auto arguments = structopt::app("test").parse<Command>(std::vector<std::string>{"./main", "foo", "15", "3.14", "--verbose", "true"});
+    REQUIRE(arguments.foo.has_value() == true);
     REQUIRE(arguments.foo.bar == 15);
     REQUIRE(arguments.foo.value == 3.14);
     REQUIRE(arguments.foo.verbose.value() == true);
-    REQUIRE(not arguments.config.global.has_value());
+    REQUIRE(not arguments.config.has_value());
   }
   {
     auto arguments = structopt::app("test").parse<Command>(std::vector<std::string>{"./main", "foo", "-v", "true", "15", "3.14"});
+    REQUIRE(arguments.foo.has_value() == true);
     REQUIRE(arguments.foo.bar == 15);
     REQUIRE(arguments.foo.value == 3.14);
     REQUIRE(arguments.foo.verbose.value() == true);
-    REQUIRE(not arguments.config.global.has_value());
+    REQUIRE(not arguments.config.has_value());
   }
   {
     auto arguments = structopt::app("test").parse<Command>(std::vector<std::string>{"./main", "config", "--global", "true"});
+    REQUIRE(arguments.foo.has_value() == false);
     REQUIRE(arguments.foo.bar == 0);
     REQUIRE(arguments.foo.value == 0.0);
-    REQUIRE(not arguments.foo.verbose.has_value());
+    REQUIRE(arguments.foo.verbose.has_value() == false);
+    REQUIRE(arguments.config.has_value() == true);
     REQUIRE(arguments.config.global == true);
   }
   {
     auto arguments = structopt::app("test").parse<Command>(std::vector<std::string>{"./main", "config", "-g", "false"});
+    REQUIRE(arguments.foo.has_value() == false);
     REQUIRE(arguments.foo.bar == 0);
     REQUIRE(arguments.foo.value == 0.0);
-    REQUIRE(not arguments.foo.verbose.has_value());
+    REQUIRE(arguments.foo.verbose.has_value() == false);
+    REQUIRE(arguments.config.has_value() == true);
     REQUIRE(arguments.config.global == false);
   }
   {
     auto arguments = structopt::app("test").parse<Command>(std::vector<std::string>{"./main", "foo", "15", "3.14", "--verbose", "true", "config", "-g", "false"});
+    REQUIRE(arguments.foo.has_value() == true);
     REQUIRE(arguments.foo.bar == 15);
     REQUIRE(arguments.foo.value == 3.14);
     REQUIRE(arguments.foo.verbose.value() == true);
+    REQUIRE(arguments.config.has_value() == true);
     REQUIRE(arguments.config.global == false);
   }
   {
     auto arguments = structopt::app("test").parse<Command>(std::vector<std::string>{"./main", "config", "-g", "false", "foo", "15", "3.14", "--verbose", "true"});
+    REQUIRE(arguments.foo.has_value() == true);
     REQUIRE(arguments.foo.bar == 15);
     REQUIRE(arguments.foo.value == 3.14);
     REQUIRE(arguments.foo.verbose.value() == true);
+    REQUIRE(arguments.config.has_value() == true);
     REQUIRE(arguments.config.global == false);
   }
 }
 
 struct Git {
   // Subcommand: git config
-  struct Config {
+  struct Config : structopt::sub_command {
     std::optional<bool> global = false;
     std::optional<bool> local  = true;
     std::array<std::string, 2> name_value_pair{};
@@ -75,7 +85,7 @@ struct Git {
   Config config;
 
   // Subcommand: git init
-  struct Init {
+  struct Init : structopt::sub_command {
     std::string name;
   };
   Init init;

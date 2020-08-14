@@ -37,3 +37,6 @@ target_link_libraries(double_dash_argument PRIVATE structopt::structopt)
 
 add_executable(tuple_arguments tuple_arguments.cpp)
 target_link_libraries(tuple_arguments PRIVATE structopt::structopt)
+
+add_executable(nested_structures nested_structures.cpp)
+target_link_libraries(nested_structures PRIVATE structopt::structopt)

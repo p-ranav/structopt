@@ -1879,9 +1879,96 @@ static inline bool is_valid_number(const std::string & input) {
 
 } // namespace structopt
 #pragma once
+#include <optional>
+// #include <structopt/visitor.hpp>
+
 #include <algorithm>
 #include <string>
 #include <queue>
+// #include <structopt/third_party/visit_struct/visit_struct.hpp>
+#include <vector>
+
+namespace structopt {
+
+class app;
+
+namespace details {
+
+struct visitor {
+  std::vector<std::string> field_names;
+  std::deque<std::string> positional_field_names;
+  std::deque<std::string> vector_like_positional_field_names;
+  std::deque<std::string> flag_field_names;
+  std::deque<std::string> optional_field_names;
+  std::deque<std::string> nested_struct_field_names;
+
+  // Visitor function for std::optional - could be an option or a flag
+  template <typename T>
+  inline typename std::enable_if<structopt::is_specialization<T, std::optional>::value,
+                                 void>::type
+  operator()(const char *name, T &value) {
+    field_names.push_back(name);
+    if constexpr (std::is_same<typename T::value_type, bool>::value) {
+      flag_field_names.push_back(name);
+    } else {
+      optional_field_names.push_back(name);
+    }
+  }
+
+  // Visitor function for any positional field (not std::optional)
+  template <typename T>
+  inline typename std::enable_if<!structopt::is_specialization<T, std::optional>::value &&
+                                     !visit_struct::traits::is_visitable<T>::value,
+                                 void>::type
+  operator()(const char *name, T &value) {
+    field_names.push_back(name);
+    positional_field_names.push_back(name);
+    if constexpr (structopt::is_specialization<T, std::deque>::value 
+      or structopt::is_specialization<T, std::list>::value
+      or structopt::is_specialization<T, std::vector>::value) {
+      // keep track of vector-like fields as these (even though positional) 
+      // can be happy without any arguments
+      vector_like_positional_field_names.push_back(name);
+    }
+  }
+
+  // Visitor function for nested structs
+  template <typename T>
+  inline typename std::enable_if<visit_struct::traits::is_visitable<T>::value,
+                                 void>::type
+  operator()(const char *name, T &value) {
+    field_names.push_back(name);
+    nested_struct_field_names.push_back(name);
+  }
+
+  bool is_field_name(const std::string &name) {
+    return std::find(field_names.begin(), field_names.end(), name) != field_names.end();
+  }
+};
+
+} // namespace details
+
+} // namespace structopt
+
+namespace structopt {
+
+struct sub_command {
+  std::string structopt_sub_command__name__{""};
+  std::optional<bool> structopt_sub_command__invoked__;
+  details::visitor structopt_sub_command__visitor__;
+
+  bool has_value() const {
+    return structopt_sub_command__invoked__.has_value();
+  }
+
+};
+
+}
+#pragma once
+#include <algorithm>
+#include <string>
+#include <queue>
+// #include <structopt/third_party/visit_struct/visit_struct.hpp>
 #include <vector>
 
 namespace structopt {
@@ -1955,6 +2042,7 @@ struct visitor {
 // #include <structopt/array_size.hpp>
 // #include <structopt/is_number.hpp>
 // #include <structopt/is_specialization.hpp>
+// #include <structopt/sub_command.hpp>
 // #include <structopt/third_party/magic_enum/magic_enum.hpp>
 // #include <structopt/third_party/visit_struct/visit_struct.hpp>
 // #include <structopt/visitor.hpp>
@@ -2119,32 +2207,50 @@ struct parser {
   inline typename std::enable_if<visit_struct::traits::is_visitable<T>::value, T>::type
   parse_nested_struct(const char *name) {
     T argument_struct;
+    argument_struct.structopt_sub_command__name__ = name;
+
+    if constexpr (std::is_base_of<structopt::sub_command, T>::value) {
+      argument_struct.structopt_sub_command__invoked__ = true;
+    }
 
     // Save struct field names
-    structopt::details::visitor nested_visitor;
-    visit_struct::for_each(argument_struct, nested_visitor);
-
-    // TODO: pass along program name, version etc. (info from `app` object)
-    // to the nested parser so that it can correctly report help() msgs
+    visit_struct::for_each(argument_struct, argument_struct.structopt_sub_command__visitor__);
 
     structopt::details::parser parser;
     parser.next_index = 0;
     parser.current_index = 0;
-    parser.visitor = std::move(nested_visitor);
+    parser.visitor = argument_struct.structopt_sub_command__visitor__;
 
     std::copy(arguments.begin() + next_index, arguments.end(),
               std::back_inserter(parser.arguments));
+
+    // std::cout << "Nested structures:\n";
+    // for (auto& ns : parser.arguments) {
+    //   std::cout << ns << " ";
+    // }
 
     for (std::size_t i = 0; i < parser.arguments.size(); i++) {
       parser.current_index = i;
       visit_struct::for_each(argument_struct, parser);
     }
 
+    if (!parser.visitor.positional_field_names.empty()) {
+      // if all positional arguments were provided
+      // this list would be empty
+      auto front = parser.visitor.positional_field_names.front();
+      if (std::find(parser.visitor.vector_like_positional_field_names.begin(),
+                    parser.visitor.vector_like_positional_field_names.end(),
+                    front) == 
+          parser.visitor.vector_like_positional_field_names.end()) {
+        // this positional argument is not a vector-like argument
+        // it expects values
+        throw std::runtime_error("Error: expected value for positional argument `" + front + "`.");
+      }
+    }
+
     // update current and next
     current_index += parser.next_index;
     next_index += parser.next_index;
-
-    // TODO: Check and make sure current and next are not out of bounds here
 
     return argument_struct;
   }

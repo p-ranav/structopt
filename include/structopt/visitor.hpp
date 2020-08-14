@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <string>
 #include <queue>
+#include <structopt/third_party/visit_struct/visit_struct.hpp>
 #include <vector>
 
 namespace structopt {
