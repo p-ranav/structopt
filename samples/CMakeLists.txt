@@ -25,3 +25,9 @@ target_link_libraries(compound_arguments PRIVATE structopt::structopt)
 
 add_executable(positional_and_compound_arguments positional_and_compound_arguments.cpp)
 target_link_libraries(positional_and_compound_arguments PRIVATE structopt::structopt)
+
+add_executable(integer_literals integer_literals.cpp)
+target_link_libraries(integer_literals PRIVATE structopt::structopt)
+
+add_executable(float_literals float_literals.cpp)
+target_link_libraries(float_literals PRIVATE structopt::structopt)
