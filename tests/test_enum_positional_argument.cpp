@@ -26,6 +26,15 @@ TEST_CASE("structopt can parse enum class positional argument" * test_suite("enu
     auto arguments = structopt::app("test").parse<EnumArgument>(std::vector<std::string>{"./main", "blue"});
     REQUIRE(arguments.color == EnumArgument::Color::blue);
   }
+  {
+    bool exception_thrown = false;
+    try {
+      auto arguments = structopt::app("test").parse<EnumArgument>(std::vector<std::string>{"./main", "black"});
+    } catch (std::exception& e) {
+      exception_thrown = true;
+    }
+    REQUIRE(exception_thrown == true);
+  }
 }
 
 struct EnumArrayArgument {

@@ -288,7 +288,7 @@ Verbosity enabled
 
 ### Enum Class Arguments
 
-Thanks to [magic_enum](https://github.com/Neargye/magic_enum), `structopt` supports enum classes. You can use an enum class directly and pass values with matching names:
+Thanks to [magic_enum](https://github.com/Neargye/magic_enum), `structopt` supports enum classes. You can use an enum classes to ask the user to provide a value given a choice of values, restricting the possible set of allowed input arguments.
 
 ```cpp
 struct StyleOptions {
@@ -302,19 +302,29 @@ STRUCTOPT(StyleOptions, color);
 
 
 int main(int argc, char *argv[]) {
-  auto options = structopt::app("my_app").parse<StyleOptions>(argc, argv);
 
-  if (options.color == StyleOptions::Color::red) {
-    std::cout << "#ff0000\n";
-  }
-  else if (options.color == StyleOptions::Color::blue) {
-    std::cout << "#0000ff\n";
-  }
-  else if (options.color == StyleOptions::Color::green) {
-    std::cout << "#00ff00\n";
+  auto app = structopt::app("my_app");
+
+  try {
+    auto options = app.parse<StyleOptions>(argc, argv);
+
+    // Use parsed argument `options.color`
+
+    if (options.color == StyleOptions::Color::red) {
+        std::cout << "#ff0000\n";
+    }
+    else if (options.color == StyleOptions::Color::blue) {
+        std::cout << "#0000ff\n";
+    }
+    else if (options.color == StyleOptions::Color::green) {
+        std::cout << "#00ff00\n";
+    }
+
+  } catch (std::exception& e) {
+    std::cout << e.what() << "\n";
+    app.print_help();
   }
 }
-
 ```
 
 ```bash
@@ -326,6 +336,13 @@ int main(int argc, char *argv[]) {
 
 ▶ ./main --color green
 #00ff00
+
+▶ ./main -c black
+Error: unexpected input provided for enum color. Allowed values are: {red, green, blue}
+
+USAGE: ./my_app [OPTIONS]
+OPTIONS:
+    -c, --color <color>
 ```
 
 ### Vector Arguments

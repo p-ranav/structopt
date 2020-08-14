@@ -113,9 +113,11 @@ public:
     if (!optional_arguments_available)
       os << "\n";
 
-    os << "\nARGS:\n";
-    for (auto& arg : visitor.positional_field_names) {
-      os << "    " << arg << "\n";
+    if (visitor.positional_field_names.empty() == false) {
+      os << "\nARGS:\n";
+      for (auto& arg : visitor.positional_field_names) {
+        os << "    " << arg << "\n";
+      }
     }
   }
 };

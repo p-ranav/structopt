@@ -353,6 +353,20 @@ struct parser {
     if (maybe_enum_value.has_value()) {
       result = maybe_enum_value.value();
     } else {
+      constexpr auto allowed_names = magic_enum::enum_names<T>();
+
+      std::string allowed_names_string = "";
+      if (allowed_names.size()) {
+        for (size_t i = 0; i < allowed_names.size() - 1; i++) {
+          allowed_names_string += std::string{allowed_names[i]} + ", ";
+        }
+        allowed_names_string += allowed_names[allowed_names.size() - 1];
+      }
+
+      throw std::runtime_error("Error: unexpected input provided for enum " + std::string{name}
+                              + ". Allowed values are: {" 
+                              + allowed_names_string
+                              + "}");
       // TODO: Throw error invalid enum option
     }
     return result;
