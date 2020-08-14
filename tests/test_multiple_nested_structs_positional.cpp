@@ -49,6 +49,20 @@ TEST_CASE("structopt can parse multiple nested struct arguments" * test_suite("n
     REQUIRE(not arguments.foo.verbose.has_value());
     REQUIRE(arguments.config.global == false);
   }
+  {
+    auto arguments = structopt::app("test").parse<Command>(std::vector<std::string>{"./main", "foo", "15", "3.14", "--verbose", "true", "config", "-g", "false"});
+    REQUIRE(arguments.foo.bar == 15);
+    REQUIRE(arguments.foo.value == 3.14);
+    REQUIRE(arguments.foo.verbose.value() == true);
+    REQUIRE(arguments.config.global == false);
+  }
+  {
+    auto arguments = structopt::app("test").parse<Command>(std::vector<std::string>{"./main", "config", "-g", "false", "foo", "15", "3.14", "--verbose", "true"});
+    REQUIRE(arguments.foo.bar == 15);
+    REQUIRE(arguments.foo.value == 3.14);
+    REQUIRE(arguments.foo.verbose.value() == true);
+    REQUIRE(arguments.config.global == false);
+  }
 }
 
 struct Git {

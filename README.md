@@ -108,7 +108,6 @@ files        = { file1.txt file3.txt file4.txt }
      *    [Positional Arguments](#positional-arguments)
      *    [Optional Arguments](#optional-arguments)
      *    [Flag Arguments](#flag-arguments)
-     *    [Combining Positional and Optional Arguments](#combining-positional-and-optional-arguments)
      *    [Enum Classes](#enum-classes)
      *    [Gathering Remaining Arguments](#gathering-remaining-arguments)
 *    [Building Samples](#building-samples)
@@ -187,6 +186,44 @@ Point: {1.1, -2.2, 3.3}
 Point: {1, 2, 3}
 ```
 
+#### Combining Positional and Optional Arguments
+
+```cpp
+struct Option {
+  // positional argument
+  // input number
+  int input{0};
+
+  // flag argument
+  // enable verbosity
+  std::optional<bool> verbose = false;
+};
+STRUCTOPT(Option, input, verbose);
+
+
+
+int main(int argc, char *argv[]) {
+  auto options = structopt::app("my_app").parse<Option>(argc, argv);
+
+  if (options.verbose == true) {
+    std::cout << "The square of " << options.input << " is " << (options.input * options.input) << "\n";
+  } else {
+    std::cout << options.input * options.input << "\n";
+  }
+}
+```
+
+```bash
+▶ ./main 3
+9
+
+▶ ./main 5 -v
+The square of 5 is 25
+
+▶ ./main --verbose 5
+The square of 4 is 16
+```
+
 ### Flag Arguments
 
 Flag arguments are `std::optional<bool>` with a default value. 
@@ -223,44 +260,6 @@ Verbosity enabled
 
 ▶ ./main --verbose
 Verbosity enabled
-```
-
-### Combining Positional and Optional Arguments
-
-```cpp
-struct Option {
-  // positional argument
-  // input number
-  int input{0};
-
-  // flag argument
-  // enable verbosity
-  std::optional<bool> verbose = false;
-};
-STRUCTOPT(Option, input, verbose);
-
-
-
-int main(int argc, char *argv[]) {
-  auto options = structopt::app("my_app").parse<Option>(argc, argv);
-
-  if (options.verbose == true) {
-    std::cout << "The square of " << options.input << " is " << (options.input * options.input) << "\n";
-  } else {
-    std::cout << options.input * options.input << "\n";
-  }
-}
-```
-
-```bash
-▶ ./main 3
-9
-
-▶ ./main 5 -v
-The square of 5 is 25
-
-▶ ./main --verbose 5
-The square of 4 is 16
 ```
 
 ### Enum Classes
