@@ -116,7 +116,7 @@ files        = { file1.txt file3.txt file4.txt }
 *    [Getting Started](#getting-started)
      *    [Positional Arguments](#positional-arguments)
      *    [Optional Arguments](#optional-arguments)
-          *    [Double dash (`--`) Argument](##double-dash----argument)
+          *    [Double dash (`--`) Argument](#double-dash----argument)
           *    [Combining Positional and Optional Arguments](#combining-positional-and-optional-arguments)
      *    [Flag Arguments](#flag-arguments)
      *    [Enum Class Arguments (Choices)](#enum-class-arguments)
