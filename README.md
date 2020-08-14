@@ -109,6 +109,7 @@ files        = { file1.txt file3.txt file4.txt }
      *    [Optional Arguments](#optional-arguments)
      *    [Flag Arguments](#flag-arguments)
      *    [Combining Positional and Optional Arguments](#combining-positional-and-optional-arguments)
+     *    [Enum Classes](#enum-classes)
 *    [Building Samples](#building-samples)
 *    [Generating Single Header](#generating-single-header)
 *    [Contributing](#contributing)
@@ -264,6 +265,8 @@ The square of 5 is 25
 ▶ ./main --verbose 5
 The square of 4 is 16
 ```
+
+### Enum Classes
 
 ## Building Samples
 
