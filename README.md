@@ -192,7 +192,9 @@ Point: {1, 2, 3}
 
 Flag arguments are `std::optional<bool>` with a default value. 
 
-***NOTE*** The default value here is important. It is not a flag if a default value isn't provided. It will simply be an optional argument. If `--verbose` is a flag argument with a default value of `false`, then providing the argument will set it to `true`. If `--verbose` does not have a default value, then `structopt` will expect the user to provide a value, e.g., `--verbose true`. 
+***NOTE*** The default value here is important. It is not a flag if a default value isn't provided. It will simply be an optional argument. 
+
+***NOTE*** If `--verbose` is a flag argument with a default value of `false`, then providing the argument will set it to `true`. If `--verbose` does not have a default value, then `structopt` will expect the user to provide a value, e.g., `--verbose true`. 
 
 ```cpp
 #include <structopt/app.hpp>
