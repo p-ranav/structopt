@@ -57,7 +57,7 @@ struct Options {
 STRUCTOPT(Options, config_file, bind_address, verbose, log_level, user, files);
 ```
 
-Create a `structopt::app` and parse the command ling arguments into the `Options` struct:
+Create a `structopt::app` and parse the command line arguments into the `Options` struct:
 
 ```cpp
 int main(int argc, char *argv[]) {
