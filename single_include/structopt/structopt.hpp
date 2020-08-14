@@ -1893,6 +1893,7 @@ namespace details {
 struct visitor {
   std::vector<std::string> field_names;
   std::deque<std::string> positional_field_names;
+  std::deque<std::string> vector_like_positional_field_names;
   std::deque<std::string> flag_field_names;
   std::deque<std::string> optional_field_names;
   std::deque<std::string> nested_struct_field_names;
@@ -1918,6 +1919,13 @@ struct visitor {
   operator()(const char *name, T &value) {
     field_names.push_back(name);
     positional_field_names.push_back(name);
+    if constexpr (structopt::is_specialization<T, std::deque>::value 
+      or structopt::is_specialization<T, std::list>::value
+      or structopt::is_specialization<T, std::vector>::value) {
+      // keep track of vector-like fields as these (even though positional) 
+      // can be happy without any arguments
+      vector_like_positional_field_names.push_back(name);
+    }
   }
 
   // Visitor function for nested structs
@@ -2014,6 +2022,9 @@ struct parser {
 
   template <typename T>
   std::pair<T, bool> parse_argument(const char *name) {
+    if (next_index >= arguments.size()) {
+      return {T(), false};
+    }
     T result;
     bool success = true;
     if constexpr (visit_struct::traits::is_visitable<T>::value) {
@@ -2107,7 +2118,6 @@ struct parser {
   template <typename T>
   inline typename std::enable_if<visit_struct::traits::is_visitable<T>::value, T>::type
   parse_nested_struct(const char *name) {
-    // std::cout << "Parsing nested struct\n";
     T argument_struct;
 
     // Save struct field names
@@ -2125,21 +2135,16 @@ struct parser {
     std::copy(arguments.begin() + next_index, arguments.end(),
               std::back_inserter(parser.arguments));
 
-    // std::cout << "Nested struct " << name << " arguments:\n";
-    // for (auto& v : parser.arguments) {
-    //   std::cout << v << " ";
-    // }
-    // std::cout << "\n";
-
-    // std::cout << "BEFORE: " <<  current_index << " " << next_index << "\n";
-
     for (std::size_t i = 0; i < parser.arguments.size(); i++) {
       parser.current_index = i;
       visit_struct::for_each(argument_struct, parser);
     }
 
-    // std::cout << "AFTER: " <<  parser.current_index << " " << parser.next_index <<
-    // "\n";
+    // update current and next
+    current_index += parser.next_index;
+    next_index += parser.next_index;
+
+    // TODO: Check and make sure current and next are not out of bounds here
 
     return argument_struct;
   }
@@ -2171,6 +2176,14 @@ struct parser {
   std::array<T, N> parse_array_argument(const char *name) {
     std::array<T, N> result;
     bool success;
+
+    const auto arguments_left = arguments.size() - next_index;
+    if (arguments_left == 0 or arguments_left < N) {
+      throw std::runtime_error("Error: expected " 
+        + std::to_string(N) + " values for std::array argument `" + name 
+        + "` - instead got only " + std::to_string(arguments_left) + " arguments.");
+    }
+
     for (std::size_t i = 0; i < N; i++) {
       auto [value, success] = parse_argument<T>(name);
       if (success) {
@@ -2286,6 +2299,22 @@ struct parser {
     if (maybe_enum_value.has_value()) {
       result = maybe_enum_value.value();
     } else {
+      constexpr auto allowed_names = magic_enum::enum_names<T>();
+
+      std::string allowed_names_string = "";
+      if (allowed_names.size()) {
+        for (size_t i = 0; i < allowed_names.size() - 1; i++) {
+          allowed_names_string += std::string{allowed_names[i]} + ", ";
+        }
+        allowed_names_string += allowed_names[allowed_names.size() - 1];
+      }
+
+      throw std::runtime_error("Error: unexpected input `"
+                              + std::string{arguments[next_index]}
+                              + "` provided for enum argument `" + std::string{name}
+                              + "`. Allowed values are {" 
+                              + allowed_names_string
+                              + "}");
       // TODO: Throw error invalid enum option
     }
     return result;
@@ -2325,13 +2354,9 @@ struct parser {
       current_index = next_index;
     }
 
-    // std::cout << "current_index: " << current_index << "; next_index: " << next_index
-    // << "\n";
-
     if (current_index < arguments.size()) {
       const auto next = arguments[current_index];
 
-      // TODO: Deal with negative numbers - these are not optional arguments
       if (is_optional(next)) {
         return;
       }
@@ -2357,8 +2382,6 @@ struct parser {
 
       // Remove from the positional field list as it is about to be parsed
       visitor.positional_field_names.pop_front();
-
-      // std::cout << "Next: " << next << "; Name: " << field_name << "\n";
 
       auto [value, success] = parse_argument<T>(field_name.c_str());
       if (success) {
@@ -2603,6 +2626,20 @@ public:
       visit_struct::for_each(argument_struct, parser);
     }
 
+    if (!parser.visitor.positional_field_names.empty()) {
+      // if all positional arguments were provided
+      // this list would be empty
+      auto front = parser.visitor.positional_field_names.front();
+      if (std::find(parser.visitor.vector_like_positional_field_names.begin(),
+                    parser.visitor.vector_like_positional_field_names.end(),
+                    front) == 
+          parser.visitor.vector_like_positional_field_names.end()) {
+        // this positional argument is not a vector-like argument
+        // it expects values
+        throw std::runtime_error("Error: expected value for positional argument `" + front + "`.");
+      }
+    }
+
     return argument_struct;
   }
 
@@ -2613,38 +2650,61 @@ public:
     return parse<T>(arguments);
   }
 
-  void generate_help(std::ostream& os) {
-    os << name_ << " [FLAGS] [OPTIONS] ";
+  void print_help(std::ostream& os = std::cout) {
+    os << "\nUSAGE: ./" << name_ << " ";
+
+    bool optional_arguments_available = false;
+
+    if (visitor.flag_field_names.empty() == false) {
+      optional_arguments_available = true;
+      os << "[FLAGS] "; 
+    } 
+
+    if (visitor.optional_field_names.empty() == false) {
+      optional_arguments_available = true;
+      os << "[OPTIONS] "; 
+    }
+
     for (auto& field : visitor.positional_field_names) {
       os << field << " ";
     }
 
-    os << "\n\nFLAGS:\n";
-    for (auto& flag : visitor.flag_field_names) {
-      os << "    -" << flag[0] << ", --" << flag << "\n";
-    }
-
-    os << "\nOPTIONS:\n";
-    for (auto& option : visitor.optional_field_names) {
-
-      // Generate kebab case and present as option
-      auto kebab_case = option;
-      details::string_replace(kebab_case, "_", "-");
-      std::string long_form = "";
-      if (kebab_case != option) {
-        long_form = kebab_case;
-      } else {
-        long_form = option;
+    if (visitor.flag_field_names.empty() == false) {
+      os << "\n\nFLAGS:\n";
+      for (auto& flag : visitor.flag_field_names) {
+        os << "    -" << flag[0] << ", --" << flag << "\n";
       }
-
-      os << "    -" << option[0] << ", --" << long_form << " <" << option << ">" << "\n";
+    } else {
+      os << "\n";
     }
 
-    os << "\nARGS:\n";
-    for (auto& arg : visitor.positional_field_names) {
-      os << "    " << arg << "\n";
+    if (visitor.optional_field_names.empty() == false) {
+      os << "\nOPTIONS:\n";
+      for (auto& option : visitor.optional_field_names) {
+
+        // Generate kebab case and present as option
+        auto kebab_case = option;
+        details::string_replace(kebab_case, "_", "-");
+        std::string long_form = "";
+        if (kebab_case != option) {
+          long_form = kebab_case;
+        } else {
+          long_form = option;
+        }
+
+        os << "    -" << option[0] << ", --" << long_form << " <" << option << ">" << "\n";
+      }
     }
-    os << "\n";
+
+    if (!optional_arguments_available)
+      os << "\n";
+
+    if (visitor.positional_field_names.empty() == false) {
+      os << "\nARGS:\n";
+      for (auto& arg : visitor.positional_field_names) {
+        os << "    " << arg << "\n";
+      }
+    }
   }
 };
 
