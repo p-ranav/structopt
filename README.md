@@ -112,7 +112,7 @@ files        = { file1.txt file3.txt file4.txt }
 *    [Contributing](#contributing)
 *    [License](#license)
 
-## Getting Started
+## Getting Started 
 
 Include `<structopt/app.hpp>` and you're good to go.
 
