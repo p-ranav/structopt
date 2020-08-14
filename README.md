@@ -116,9 +116,11 @@ files        = { file1.txt file3.txt file4.txt }
 *    [Getting Started](#getting-started)
      *    [Positional Arguments](#positional-arguments)
      *    [Optional Arguments](#optional-arguments)
+          *    [Double dash (`--`) Argument](##double-dash----argument)
           *    [Combining Positional and Optional Arguments](#combining-positional-and-optional-arguments)
      *    [Flag Arguments](#flag-arguments)
      *    [Enum Class Arguments (Choices)](#enum-class-arguments)
+     *    [Tuple Arguments](#tuple-arguments)
      *    [Vector Arguments](#vector-arguments)
      *    [Compound Arguments](#compound-arguments)
           *    [Positional and Compound Toggle Arguments](#positional-and-compound-toggle-arguments)
@@ -411,6 +413,69 @@ OPTIONS:
 
 ### Tuple Arguments
 
+Now that we've looked at enum class support, let's build a simple calculator. In this sample, we will use an `std::tuple` to pack all the arguments to the calculator:
+
+```cpp
+struct CalculatorOptions {
+
+  // types of operations supported
+  enum class operation { add, subtract, multiply, divide };
+
+  // single tuple positional argument
+  std::tuple<operation, int, int> input;
+
+};
+STRUCTOPT(CalculatorOptions, input);
+
+
+
+int main(int argc, char *argv[]) {
+
+  auto app = structopt::app("my_app");
+
+  try {
+    auto options = app.parse<CalculatorOptions>(argc, argv);
+
+    auto op = std::get<0>(options.input);
+    auto lhs = std::get<1>(options.input);
+    auto rhs = std::get<2>(options.input);
+    switch(op)
+    {
+        case CalculatorOptions::operation::add:
+            std::cout << lhs + rhs << "\n";
+            break;
+        case CalculatorOptions::operation::subtract:
+            std::cout << lhs - rhs << "\n";
+            break;
+        case CalculatorOptions::operation::multiply:
+            std::cout << lhs * rhs << "\n";
+            break;
+        case CalculatorOptions::operation::divide:
+            std::cout << lhs / rhs << "\n";
+            break;
+    }
+  }
+  catch (std::exception& e) {
+    std::cout << e.what();
+    app.print_help();
+  }
+
+}
+```
+
+```bash
+▶ ./main add 1 2
+3
+
+▶ ./main subtract 5 9
+-4
+
+▶ ./main multiply 16 5
+80
+
+▶ ./main divide 1331 11
+121
+```
 
 ### Vector Arguments
 
