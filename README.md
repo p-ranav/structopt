@@ -179,7 +179,6 @@ Error: expected value for positional argument `output_file`.
 
 USAGE: ./my_app input_file output_file
 
-
 ARGS:
     input_file
     output_file
