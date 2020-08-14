@@ -109,7 +109,7 @@ files        = { file1.txt file3.txt file4.txt }
      *    [Optional Arguments](#optional-arguments)
      *    [Flag Arguments](#flag-arguments)
      *    [Enum Classes](#enum-classes)
-     *    [Gathering Remaining Arguments](#gathering-remaining-arguments)
+     *    [Vector Arguments](#vector-arguments)
 *    [Building Samples](#building-samples)
 *    [Generating Single Header](#generating-single-header)
 *    [Contributing](#contributing)
@@ -304,7 +304,7 @@ int main(int argc, char *argv[]) {
 #00ff00
 ```
 
-### Gathering Remaining Arguments
+### Vector Arguments
 
 `structopt` supports gathering "remaining" arguments at the end of the command, e.g., for use in a compiler:
 
