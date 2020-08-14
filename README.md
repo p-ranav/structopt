@@ -104,7 +104,7 @@ files        = { file1.txt file3.txt file4.txt }
 
 ## Table of Contents
 
-*    Getting Started[#getting-started]
+*    [Getting Started](#getting-started)
      *    [Positional Arguments](#positional-arguments)
      *    [Optional Arguments](#optional-arguments)
 *    [Building Samples](#building-samples)
