@@ -125,8 +125,6 @@ Include `<structopt/app.hpp>` and you're good to go.
 Here's an example of some positional arguments:
 
 ```cpp
-#include <structopt/app.hpp>
-
 struct FileOptions {
   // Positional arguments
   // ./main <input_file> <output_file>
@@ -134,6 +132,8 @@ struct FileOptions {
   std::string output_file;
 };
 STRUCTOPT(FileOptions, input_file, output_file);
+
+
 
 int main(int argc, char *argv[]) {
   auto options = structopt::app("my_app").parse<FileOptions>(argc, argv);
@@ -157,14 +157,14 @@ Output file : bar.csv
 Now, let's look at optional arguments. To configure an optional argument, use `std::optional` in the options struct:
 
 ```cpp
-#include <structopt/app.hpp>
-
 struct Options {
   // Optional argument
   // -f, --fixed_point, --fixed-point <fixed_point...>
   std::optional<std::array<float, 3>> fixed_point;
 };
 STRUCTOPT(Options, fixed_point);
+
+
 
 int main(int argc, char *argv[]) {
   auto options = structopt::app("my_app").parse<Options>(argc, argv);
@@ -198,8 +198,6 @@ Flag arguments are `std::optional<bool>` with a default value.
 ***NOTE*** If `--verbose` is a flag argument with a default value of `false`, then providing the argument will set it to `true`. If `--verbose` does not have a default value, then `structopt` will expect the user to provide a value, e.g., `--verbose true`. 
 
 ```cpp
-#include <structopt/app.hpp>
-
 struct Options {
   // verbosity flag
   // -v, --verbose
@@ -207,6 +205,8 @@ struct Options {
   std::optional<bool> verbose = false;
 };
 STRUCTOPT(Options, verbose);
+
+
 
 int main(int argc, char *argv[]) {
   auto options = structopt::app("my_app").parse<Options>(argc, argv);
@@ -230,8 +230,6 @@ Verbosity enabled
 ### Combining Positional and Optional Arguments
 
 ```cpp
-#include <structopt/app.hpp>
-
 struct Option {
   // positional argument
   // input number
@@ -242,6 +240,8 @@ struct Option {
   std::optional<bool> verbose = false;
 };
 STRUCTOPT(Option, input, verbose);
+
+
 
 int main(int argc, char *argv[]) {
   auto options = structopt::app("my_app").parse<Option>(argc, argv);
