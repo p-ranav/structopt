@@ -200,6 +200,7 @@ struct parser {
     structopt::details::parser parser;
     parser.next_index = 0;
     parser.current_index = 0;
+    parser.double_dash_encountered = double_dash_encountered; 
     parser.visitor = argument_struct.structopt_sub_command__visitor__;
 
     std::copy(arguments.begin() + next_index, arguments.end(),
