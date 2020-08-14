@@ -74,7 +74,7 @@ public:
     if (visitor.flag_field_names.empty() == false) {
       optional_arguments_available = true;
       os << "[FLAGS] "; 
-    }
+    } 
 
     if (visitor.optional_field_names.empty() == false) {
       optional_arguments_available = true;
@@ -90,6 +90,8 @@ public:
       for (auto& flag : visitor.flag_field_names) {
         os << "    -" << flag[0] << ", --" << flag << "\n";
       }
+    } else {
+      os << "\n";
     }
 
     if (visitor.optional_field_names.empty() == false) {

@@ -61,16 +61,25 @@ Create a `structopt::app` and parse the command line arguments into the `Options
 
 ```cpp
 int main(int argc, char *argv[]) {
+
+  auto app = structopt::app("my_app");
+
+  try {
   
-  // Line of code that does all the work:
-  auto options = structopt::app("my_app").parse<Options>(argc, argv);
+    // Line of code that does all the work:
+    auto options = structopt::app("my_app").parse<Options>(argc, argv);
 
-  // Print out parsed arguments:
+    // Print out parsed arguments:
 
-  // std::cout << "config_file  = " << options.config_file << "\n";
-  // std::cout << "bind_address = " << options.bind_address.value_or("not provided") << "\n";
-  // std::cout << "verbose      = " << std::boolalpha << options.verbose.value() << "\n";
-  // ...
+    // std::cout << "config_file  = " << options.config_file << "\n";
+    // std::cout << "bind_address = " << options.bind_address.value_or("not provided") << "\n";
+    // std::cout << "verbose      = " << std::boolalpha << options.verbose.value() << "\n";
+    // ...
+
+  } catch (std::exception& e) {
+    std::cout << e.what() << std::endl;
+    app.print_help();
+  }
 }
 ```
 
@@ -338,9 +347,10 @@ int main(int argc, char *argv[]) {
 #00ff00
 
 ▶ ./main -c black
-Error: unexpected input provided for enum color. Allowed values are: {red, green, blue}
+Error: unexpected input provided for enum argument `color`. Allowed values are {red, green, blue}
 
 USAGE: ./my_app [OPTIONS]
+
 OPTIONS:
     -c, --color <color>
 ```

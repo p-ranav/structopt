@@ -234,8 +234,8 @@ struct parser {
     const auto arguments_left = arguments.size() - next_index;
     if (arguments_left == 0 or arguments_left < N) {
       throw std::runtime_error("Error: expected " 
-        + std::to_string(N) + " arguments for std::array " + name 
-        + " instead got only " + std::to_string(arguments_left) + " arguments.");
+        + std::to_string(N) + " values for std::array argument `" + name 
+        + "` - instead got only " + std::to_string(arguments_left) + " arguments.");
     }
 
     for (std::size_t i = 0; i < N; i++) {
@@ -363,8 +363,8 @@ struct parser {
         allowed_names_string += allowed_names[allowed_names.size() - 1];
       }
 
-      throw std::runtime_error("Error: unexpected input provided for enum " + std::string{name}
-                              + ". Allowed values are: {" 
+      throw std::runtime_error("Error: unexpected input provided for enum argument `" + std::string{name}
+                              + "`. Allowed values are {" 
                               + allowed_names_string
                               + "}");
       // TODO: Throw error invalid enum option
