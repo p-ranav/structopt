@@ -363,7 +363,9 @@ struct parser {
         allowed_names_string += allowed_names[allowed_names.size() - 1];
       }
 
-      throw std::runtime_error("Error: unexpected input provided for enum argument `" + std::string{name}
+      throw std::runtime_error("Error: unexpected input `"
+                              + std::string{arguments[next_index]}
+                              + "` provided for enum argument `" + std::string{name}
                               + "`. Allowed values are {" 
                               + allowed_names_string
                               + "}");

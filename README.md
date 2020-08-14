@@ -348,7 +348,7 @@ int main(int argc, char *argv[]) {
 #00ff00
 
 ▶ ./main -c black
-Error: unexpected input provided for enum argument `color`. Allowed values are {red, green, blue}
+Error: unexpected input `black` provided for enum argument `color`. Allowed values are {red, green, blue}
 
 USAGE: ./my_app [OPTIONS]
 
