@@ -102,12 +102,12 @@ log_level    = 3
 user         = not provided
 files        = { file1.txt file2.txt }
 
-▶ ./my_app config_2.csv --bind-address 192.168.7.3 -log-level debug file1.txt file3.txt file4.txt --user "Pranav Kumar" "pranav.kumar@foo.com"
+▶ ./my_app config_2.csv --bind-address 192.168.7.3 -log-level debug file1.txt file3.txt file4.txt --user "John Doe" "john.doe@foo.com"
 config_file  = config_2.csv
 bind_address = 192.168.7.3
 verbose      = false
 log_level    = 0
-user         = Pranav Kumar<pranav.kumar@foo.com>
+user         = John Doe<john.doe@foo.com>
 files        = { file1.txt file3.txt file4.txt }
 ```
 
@@ -127,6 +127,7 @@ files        = { file1.txt file3.txt file4.txt }
      *    [Parsing Numbers](#parsing-numbers)
           *    [Integer Literals](#integer-literals)
           *    [Floating point Literals](#floating-point-literals)
+     *    [Nested Structures (Sub-commands)](#nested-structures)
 *    [Building Samples](#building-samples)
 *    [Generating Single Header](#generating-single-header)
 *    [Contributing](#contributing)
