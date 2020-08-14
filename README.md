@@ -112,7 +112,7 @@ files        = { file1.txt file3.txt file4.txt }
      *    [Enum Class Arguments (Choices)](#enum-class-arguments)
      *    [Vector Arguments](#vector-arguments)
      *    [Compound Arguments](#compound-arguments)
-          *    [Positional Arguments with Compound Toggle Arguments](positional-arguments-with-compound-toggle-arguments)
+          *    [Positional Arguments with Compound Toggle Arguments](#positional-arguments-with-compound-toggle-arguments)
      *    [Parsing Numbers](#parsing-numbers)
           *    [Integer Literals](#integer-literals)
           *    [Floating point Literals](#floating-point-literals)
