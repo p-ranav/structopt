@@ -37,3 +37,19 @@ TEST_CASE("structopt can parse combined optional flag arguments" * test_suite("c
     REQUIRE(arguments.c == true);
   }
 }
+
+struct FlagAndOptionArguments {
+  std::optional<bool> a = false;
+  std::optional<bool> b = false;
+  std::optional<std::array<float, 2>> c = {};
+};
+STRUCTOPT(FlagAndOptionArguments, a, b, c);
+
+TEST_CASE("structopt can parse combined optional and flag arguments" * test_suite("combined_optional")) {
+  {
+    auto arguments = structopt::app("test").parse<FlagAndOptionArguments>(std::vector<std::string>{"./main", "-ac", "3.14", "2.718"});
+    REQUIRE(arguments.a == true);
+    REQUIRE(arguments.b == false);
+    REQUIRE(arguments.c == std::array<float, 2>{3.14f, 2.718f});
+  }
+}

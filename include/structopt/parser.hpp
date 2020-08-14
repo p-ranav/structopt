@@ -550,20 +550,23 @@ struct parser {
 
               if (field_name_matched) {
                 // confirmed: this is a combined argument
-                // append args to end of `arguments` and increment `next_index`?
-                // what if there is a `--` in the way
-                // need to insert these split args before next `--` if any
-                auto double_dash_location = std::find(arguments.begin() + next_index, arguments.end(), "--");
-                if (double_dash_location == arguments.end()) {
-                  // no "--" till end of `arguments` list
-                  for (auto& arg : potential_combined_argument) {
+
+                // insert the individual options that make up the combined argument
+                // right after the combined argument
+                // e.g., ""./main -abc" becomes "./main -abc -a -b -c"
+                // Once this is done, increment `next_index` so that the parser loop will service
+                // `-a`, `-b` and `-c` like any other optional arguments (flags and otherwise)
+                for (std::vector<std::string>::reverse_iterator it = potential_combined_argument.rbegin(); 
+                      it != potential_combined_argument.rend(); ++it) { 
+                  auto& arg = *it;
+                  if (next_index < arguments.size()) {
+                    auto begin = arguments.begin();
+                    arguments.insert(begin + next_index + 1, arg);
+                  } else {
                     arguments.push_back(arg);
                   }
-                } else {
-                  for (auto& arg: potential_combined_argument) {
-                    arguments.insert(double_dash_location, arg);
-                  }
                 }
+
                 // get past the current combined argument
                 next_index += 1;
               }
