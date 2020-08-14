@@ -343,7 +343,7 @@ int main(int argc, char *argv[]) {
 }
 ```
 
-***NOTE*** Notice below that the act of gathering remaining arguments is arrested as soon as an optional argument is detected. See the output of `./main file1.cpp file2.cpp --std c++17` below.
+***NOTE*** Notice below that the act of gathering remaining arguments is arrested as soon as an optional argument is detected. See the output of `./main file1.cpp file2.cpp --std c++17` below. Notice that `--std` and `c++17` are not part of the vector. This is because `--std` is a valid optional argument.
 
 ```bash
 ▶ ./main file1.cpp file2.cpp
