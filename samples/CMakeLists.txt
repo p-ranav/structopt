@@ -13,3 +13,6 @@ target_link_libraries(flag_arguments PRIVATE structopt::structopt)
 
 add_executable(positional_and_optional_arguments positional_and_optional_arguments.cpp)
 target_link_libraries(positional_and_optional_arguments PRIVATE structopt::structopt)
+
+add_executable(enum_class_argument enum_class_argument.cpp)
+target_link_libraries(enum_class_argument PRIVATE structopt::structopt)

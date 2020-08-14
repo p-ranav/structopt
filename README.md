@@ -268,6 +268,50 @@ The square of 4 is 16
 
 ### Enum Classes
 
+Thanks to [magic_enum](https://github.com/Neargye/magic_enum), `structopt` supports enum classes. You can use an enum class directly and pass values with matching names:
+
+```cpp
+#include <structopt/app.hpp>
+
+struct StyleOptions {
+  enum class Color {red, green, blue};
+
+  // e.g., `--color red`
+  // e.g., `-c green`
+  std::optional<Color> color = Color::red;
+};
+STRUCTOPT(StyleOptions, color);
+
+
+
+int main(int argc, char *argv[]) {
+  auto options = structopt::app("my_app").parse<StyleOptions>(argc, argv);
+
+  if (options.color.has_value()) {
+    if (options.color == StyleOptions::Color::red) {
+      std::cout << "#ff0000\n";
+    }
+    else if (options.color == StyleOptions::Color::blue) {
+      std::cout << "#0000ff\n";
+    }
+    else if (options.color == StyleOptions::Color::green) {
+      std::cout << "#00ff00\n";
+    }
+  }
+}
+```
+
+```bash
+▶ ./main --color red
+#ff0000
+
+▶ ./main -c blue
+#0000ff
+
+▶ ./main --color green
+#00ff00
+```
+
 ## Building Samples
 
 ```bash
