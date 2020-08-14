@@ -16,6 +16,8 @@
   <img src="https://img.shields.io/badge/version-1.0-blue.svg?cacheSeconds=2592000" alt="version"/>
 </p>
 
+## Quick Start
+
 ```cpp
 struct Options {
    // positional argument
@@ -99,6 +101,16 @@ log_level    = 0
 user         = Pranav Kumar<pranav.kumar@foo.com>
 files        = { file1.txt file3.txt file4.txt }
 ```
+
+## Table of Contents
+
+*    Getting Started[#getting-started]
+     *    [Positional Arguments](#positional-arguments)
+     *    [Optional Arguments](#optional-arguments)
+*    [Building Samples](#building-samples)
+*    [Generating Single Header](#generating-single-header)
+*    [Contributing](#contributing)
+*    [License](#license)
 
 ## Getting Started
 
