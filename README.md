@@ -67,7 +67,7 @@ int main(int argc, char *argv[]) {
   try {
   
     // Line of code that does all the work:
-    auto options = structopt::app("my_app").parse<Options>(argc, argv);
+    auto options = app.parse<Options>(argc, argv);
 
     // Print out parsed arguments:
 
