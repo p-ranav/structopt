@@ -195,6 +195,8 @@ struct parser {
     current_index += parser.next_index;
     next_index += parser.next_index;
 
+    // TODO: Check and make sure current and next are not out of bounds here
+
     return argument_struct;
   }
 
