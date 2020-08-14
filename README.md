@@ -332,10 +332,7 @@ STRUCTOPT(CompilerOptions, std, files);
 int main(int argc, char *argv[]) {
   auto options = structopt::app("my_app").parse<CompilerOptions>(argc, argv);
 
-  std::cout << "Standard : " << options.std.value_or("not provided") << "\n";
-  std::cout << "Files    : { ";
-  std::copy(options.files.begin(), options.files.end(), std::ostream_iterator<std::string>(std::cout, " "));
-  std::cout << "}" << std::endl; 
+  // Some code to print parsed arguments
 }
 ```
 
@@ -376,12 +373,7 @@ STRUCTOPT(Options, a, b, c);
 int main(int argc, char *argv[]) {
   auto options = structopt::app("my_app").parse<Options>(argc, argv);
 
-  // Print parsed arguments:
-
-  std::cout << std::boolalpha << "a = " << options.a.value() << ", b = " << options.b.value() << "\n";
-  if (options.c.has_value()) {
-    std::cout << "c = [" << options.c.value()[0] << ", " << options.c.value()[1] << "]\n";
-  }
+  // Some code to print parsed arguments
 }
 ```
 
