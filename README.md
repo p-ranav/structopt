@@ -108,7 +108,7 @@ files        = { file1.txt file3.txt file4.txt }
      *    [Positional Arguments](#positional-arguments)
      *    [Optional Arguments](#optional-arguments)
      *    [Flag Arguments](#flag-arguments)
-     *    [Enum Classes (Choices)](#enum-classes)
+     *    [Enum Class Arguments (Choices)](#enum-class-arguments)
      *    [Vector Arguments](#vector-arguments)
      *    [Compound Arguments](#compound-arguments)
 *    [Building Samples](#building-samples)
@@ -263,7 +263,7 @@ Verbosity enabled
 Verbosity enabled
 ```
 
-### Enum Classes
+### Enum Class Arguments
 
 Thanks to [magic_enum](https://github.com/Neargye/magic_enum), `structopt` supports enum classes. You can use an enum class directly and pass values with matching names:
 
