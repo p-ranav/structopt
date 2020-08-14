@@ -320,6 +320,8 @@ $ compiler file1 file2 file3
 
 Do this by using an `std::vector<T>` (or other STL containers with `.push_back()`, e.g, `std::deque` or `std::list`).
 
+***NOTE*** Vector arguments have a cardinality of `0..*`, i.e., zero or more arguments. Unlike array types, you can provide zero arguments to a vector and `structopt` will (try to) not complain.
+
 ```cpp
 struct CompilerOptions {
   // Language standard
@@ -340,8 +342,6 @@ int main(int argc, char *argv[]) {
   // Some code to print parsed arguments
 }
 ```
-
-***NOTE*** Vector arguments have a cardinality of `0..*`, i.e., zero or more arguments. Unlike array types, you can provide zero arguments to a vector and `structopt` will (try to) not complain.
 
 ***NOTE*** Notice below that the act of gathering remaining arguments is arrested as soon as an optional argument is detected. See the output of `./main file1.cpp file2.cpp --std c++17` below. Notice that `--std` and `c++17` are not part of the vector. This is because `--std` is a valid optional argument.
 
