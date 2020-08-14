@@ -122,7 +122,7 @@ STRUCTOPT(FileOptions, input_file, output_file);
 int main(int argc, char *argv[]) {
   auto options = structopt::app("my_app").parse<FileOptions>(argc, argv);
 
-  std::cout << "Input file  : " << options.input_file << "\n";
+  std::cout << "\nInput file  : " << options.input_file << "\n";
   std::cout << "Output file : " << options.output_file << "\n";
 }
 ```
@@ -130,7 +130,8 @@ int main(int argc, char *argv[]) {
 Now we can run our program like so:
 
 ```bash
-./main foo.txt bar.csv
+▶ ./main foo.txt bar.csv
+
 Input file  : foo.txt
 Output file : bar.csv
 ```
