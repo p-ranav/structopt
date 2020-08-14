@@ -19,3 +19,6 @@ target_link_libraries(enum_class_argument PRIVATE structopt::structopt)
 
 add_executable(remaining_arguments remaining_arguments.cpp)
 target_link_libraries(remaining_arguments PRIVATE structopt::structopt)
+
+add_executable(compound_arguments compound_arguments.cpp)
+target_link_libraries(compound_arguments PRIVATE structopt::structopt)

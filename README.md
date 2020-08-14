@@ -110,6 +110,7 @@ files        = { file1.txt file3.txt file4.txt }
      *    [Flag Arguments](#flag-arguments)
      *    [Enum Classes (Choices)](#enum-classes)
      *    [Vector Arguments](#vector-arguments)
+     *    [Compound Arguments](#compound-arguments)
 *    [Building Samples](#building-samples)
 *    [Generating Single Header](#generating-single-header)
 *    [Contributing](#contributing)
@@ -353,6 +354,50 @@ Files    : { file1.cpp file2.cpp }
 Standard : c++20
 Files    : { file1.cpp file2.cpp }
 ```
+
+### Compound Arguments
+
+Compound arguments are optional arguments that are combined and provided as a single argument. Example: `ps -aux`
+
+```cpp
+struct Options {
+  // Flag arguments
+  std::optional<bool> a = false;
+  std::optional<bool> b = false;
+
+  // Optional argument
+  // e.g., -c 1.1 2.2
+  std::optional<std::array<float, 2>> c = {};
+};
+STRUCTOPT(Options, a, b, c);
+
+
+
+int main(int argc, char *argv[]) {
+  auto options = structopt::app("my_app").parse<Options>(argc, argv);
+
+  // Print parsed arguments:
+
+  std::cout << std::boolalpha << "a = " << options.a.value() << ", b = " << options.b.value() << "\n";
+  if (options.c.has_value()) {
+    std::cout << "c = [" << options.c.value()[0] << ", " << options.c.value()[1] << "]\n";
+  }
+}
+```
+
+```bash
+▶ ./main -ac 3.14 2.718
+a = true, b = false
+c = [3.14, 2.718]
+
+▶ ./main -ba
+a = true, b = true
+
+▶ ./main -c 1.5 3.0 -ab
+a = true, b = true
+c = [1.5, 3]
+```
+
 
 ## Building Samples
 
