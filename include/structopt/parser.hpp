@@ -30,6 +30,8 @@ struct parser {
   std::size_t current_index{1};
   std::size_t next_index{1};
   bool double_dash_encountered{false}; // "--" option-argument delimiter
+  bool sub_command_invoked{false};
+  std::string already_invoked_subcommand_name{""};
 
   bool is_optional(const std::string &name) {
     if (double_dash_encountered) {
@@ -173,6 +175,18 @@ struct parser {
   template <typename T>
   inline typename std::enable_if<visit_struct::traits::is_visitable<T>::value, T>::type
   parse_nested_struct(const char *name) {
+
+    if (!sub_command_invoked) {
+      sub_command_invoked = true;
+      already_invoked_subcommand_name = name;
+    } else {
+      // a sub-command has already been invoked
+      throw std::runtime_error("Error: failed to invoke sub-command `"
+        + std::string{name} + "` because a different sub-command, `"
+        + already_invoked_subcommand_name 
+        + "`, has already been invoked.");
+    }
+
     T argument_struct;
     argument_struct.structopt_sub_command__name__ = name;
 

@@ -56,22 +56,22 @@ TEST_CASE("structopt can parse multiple nested struct arguments" * test_suite("n
     REQUIRE(arguments.config.global == false);
   }
   {
-    auto arguments = structopt::app("test").parse<Command>(std::vector<std::string>{"./main", "foo", "15", "3.14", "--verbose", "true", "config", "-g", "false"});
-    REQUIRE(arguments.foo.has_value() == true);
-    REQUIRE(arguments.foo.bar == 15);
-    REQUIRE(arguments.foo.value == 3.14);
-    REQUIRE(arguments.foo.verbose.value() == true);
-    REQUIRE(arguments.config.has_value() == true);
-    REQUIRE(arguments.config.global == false);
+    bool exception_thrown = false;
+    try {
+      auto arguments = structopt::app("test").parse<Command>(std::vector<std::string>{"./main", "foo", "15", "3.14", "--verbose", "true", "config", "-g", "false"});
+    } catch (std::exception& e) {
+      exception_thrown = true;
+    }
+    REQUIRE(exception_thrown);
   }
   {
-    auto arguments = structopt::app("test").parse<Command>(std::vector<std::string>{"./main", "config", "-g", "false", "foo", "15", "3.14", "--verbose", "true"});
-    REQUIRE(arguments.foo.has_value() == true);
-    REQUIRE(arguments.foo.bar == 15);
-    REQUIRE(arguments.foo.value == 3.14);
-    REQUIRE(arguments.foo.verbose.value() == true);
-    REQUIRE(arguments.config.has_value() == true);
-    REQUIRE(arguments.config.global == false);
+    bool exception_thrown = false;
+    try {
+      auto arguments = structopt::app("test").parse<Command>(std::vector<std::string>{"./main", "config", "-g", "false", "foo", "15", "3.14", "--verbose", "true"});
+    } catch (std::exception &e) {
+      exception_thrown = true;
+    }
+    REQUIRE(exception_thrown);
   }
 }
 

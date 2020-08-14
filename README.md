@@ -717,6 +717,11 @@ int main(int argc, char *argv[]) {
 ```
 
 ```bash
+▶ ./main config user.email "john.doe@foo.com"
+You invoked `git config`:
+Global : false
+Input  : (user.email, john.doe@foo.com)
+
 ▶ ./main config user.name "John Doe" --global
 You invoked `git config`:
 Global : true
@@ -725,6 +730,14 @@ Input  : (user.name, John Doe)
 ▶ ./main init my_repo
 You invoked `git init`:
 Repository name : my_repo
+```
+
+***NOTE*** `structopt` does not allow to invoke multiple sub-commands. If one has already been invoked, you will see the following error:
+
+```bash
+./samples/nested_structures config user.name Foo   init my_repo
+#                    config ^^^^^^^^^^^^^^^^^^^^   ^^^^^^^^^^^^ init
+Error: failed to invoke sub-command `init` because a different sub-command, `config`, has already been invoked.
 ```
 
 ## Building Samples
