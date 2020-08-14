@@ -21,6 +21,7 @@ struct visitor {
   std::string version;
   std::vector<std::string> field_names;
   std::deque<std::string> positional_field_names;
+  std::deque<std::string> positional_field_names_for_help;
   std::deque<std::string> vector_like_positional_field_names;
   std::deque<std::string> flag_field_names;
   std::deque<std::string> optional_field_names;
@@ -51,6 +52,7 @@ struct visitor {
   operator()(const char *name, T &value) {
     field_names.push_back(name);
     positional_field_names.push_back(name);
+    positional_field_names_for_help.push_back(name);
     if constexpr (structopt::is_specialization<T, std::deque>::value 
       or structopt::is_specialization<T, std::list>::value
       or structopt::is_specialization<T, std::vector>::value) {
@@ -92,7 +94,7 @@ struct visitor {
       os << "[SUBCOMMANDS] ";
     }
 
-    for (auto& field : positional_field_names) {
+    for (auto& field : positional_field_names_for_help) {
       os << field << " ";
     }
 
@@ -133,9 +135,9 @@ struct visitor {
       }
     }
 
-    if (positional_field_names.empty() == false) {
+    if (positional_field_names_for_help.empty() == false) {
       os << "\nARGS:\n";
-      for (auto& arg : positional_field_names) {
+      for (auto& arg : positional_field_names_for_help) {
         os << "    " << arg << "\n";
       }
     }
