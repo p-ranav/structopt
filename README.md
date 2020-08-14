@@ -736,7 +736,6 @@ Repository name : my_repo
 
 ```bash
 ./samples/nested_structures config user.name Foo   init my_repo
-#                    config ^^^^^^^^^^^^^^^^^^^^   ^^^^^^^^^^^^ init
 Error: failed to invoke sub-command `init` because a different sub-command, `config`, has already been invoked.
 ```
 
