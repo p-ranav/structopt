@@ -52,7 +52,7 @@ public:
     return parse<T>(arguments);
   }
 
-  void generate_help(std::ostream& os) {
+  void print_help(std::ostream& os = std::cout) {
     os << name_ << " [FLAGS] [OPTIONS] ";
     for (auto& field : visitor.positional_field_names) {
       os << field << " ";
