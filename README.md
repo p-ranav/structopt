@@ -100,6 +100,36 @@ user         = Pranav Kumar<pranav.kumar@foo.com>
 files        = { file1.txt file3.txt file4.txt }
 ```
 
+## Quick Start
+
+Simply include `<structopt/app.hpp>` and you're good to go.
+
+```cpp
+#include <structopt/app.hpp>
+```
+
+`structopt` supports a variety of argument types including positional, optional, flags, and compound arguments. Below you can see how to configure each of these types:
+
+### Positional Arguments
+
+Here's an example of some positional arguments:
+
+```cpp
+#include <structopt/app.hpp>
+
+struct FileOptions {
+  std::string input_file;
+  std::string output_file;
+};
+STRUCTOPT(FileOptions, input_file, output_file);
+
+int main(int argc, char *argv[]) {
+  auto options = structopt::app("my_app").parse<FileOptions>(argc, argv);
+
+  // Now you can use `options.input_file` and `options.output_file`
+}
+```
+
 ## Building Samples
 
 ```bash
