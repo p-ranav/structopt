@@ -100,13 +100,9 @@ user         = Pranav Kumar<pranav.kumar@foo.com>
 files        = { file1.txt file3.txt file4.txt }
 ```
 
-## Quick Start
+## Getting Started
 
-Simply include `<structopt/app.hpp>` and you're good to go.
-
-```cpp
-#include <structopt/app.hpp>
-```
+Include `<structopt/app.hpp>` and you're good to go.
 
 `structopt` supports a variety of argument types including positional, optional, flags, and compound arguments. Below you can see how to configure each of these types:
 
