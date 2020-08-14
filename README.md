@@ -220,6 +220,59 @@ Point: {1.1, -2.2, 3.3}
 Point: {1, 2, 3}
 ```
 
+#### Double dash (`--`) Argument
+
+A double dash (`--`) is used in most bash built-in commands and many other commands to signify the end of command options, after which only positional parameters are accepted.
+
+Example use: lets say you want to `grep` a file for the string `-v` - normally `-v` will be considered the option to reverse the matching meaning (only show lines that do not match), but with `--` you can `grep` for string `-v` like this:
+
+```cpp
+struct GrepOptions {
+  // reverse the matching
+  // enable with `-v`
+  std::optional<bool> v = false;
+  
+  // positional arguments
+  std::string search;
+  std::string pathspec;
+};
+STRUCTOPT(GrepOptions, v, search, pathspec);
+
+
+
+int main(int argc, char *argv[]) {
+
+  auto app = structopt::app("my_app");
+
+  try {
+    auto options = app.parse<GrepOptions>(argc, argv);
+
+    if (options.v == true) {
+      std::cout << "`-v` provided - Matching is now reversed\n";
+    }
+
+    std::cout << "Search   : " << options.search << "\n";
+    std::cout << "Pathspec : " << options.pathspec << "\n";
+  }
+  catch (std::exception& e) {
+    std::cout << e.what();
+    app.print_help();
+  }
+
+}
+```
+
+```bash
+▶ ./main -v foo bar.txt
+`-v` provided - Matching is now reversed
+Search   : foo
+Pathspec : bar.txt
+
+▶ ./main -- -v bar.txt
+Search   : -v
+Pathspec : bar.txt
+```
+
 #### Combining Positional and Optional Arguments
 
 ```cpp
@@ -355,6 +408,9 @@ USAGE: ./my_app [OPTIONS]
 OPTIONS:
     -c, --color <color>
 ```
+
+### Tuple Arguments
+
 
 ### Vector Arguments
 
@@ -531,6 +587,9 @@ STRUCTOPT(FloatLiterals, numbers);
 -0.3
 5.999
 ```
+
+### Nested Structures
+
 
 ## Building Samples
 
