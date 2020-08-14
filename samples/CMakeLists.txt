@@ -22,3 +22,6 @@ target_link_libraries(remaining_arguments PRIVATE structopt::structopt)
 
 add_executable(compound_arguments compound_arguments.cpp)
 target_link_libraries(compound_arguments PRIVATE structopt::structopt)
+
+add_executable(positional_and_compound_arguments positional_and_compound_arguments.cpp)
+target_link_libraries(positional_and_compound_arguments PRIVATE structopt::structopt)

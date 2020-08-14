@@ -398,6 +398,41 @@ a = true, b = true
 c = [1.5, 3]
 ```
 
+#### Positional Arguments with Compound Toggle Arguments
+
+```cpp
+struct Options {
+  // Positional arguments
+  std::array<int, 3> numbers = {0, 0, 0};
+
+  // Flag arguments
+  std::optional<bool> a = false;
+  std::optional<bool> b = false;
+
+  // Optional argument
+  // e.g., -c 1.1 2.2
+  std::optional<std::array<float, 2>> c = {};
+
+  // Remaining arguments
+  std::optional<std::vector<std::string>> files;
+};
+STRUCTOPT(Options, numbers, a, b, c, files);
+
+
+int main(int argc, char *argv[]) {
+  auto options = structopt::app("my_app").parse<Options>(argc, argv);
+
+  // Some code to print parsed arguments
+}
+```
+
+```bash
+▶ ./main 1 2 3 -abc 3.14 2.718 --files a.txt b.txt c.txt
+numbers = [1, 2, 3]
+a = true, b = true
+c = [3.14, 2.718]
+files = a.txt b.txt c.txt
+```
 
 ## Building Samples
 
