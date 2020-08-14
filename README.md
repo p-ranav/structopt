@@ -174,6 +174,14 @@ ARGS:
     input_file
     output_file
 
+▶ ./main foo.csv
+Error: expected positional argument output_file
+
+USAGE: ./my_app input_file output_file
+
+ARGS:
+    input_file
+    output_file
 ```
 
 ### Optional Arguments
