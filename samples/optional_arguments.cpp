@@ -1,6 +1,8 @@
 #include <structopt/app.hpp>
 
 struct Options {
+  // Optional argument
+  // -f, --fixed_point, --fixed-point <fixed_point...>
   std::optional<std::array<float, 3>> fixed_point;
 };
 STRUCTOPT(Options, fixed_point);

@@ -126,6 +126,8 @@ Here's an example of some positional arguments:
 #include <structopt/app.hpp>
 
 struct FileOptions {
+  // Positional arguments
+  // ./main <input_file> <output_file>
   std::string input_file;
   std::string output_file;
 };
@@ -156,14 +158,12 @@ Now, let's look at optional arguments. To configure an optional argument, use `s
 #include <structopt/app.hpp>
 
 struct Options {
+  // Optional argument
+  // -f, --fixed_point, --fixed-point <fixed_point...>
   std::optional<std::array<float, 3>> fixed_point;
 };
 STRUCTOPT(Options, fixed_point);
-```
 
-The above optional argument can be provided as `-f`, or `--fixed_point` or `--fixed-point`.
-
-```cpp
 int main(int argc, char *argv[]) {
   auto options = structopt::app("my_app").parse<Options>(argc, argv);
 
@@ -185,6 +185,42 @@ Point: {1.1, 2.2, 3.3}
 
 ▶ ./main -f 1 2 3
 Point: {1, 2, 3}
+```
+
+### Flag Arguments
+
+Flag arguments are `std::optional<bool>` with a default value. 
+
+***NOTE*** The default value here is important. It is not a flag if a default value isn't provided. It will simply be an optional argument.
+
+```cpp
+#include <structopt/app.hpp>
+
+struct Options {
+  // verbosity flag
+  // -v, --verbose
+  // remember to provide a default value
+  std::optional<bool> verbose = false;
+};
+STRUCTOPT(Options, verbose);
+
+int main(int argc, char *argv[]) {
+  auto options = structopt::app("my_app").parse<Options>(argc, argv);
+
+  if (options.verbose == true) {
+    std::cout << "Verbosity enabled\n";
+  }
+}
+```
+
+```bash
+▶ ./main
+
+▶ ./main -v
+Verbosity enabled
+
+▶ ./main --verbose
+Verbosity enabled
 ```
 
 ## Building Samples
