@@ -110,6 +110,7 @@ files        = { file1.txt file3.txt file4.txt }
      *    [Flag Arguments](#flag-arguments)
      *    [Combining Positional and Optional Arguments](#combining-positional-and-optional-arguments)
      *    [Enum Classes](#enum-classes)
+     *    [Gathering Remaining Arguments](#gathering-remaining-arguments)
 *    [Building Samples](#building-samples)
 *    [Generating Single Header](#generating-single-header)
 *    [Contributing](#contributing)
@@ -306,6 +307,56 @@ int main(int argc, char *argv[]) {
 
 ▶ ./main --color green
 #00ff00
+```
+
+### Gathering Remaining Arguments
+
+`structopt` supports gathering "remaining" arguments at the end of the command, e.g., for use in a compiler:
+
+```bash
+$ compiler file1 file2 file3
+```
+
+Do this by using an `std::vector<T>` (or other STL containers with `.push_back()`, e.g, `std::deque` or `std::list` if that's your thing). `structopt` will parse every remaining argument. 
+
+```cpp
+struct CompilerOptions {
+  // Language standard
+  // e.g., --std c++17
+  std::optional<std::string> std;
+
+  // remaining arguments
+  // e.g., ./compiler file1 file2 file3
+  std::vector<std::string> files{};
+};
+STRUCTOPT(CompilerOptions, std, files);
+
+
+
+int main(int argc, char *argv[]) {
+  auto options = structopt::app("my_app").parse<CompilerOptions>(argc, argv);
+
+  std::cout << "Standard : " << options.std.value_or("not provided") << "\n";
+  std::cout << "Files    : { ";
+  std::copy(options.files.begin(), options.files.end(), std::ostream_iterator<std::string>(std::cout, " "));
+  std::cout << "}" << std::endl; 
+}
+```
+
+***NOTE*** Notice below that the act of gathering remaining arguments is arrested as soon as an optional argument is detected. See the output of `./main file1.cpp file2.cpp --std c++17` below.
+
+```bash
+▶ ./main file1.cpp file2.cpp
+Standard : not provided
+Files    : { file1.cpp file2.cpp }
+
+▶ ./main file1.cpp file2.cpp --std c++17
+Standard : c++17
+Files    : { file1.cpp file2.cpp }
+
+▶ ./main --std c++20 file1.cpp file2.cpp
+Standard : c++20
+Files    : { file1.cpp file2.cpp }
 ```
 
 ## Building Samples
