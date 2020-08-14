@@ -504,6 +504,44 @@ struct parser {
           value = parse_optional_argument<typename T::value_type>(name);
         }
       }
+      else {
+        // A direct match of optional argument with field_name has not happened
+        // This _could_ be a combined argument
+        // e.g., -abc => -a, -b, and -c where each of these is a flag argument
+        std::vector<std::string> potential_combined_argument;
+        if (next[0] == '-') {
+          for (std::size_t i = 1; i < next.size(); i++) {
+            potential_combined_argument.push_back(std::string(1, next[i]));
+          }
+        }
+
+        bool is_combined_argument = true;
+        for (auto& arg : potential_combined_argument) {
+          if (!is_optional_field(arg)) {
+            is_combined_argument = false;
+            // TODO: report error unrecognized option in combined argument
+          }
+        }
+
+        if (is_combined_argument) {
+          // confirmed: this is a combined argument
+          // append args to end of `arguments` and increment `next_index`?
+          // what if there is a `--` in the way
+          // need to insert these split args before next `--` if any
+          auto double_dash_location = std::find(arguments.begin() + next_index, arguments.end(), "--");
+          if (double_dash_location == arguments.end()) {
+            // no "--" till end of `arguments` list
+            for (auto& arg : potential_combined_argument) {
+              arguments.push_back("-" + arg);
+            }
+          } else {
+            for (auto& arg: potential_combined_argument) {
+              arguments.insert(double_dash_location, arg);
+            }
+          }
+        }
+
+      }
     }
   }
 };
