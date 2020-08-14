@@ -317,7 +317,7 @@ int main(int argc, char *argv[]) {
 $ compiler file1 file2 file3
 ```
 
-Do this by using an `std::vector<T>` (or other STL containers with `.push_back()`, e.g, `std::deque` or `std::list` if that's your thing). `structopt` will parse every remaining argument. 
+Do this by using an `std::vector<T>` (or other STL containers with `.push_back()`, e.g, `std::deque` or `std::list`).
 
 ```cpp
 struct CompilerOptions {
