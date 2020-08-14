@@ -144,20 +144,22 @@ Now, let's look at optional arguments. To configure an optional argument, use `s
 #include <structopt/app.hpp>
 
 struct Options {
-  std::optional<std::array<float, 3>> fixed_point = std::array<float, 3>{0.0f, 0.0f, 0.0f};
+  std::optional<std::array<float, 3>> fixed_point;
 };
 STRUCTOPT(Options, fixed_point);
 ```
 
-The above optional argument can now be provided as `-f`, or `--fixed_point` or `--fixed-point`. Notice that the option has a default value
+The above optional argument can be provided as `-f`, or `--fixed_point` or `--fixed-point`.
 
 ```cpp
 int main(int argc, char *argv[]) {
   auto options = structopt::app("my_app").parse<Options>(argc, argv);
 
-  std::cout << "Point: {" << options.fixed_point.value()[0] << ", " 
-                          << options.fixed_point.value()[1] << ", "
-                          << options.fixed_point.value()[2] << "}\n";
+  if (options.fixed_point.has_value()) {
+    std::cout << "Point: {" << options.fixed_point.value()[0] << ", " 
+                            << options.fixed_point.value()[1] << ", "
+                            << options.fixed_point.value()[2] << "}\n";
+  }
 }
 ```
 
@@ -165,7 +167,6 @@ Now we can run our program like so:
 
 ```bash
 ▶ ./main
-Point: {0.0f, 0.0f, 0.0f}
 
 ▶ ./main --fixed_point 1.1 2.2 3.3
 Point: {1.1, 2.2, 3.3}
