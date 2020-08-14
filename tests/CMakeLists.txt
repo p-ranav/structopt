@@ -49,6 +49,7 @@ file(GLOB structopt_TEST_SOURCES
     test_list_positional_argument.cpp
     test_map_positional_argument.cpp
     test_container_adapter_positional_argument.cpp
+    test_combined_flag_arguments.cpp
 )
 set_source_files_properties(main.cpp
     PROPERTIES

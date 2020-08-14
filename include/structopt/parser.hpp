@@ -505,42 +505,71 @@ struct parser {
         }
       }
       else {
-        // A direct match of optional argument with field_name has not happened
-        // This _could_ be a combined argument
-        // e.g., -abc => -a, -b, and -c where each of these is a flag argument
-        std::vector<std::string> potential_combined_argument;
-        if (next[0] == '-') {
-          for (std::size_t i = 1; i < next.size(); i++) {
-            potential_combined_argument.push_back(std::string(1, next[i]));
-          }
-        }
+        if (double_dash_encountered == false) {
+          // A direct match of optional argument with field_name has not happened
+          // This _could_ be a combined argument
+          // e.g., -abc => -a, -b, and -c where each of these is a flag argument
+          std::vector<std::string> potential_combined_argument;
 
-        bool is_combined_argument = true;
-        for (auto& arg : potential_combined_argument) {
-          if (!is_optional_field(arg)) {
-            is_combined_argument = false;
-            // TODO: report error unrecognized option in combined argument
+          // if next is of the form `-abc` or `-de` and NOT of the form `--abc` 
+          // `--abc` is not a combined argument
+          // `-abc` might be
+          if (next[0] == '-' and (next.size() > 1 and next[1] != '-')) {
+            for (std::size_t i = 1; i < next.size(); i++) {
+              potential_combined_argument.push_back("-" + std::string(1, next[i]));
+            }
           }
-        }
 
-        if (is_combined_argument) {
-          // confirmed: this is a combined argument
-          // append args to end of `arguments` and increment `next_index`?
-          // what if there is a `--` in the way
-          // need to insert these split args before next `--` if any
-          auto double_dash_location = std::find(arguments.begin() + next_index, arguments.end(), "--");
-          if (double_dash_location == arguments.end()) {
-            // no "--" till end of `arguments` list
+          if (!potential_combined_argument.empty()) {
+            bool is_combined_argument = true;
             for (auto& arg : potential_combined_argument) {
-              arguments.push_back("-" + arg);
+              if (!is_optional_field(arg)) {
+                is_combined_argument = false;
+                // TODO: report error unrecognized option in combined argument
+              }
             }
-          } else {
-            for (auto& arg: potential_combined_argument) {
-              arguments.insert(double_dash_location, arg);
+
+            if (is_combined_argument) {
+
+              // check and make sure the current field_name is 
+              // in `potential_combined_argument`
+              //
+              // Let's say the argument `next` is `-abc`
+              // the current field name is `b`
+              // 1. Split `-abc` into `-a`, `-b`, and `-c`
+              // 2. Check if `-b` is in the above list
+              //    1. If yes, consider this as a combined argument
+              //       push the list of arguments (split up) into `arguments`
+              //    2. If no, nothing to do here
+              bool field_name_matched = false;
+              for (auto& arg : potential_combined_argument) {
+                if (arg == "-" + std::string(1, field_name[0])) {
+                  field_name_matched = true;
+                }
+              }
+
+              if (field_name_matched) {
+                // confirmed: this is a combined argument
+                // append args to end of `arguments` and increment `next_index`?
+                // what if there is a `--` in the way
+                // need to insert these split args before next `--` if any
+                auto double_dash_location = std::find(arguments.begin() + next_index, arguments.end(), "--");
+                if (double_dash_location == arguments.end()) {
+                  // no "--" till end of `arguments` list
+                  for (auto& arg : potential_combined_argument) {
+                    arguments.push_back(arg);
+                  }
+                } else {
+                  for (auto& arg: potential_combined_argument) {
+                    arguments.insert(double_dash_location, arg);
+                  }
+                }
+                // get past the current combined argument
+                next_index += 1;
+              }
             }
           }
         }
-
       }
     }
   }
