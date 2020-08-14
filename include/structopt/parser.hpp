@@ -169,7 +169,6 @@ struct parser {
   template <typename T>
   inline typename std::enable_if<visit_struct::traits::is_visitable<T>::value, T>::type
   parse_nested_struct(const char *name) {
-    // std::cout << "Parsing nested struct\n";
     T argument_struct;
 
     // Save struct field names
@@ -187,21 +186,14 @@ struct parser {
     std::copy(arguments.begin() + next_index, arguments.end(),
               std::back_inserter(parser.arguments));
 
-    // std::cout << "Nested struct " << name << " arguments:\n";
-    // for (auto& v : parser.arguments) {
-    //   std::cout << v << " ";
-    // }
-    // std::cout << "\n";
-
-    // std::cout << "BEFORE: " <<  current_index << " " << next_index << "\n";
-
     for (std::size_t i = 0; i < parser.arguments.size(); i++) {
       parser.current_index = i;
       visit_struct::for_each(argument_struct, parser);
     }
 
-    // std::cout << "AFTER: " <<  parser.current_index << " " << parser.next_index <<
-    // "\n";
+    // update current and next
+    current_index += parser.next_index;
+    next_index += parser.next_index;
 
     return argument_struct;
   }
