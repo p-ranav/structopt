@@ -67,37 +67,56 @@ public:
   }
 
   void print_help(std::ostream& os = std::cout) {
-    os << name_ << " [FLAGS] [OPTIONS] ";
+    os << "\nUSAGE: ./" << name_ << " ";
+
+    bool optional_arguments_available = false;
+
+    if (visitor.flag_field_names.empty() == false) {
+      optional_arguments_available = true;
+      os << "[FLAGS] "; 
+    }
+
+    if (visitor.optional_field_names.empty() == false) {
+      optional_arguments_available = true;
+      os << "[OPTIONS] "; 
+    }
+
     for (auto& field : visitor.positional_field_names) {
       os << field << " ";
     }
 
-    os << "\n\nFLAGS:\n";
-    for (auto& flag : visitor.flag_field_names) {
-      os << "    -" << flag[0] << ", --" << flag << "\n";
-    }
-
-    os << "\nOPTIONS:\n";
-    for (auto& option : visitor.optional_field_names) {
-
-      // Generate kebab case and present as option
-      auto kebab_case = option;
-      details::string_replace(kebab_case, "_", "-");
-      std::string long_form = "";
-      if (kebab_case != option) {
-        long_form = kebab_case;
-      } else {
-        long_form = option;
+    if (visitor.flag_field_names.empty() == false) {
+      os << "\n\nFLAGS:\n";
+      for (auto& flag : visitor.flag_field_names) {
+        os << "    -" << flag[0] << ", --" << flag << "\n";
       }
-
-      os << "    -" << option[0] << ", --" << long_form << " <" << option << ">" << "\n";
     }
+
+    if (visitor.optional_field_names.empty() == false) {
+      os << "\nOPTIONS:\n";
+      for (auto& option : visitor.optional_field_names) {
+
+        // Generate kebab case and present as option
+        auto kebab_case = option;
+        details::string_replace(kebab_case, "_", "-");
+        std::string long_form = "";
+        if (kebab_case != option) {
+          long_form = kebab_case;
+        } else {
+          long_form = option;
+        }
+
+        os << "    -" << option[0] << ", --" << long_form << " <" << option << ">" << "\n";
+      }
+    }
+
+    if (!optional_arguments_available)
+      os << "\n";
 
     os << "\nARGS:\n";
     for (auto& arg : visitor.positional_field_names) {
       os << "    " << arg << "\n";
     }
-    os << "\n";
   }
 };
 

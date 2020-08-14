@@ -129,7 +129,7 @@ Include `<structopt/app.hpp>` and you're good to go.
 
 ### Positional Arguments
 
-Here's an example of some positional arguments:
+Here's an example of two positional arguments: `input_file` and `output_file`. `input_file` is expected to be the first argument and `output_file` is expected to be the second argument
 
 ```cpp
 struct FileOptions {
@@ -143,10 +143,19 @@ STRUCTOPT(FileOptions, input_file, output_file);
 
 
 int main(int argc, char *argv[]) {
-  auto options = structopt::app("my_app").parse<FileOptions>(argc, argv);
+  auto app = structopt::app("my_app");
+  
+  try {
+    auto options = app.parse<FileOptions>(argc, argv);
 
-  std::cout << "\nInput file  : " << options.input_file << "\n";
-  std::cout << "Output file : " << options.output_file << "\n";
+    // Print parsed arguments:
+    std::cout << "\nInput file  : " << options.input_file << "\n";
+    std::cout << "Output file : " << options.output_file << "\n";
+
+  } catch (std::exception& e) {
+    std::cout << e.what() << std::endl;
+    app.print_help();
+  }
 }
 ```
 
@@ -155,6 +164,16 @@ int main(int argc, char *argv[]) {
 
 Input file  : foo.txt
 Output file : bar.csv
+
+▶ ./main
+Error: expected positional argument input_file
+
+USAGE: ./my_app input_file output_file
+
+ARGS:
+    input_file
+    output_file
+
 ```
 
 ### Optional Arguments
