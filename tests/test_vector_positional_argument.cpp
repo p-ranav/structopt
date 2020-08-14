@@ -15,6 +15,10 @@ TEST_CASE("structopt can parse vector positional argument" * test_suite("vector_
     auto arguments = structopt::app("test").parse<VectorIntArgument>(std::vector<std::string>{"./main", "1", "2", "3"});
     REQUIRE(arguments.value == std::vector<int>{1, 2, 3});
   }
+  {
+    auto arguments = structopt::app("test").parse<VectorIntArgument>(std::vector<std::string>{"./main"});
+    REQUIRE(arguments.value.empty());
+  }
 }
 
 struct VectorIntArgumentWithOtherFlags {

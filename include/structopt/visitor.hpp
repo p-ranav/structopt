@@ -14,6 +14,7 @@ namespace details {
 struct visitor {
   std::vector<std::string> field_names;
   std::deque<std::string> positional_field_names;
+  std::deque<std::string> vector_like_positional_field_names;
   std::deque<std::string> flag_field_names;
   std::deque<std::string> optional_field_names;
   std::deque<std::string> nested_struct_field_names;
@@ -39,6 +40,13 @@ struct visitor {
   operator()(const char *name, T &value) {
     field_names.push_back(name);
     positional_field_names.push_back(name);
+    if constexpr (structopt::is_specialization<T, std::deque>::value 
+      or structopt::is_specialization<T, std::list>::value
+      or structopt::is_specialization<T, std::vector>::value) {
+      // keep track of vector-like fields as these (even though positional) 
+      // can be happy without any arguments
+      vector_like_positional_field_names.push_back(name);
+    }
   }
 
   // Visitor function for nested structs

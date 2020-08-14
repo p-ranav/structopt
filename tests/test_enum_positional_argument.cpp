@@ -75,7 +75,7 @@ TEST_CASE("structopt can parse enum vector positional argument" * test_suite("en
   }
   {
     auto arguments = structopt::app("test").parse<EnumVectorArgument>(std::vector<std::string>{"./main"});
-    REQUIRE(arguments.colors == std::vector<EnumVectorArgument::Color>{});
+    REQUIRE(arguments.colors.empty());
   }
   {
     auto arguments = structopt::app("test").parse<EnumVectorArgument>(std::vector<std::string>{"./main", "blue", "red"});

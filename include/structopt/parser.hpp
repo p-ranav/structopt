@@ -76,6 +76,9 @@ struct parser {
 
   template <typename T>
   std::pair<T, bool> parse_argument(const char *name) {
+    if (next_index >= arguments.size()) {
+      return {T(), false};
+    }
     T result;
     bool success = true;
     if constexpr (visit_struct::traits::is_visitable<T>::value) {
@@ -227,6 +230,14 @@ struct parser {
   std::array<T, N> parse_array_argument(const char *name) {
     std::array<T, N> result;
     bool success;
+
+    const auto arguments_left = arguments.size() - next_index;
+    if (arguments_left == 0 or arguments_left < N) {
+      throw std::runtime_error("Error: expected " 
+        + std::to_string(N) + " arguments for std::array " + name 
+        + " instead got only " + std::to_string(arguments_left) + " arguments.");
+    }
+
     for (std::size_t i = 0; i < N; i++) {
       auto [value, success] = parse_argument<T>(name);
       if (success) {
@@ -381,13 +392,9 @@ struct parser {
       current_index = next_index;
     }
 
-    // std::cout << "current_index: " << current_index << "; next_index: " << next_index
-    // << "\n";
-
     if (current_index < arguments.size()) {
       const auto next = arguments[current_index];
 
-      // TODO: Deal with negative numbers - these are not optional arguments
       if (is_optional(next)) {
         return;
       }
@@ -413,8 +420,6 @@ struct parser {
 
       // Remove from the positional field list as it is about to be parsed
       visitor.positional_field_names.pop_front();
-
-      // std::cout << "Next: " << next << "; Name: " << field_name << "\n";
 
       auto [value, success] = parse_argument<T>(field_name.c_str());
       if (success) {

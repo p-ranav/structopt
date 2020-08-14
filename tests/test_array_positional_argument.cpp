@@ -79,4 +79,15 @@ TEST_CASE("structopt can parse fixed array positional argument" * test_suite("ar
     auto arguments = structopt::app("test").parse<ArrayStringArgument>(std::vector<std::string>{"./main", "abc", "def", "ghi", "jkl"});
     REQUIRE(arguments.value == std::array<std::string, 4>{"abc", "def", "ghi", "jkl"});
   }
+
+  // 0 arguments provided
+  {
+    bool exception_thrown = false;
+    try {
+      auto arguments = structopt::app("test").parse<ArrayIntArgument>(std::vector<std::string>{"./main"});
+    } catch (std::exception& e) {
+      exception_thrown = true;
+    }
+    REQUIRE(exception_thrown == true);
+  }
 }

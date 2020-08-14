@@ -42,6 +42,20 @@ public:
       visit_struct::for_each(argument_struct, parser);
     }
 
+    if (!parser.visitor.positional_field_names.empty()) {
+      // if all positional arguments were provided
+      // this list would be empty
+      auto front = parser.visitor.positional_field_names.front();
+      if (std::find(parser.visitor.vector_like_positional_field_names.begin(),
+                    parser.visitor.vector_like_positional_field_names.end(),
+                    front) == 
+          parser.visitor.vector_like_positional_field_names.end()) {
+        // this positional argument is not a vector-like argument
+        // it expects values
+        throw std::runtime_error("Error: expected positional argument " + front);
+      }
+    }
+
     return argument_struct;
   }
 
