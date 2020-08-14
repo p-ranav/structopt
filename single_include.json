@@ -9,8 +9,9 @@
         "include/structopt/is_stl_container.hpp",
         "include/structopt/string.hpp",
         "include/structopt/is_number.hpp",
-        "include/structopt/sub_command.hpp",        
         "include/structopt/visitor.hpp",
+        "include/structopt/exception.hpp",
+        "include/structopt/sub_command.hpp",
         "include/structopt/parser.hpp",
         "include/structopt/app.hpp"
     ],

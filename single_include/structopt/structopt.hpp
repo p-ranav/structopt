@@ -1879,13 +1879,14 @@ static inline bool is_valid_number(const std::string & input) {
 
 } // namespace structopt
 #pragma once
-#include <optional>
-// #include <structopt/visitor.hpp>
-
 #include <algorithm>
+#include <iostream>
 #include <string>
 #include <queue>
+// #include <structopt/is_specialization.hpp>
+// #include <structopt/string.hpp>
 // #include <structopt/third_party/visit_struct/visit_struct.hpp>
+#include <type_traits>
 #include <vector>
 
 namespace structopt {
@@ -1895,12 +1896,18 @@ class app;
 namespace details {
 
 struct visitor {
+  std::string name;
+  std::string version;
   std::vector<std::string> field_names;
   std::deque<std::string> positional_field_names;
   std::deque<std::string> vector_like_positional_field_names;
   std::deque<std::string> flag_field_names;
   std::deque<std::string> optional_field_names;
   std::deque<std::string> nested_struct_field_names;
+
+  visitor() = default;
+
+  explicit visitor(const std::string &name, const std::string& version) : name(name), version(version) {}
 
   // Visitor function for std::optional - could be an option or a flag
   template <typename T>
@@ -1944,18 +1951,117 @@ struct visitor {
   bool is_field_name(const std::string &name) {
     return std::find(field_names.begin(), field_names.end(), name) != field_names.end();
   }
+
+  void print_help(std::ostream& os) {
+    os << "\nUSAGE: " << name << " ";
+    
+    bool optional_arguments_available = false;
+
+    if (flag_field_names.empty() == false) {
+      optional_arguments_available = true;
+      os << "[FLAGS] "; 
+    } 
+
+    if (optional_field_names.empty() == false) {
+      optional_arguments_available = true;
+      os << "[OPTIONS] "; 
+    }
+
+    if (nested_struct_field_names.empty() == false) {
+      os << "[SUBCOMMANDS] ";
+    }
+
+    for (auto& field : positional_field_names) {
+      os << field << " ";
+    }
+
+    if (flag_field_names.empty() == false) {
+      os << "\n\nFLAGS:\n";
+      for (auto& flag : flag_field_names) {
+        os << "    -" << flag[0] << ", --" << flag << "\n";
+      }
+    } else {
+      os << "\n";
+    }
+
+    if (optional_field_names.empty() == false) {
+      os << "\nOPTIONS:\n";
+      for (auto& option : optional_field_names) {
+
+        // Generate kebab case and present as option
+        auto kebab_case = option;
+        details::string_replace(kebab_case, "_", "-");
+        std::string long_form = "";
+        if (kebab_case != option) {
+          long_form = kebab_case;
+        } else {
+          long_form = option;
+        }
+
+        os << "    -" << option[0] << ", --" << long_form << " <" << option << ">" << "\n";
+      }
+    }
+
+    // if (!optional_arguments_available)
+    //   os << "\n";
+
+    if (nested_struct_field_names.empty() == false) {
+      os << "\nSUBCOMMANDS:\n";
+      for (auto& sc: nested_struct_field_names) {
+        os << "    " << sc << "\n";
+      }
+    }
+
+    if (positional_field_names.empty() == false) {
+      os << "\nARGS:\n";
+      for (auto& arg : positional_field_names) {
+        os << "    " << arg << "\n";
+      }
+    }
+  }
 };
 
 } // namespace details
 
 } // namespace structopt
+#pragma once
+#include <exception>
+#include <sstream>
+#include <string>
+// #include <structopt/visitor.hpp>
+
+namespace structopt {
+
+class exception : public std::exception {
+  std::string what_{""};
+  std::string help_{""};
+  details::visitor visitor_;
+
+public:
+
+  exception(const std::string & what, const details::visitor& visitor) : what_(what), help_(""), visitor_(visitor) {
+    std::stringstream os;
+    visitor_.print_help(os);
+    help_ = os.str();
+  }
+
+  const char * what() const throw () {
+    return what_.c_str();
+  }
+
+  const char * help() const throw() {
+    return help_.c_str();
+  }
+};
+
+}
+#pragma once
+#include <optional>
 
 namespace structopt {
 
 struct sub_command {
-  std::string structopt_sub_command__name__{""};
   std::optional<bool> structopt_sub_command__invoked__;
-  details::visitor structopt_sub_command__visitor__;
 
   bool has_value() const {
     return structopt_sub_command__invoked__.has_value();
@@ -1966,86 +2072,18 @@ struct sub_command {
 }
 #pragma once
 #include <algorithm>
-#include <string>
-#include <queue>
-// #include <structopt/third_party/visit_struct/visit_struct.hpp>
-#include <vector>
-
-namespace structopt {
-
-class app;
-
-namespace details {
-
-struct visitor {
-  std::vector<std::string> field_names;
-  std::deque<std::string> positional_field_names;
-  std::deque<std::string> vector_like_positional_field_names;
-  std::deque<std::string> flag_field_names;
-  std::deque<std::string> optional_field_names;
-  std::deque<std::string> nested_struct_field_names;
-
-  // Visitor function for std::optional - could be an option or a flag
-  template <typename T>
-  inline typename std::enable_if<structopt::is_specialization<T, std::optional>::value,
-                                 void>::type
-  operator()(const char *name, T &value) {
-    field_names.push_back(name);
-    if constexpr (std::is_same<typename T::value_type, bool>::value) {
-      flag_field_names.push_back(name);
-    } else {
-      optional_field_names.push_back(name);
-    }
-  }
-
-  // Visitor function for any positional field (not std::optional)
-  template <typename T>
-  inline typename std::enable_if<!structopt::is_specialization<T, std::optional>::value &&
-                                     !visit_struct::traits::is_visitable<T>::value,
-                                 void>::type
-  operator()(const char *name, T &value) {
-    field_names.push_back(name);
-    positional_field_names.push_back(name);
-    if constexpr (structopt::is_specialization<T, std::deque>::value 
-      or structopt::is_specialization<T, std::list>::value
-      or structopt::is_specialization<T, std::vector>::value) {
-      // keep track of vector-like fields as these (even though positional) 
-      // can be happy without any arguments
-      vector_like_positional_field_names.push_back(name);
-    }
-  }
-
-  // Visitor function for nested structs
-  template <typename T>
-  inline typename std::enable_if<visit_struct::traits::is_visitable<T>::value,
-                                 void>::type
-  operator()(const char *name, T &value) {
-    field_names.push_back(name);
-    nested_struct_field_names.push_back(name);
-  }
-
-  bool is_field_name(const std::string &name) {
-    return std::find(field_names.begin(), field_names.end(), name) != field_names.end();
-  }
-};
-
-} // namespace details
-
-} // namespace structopt
-#pragma once
-#include <algorithm>
 #include <array>
 #include <iostream>
 #include <set>
 #include <sstream>
 #include <string>
 // #include <structopt/array_size.hpp>
+// #include <structopt/exception.hpp>
 // #include <structopt/is_number.hpp>
 // #include <structopt/is_specialization.hpp>
 // #include <structopt/sub_command.hpp>
 // #include <structopt/third_party/magic_enum/magic_enum.hpp>
 // #include <structopt/third_party/visit_struct/visit_struct.hpp>
-// #include <structopt/visitor.hpp>
 #include <tuple>
 #include <type_traits>
 #include <utility>
@@ -2063,6 +2101,8 @@ struct parser {
   std::size_t current_index{1};
   std::size_t next_index{1};
   bool double_dash_encountered{false}; // "--" option-argument delimiter
+  bool sub_command_invoked{false};
+  std::string already_invoked_subcommand_name{""};
 
   bool is_optional(const std::string &name) {
     if (double_dash_encountered) {
@@ -2206,20 +2246,35 @@ struct parser {
   template <typename T>
   inline typename std::enable_if<visit_struct::traits::is_visitable<T>::value, T>::type
   parse_nested_struct(const char *name) {
+
     T argument_struct;
-    argument_struct.structopt_sub_command__name__ = name;
 
     if constexpr (std::is_base_of<structopt::sub_command, T>::value) {
       argument_struct.structopt_sub_command__invoked__ = true;
     }
 
     // Save struct field names
-    visit_struct::for_each(argument_struct, argument_struct.structopt_sub_command__visitor__);
+    details::visitor nested_visitor;
+    nested_visitor.name = name; // sub-command name; not program name
+    nested_visitor.version = visitor.version;
+    visit_struct::for_each(argument_struct, nested_visitor);
+
+    if (!sub_command_invoked) {
+      sub_command_invoked = true;
+      already_invoked_subcommand_name = name;
+    } else {
+      // a sub-command has already been invoked
+      throw structopt::exception("Error: failed to invoke sub-command `"
+        + std::string{name} + "` because a different sub-command, `"
+        + already_invoked_subcommand_name 
+        + "`, has already been invoked.", nested_visitor);
+    }
 
     structopt::details::parser parser;
     parser.next_index = 0;
     parser.current_index = 0;
-    parser.visitor = argument_struct.structopt_sub_command__visitor__;
+    parser.double_dash_encountered = double_dash_encountered; 
+    parser.visitor = nested_visitor;
 
     std::copy(arguments.begin() + next_index, arguments.end(),
               std::back_inserter(parser.arguments));
@@ -2244,7 +2299,8 @@ struct parser {
           parser.visitor.vector_like_positional_field_names.end()) {
         // this positional argument is not a vector-like argument
         // it expects values
-        throw std::runtime_error("Error: expected value for positional argument `" + front + "`.");
+        throw structopt::exception("Error: expected value for positional argument `" + front + "`.", 
+          nested_visitor);
       }
     }
 
@@ -2285,9 +2341,9 @@ struct parser {
 
     const auto arguments_left = arguments.size() - next_index;
     if (arguments_left == 0 or arguments_left < N) {
-      throw std::runtime_error("Error: expected " 
+      throw structopt::exception("Error: expected " 
         + std::to_string(N) + " values for std::array argument `" + name 
-        + "` - instead got only " + std::to_string(arguments_left) + " arguments.");
+        + "` - instead got only " + std::to_string(arguments_left) + " arguments.", visitor);
     }
 
     for (std::size_t i = 0; i < N; i++) {
@@ -2415,12 +2471,12 @@ struct parser {
         allowed_names_string += allowed_names[allowed_names.size() - 1];
       }
 
-      throw std::runtime_error("Error: unexpected input `"
+      throw structopt::exception("Error: unexpected input `"
                               + std::string{arguments[next_index]}
                               + "` provided for enum argument `" + std::string{name}
                               + "`. Allowed values are {" 
                               + allowed_names_string
-                              + "}");
+                              + "}", visitor);
       // TODO: Throw error invalid enum option
     }
     return result;
@@ -2694,10 +2750,8 @@ template <> inline bool parser::parse_single_argument<bool>(const char *name) {
 #include <iostream>
 #include <memory>
 #include <string>
-// #include <structopt/app.hpp>
 // #include <structopt/is_stl_container.hpp>
 // #include <structopt/parser.hpp>
-// #include <structopt/string.hpp>
 // #include <structopt/third_party/visit_struct/visit_struct.hpp>
 #include <type_traits>
 #include <vector>
@@ -2707,13 +2761,11 @@ template <> inline bool parser::parse_single_argument<bool>(const char *name) {
 namespace structopt {
 
 class app {
-  std::string name_;
-  std::string version_;
   details::visitor visitor;
 
 public:
   explicit app(const std::string name, const std::string version = "")
-      : name_(name), version_(version) {}
+      : visitor(name, version) {}
 
   template <typename T>
   T parse(const std::vector<std::string> &arguments) {
@@ -2742,7 +2794,7 @@ public:
           parser.visitor.vector_like_positional_field_names.end()) {
         // this positional argument is not a vector-like argument
         // it expects values
-        throw std::runtime_error("Error: expected value for positional argument `" + front + "`.");
+        throw structopt::exception("Error: expected value for positional argument `" + front + "`.", parser.visitor);
       }
     }
 
@@ -2754,63 +2806,6 @@ public:
     std::vector<std::string> arguments;
     std::copy(argv, argv + argc, std::back_inserter(arguments));
     return parse<T>(arguments);
-  }
-
-  void print_help(std::ostream& os = std::cout) {
-    os << "\nUSAGE: ./" << name_ << " ";
-
-    bool optional_arguments_available = false;
-
-    if (visitor.flag_field_names.empty() == false) {
-      optional_arguments_available = true;
-      os << "[FLAGS] "; 
-    } 
-
-    if (visitor.optional_field_names.empty() == false) {
-      optional_arguments_available = true;
-      os << "[OPTIONS] "; 
-    }
-
-    for (auto& field : visitor.positional_field_names) {
-      os << field << " ";
-    }
-
-    if (visitor.flag_field_names.empty() == false) {
-      os << "\n\nFLAGS:\n";
-      for (auto& flag : visitor.flag_field_names) {
-        os << "    -" << flag[0] << ", --" << flag << "\n";
-      }
-    } else {
-      os << "\n";
-    }
-
-    if (visitor.optional_field_names.empty() == false) {
-      os << "\nOPTIONS:\n";
-      for (auto& option : visitor.optional_field_names) {
-
-        // Generate kebab case and present as option
-        auto kebab_case = option;
-        details::string_replace(kebab_case, "_", "-");
-        std::string long_form = "";
-        if (kebab_case != option) {
-          long_form = kebab_case;
-        } else {
-          long_form = option;
-        }
-
-        os << "    -" << option[0] << ", --" << long_form << " <" << option << ">" << "\n";
-      }
-    }
-
-    if (!optional_arguments_available)
-      os << "\n";
-
-    if (visitor.positional_field_names.empty() == false) {
-      os << "\nARGS:\n";
-      for (auto& arg : visitor.positional_field_names) {
-        os << "    " << arg << "\n";
-      }
-    }
   }
 };
 

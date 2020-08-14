@@ -21,10 +21,9 @@ STRUCTOPT(Git, config, init);
 
 
 int main(int argc, char *argv[]) {
-  auto app = structopt::app("my_app");
   
   try {
-    auto options = app.parse<Git>(argc, argv);
+    auto options = structopt::app("my_app").parse<Git>(argc, argv);
 
     if (options.config.has_value()) {
       // config was invoked
@@ -39,8 +38,8 @@ int main(int argc, char *argv[]) {
     }
 
 
-  } catch (std::exception& e) {
-    std::cout << e.what() << std::endl;
-    app.print_help();
+  }  catch (structopt::exception& e) {
+    std::cout << e.what() << "\n";
+    std::cout << e.help() << "\n";
   }
 }

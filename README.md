@@ -62,12 +62,10 @@ Create a `structopt::app` and parse the command line arguments into the `Options
 ```cpp
 int main(int argc, char *argv[]) {
 
-  auto app = structopt::app("my_app");
-
   try {
   
     // Line of code that does all the work:
-    auto options = app.parse<Options>(argc, argv);
+    auto options = structopt::app("my_app").parse<Options>(argc, argv);
 
     // Print out parsed arguments:
 
@@ -76,9 +74,9 @@ int main(int argc, char *argv[]) {
     // std::cout << "verbose      = " << std::boolalpha << options.verbose.value() << "\n";
     // ...
 
-  } catch (std::exception& e) {
-    std::cout << e.what() << std::endl;
-    app.print_help();
+  } catch (structopt::exception& e) {
+    std::cout << e.what() << "\n";
+    std::cout << e.help();
   }
 }
 ```
@@ -155,18 +153,17 @@ STRUCTOPT(FileOptions, input_file, output_file);
 
 
 int main(int argc, char *argv[]) {
-  auto app = structopt::app("my_app");
-  
+
   try {
-    auto options = app.parse<FileOptions>(argc, argv);
+    auto options = structopt::app("my_app").parse<FileOptions>(argc, argv);
 
     // Print parsed arguments:
     std::cout << "\nInput file  : " << options.input_file << "\n";
     std::cout << "Output file : " << options.output_file << "\n";
 
-  } catch (std::exception& e) {
-    std::cout << e.what() << std::endl;
-    app.print_help();
+  } catch (structopt::exception& e) {
+    std::cout << e.what() << "\n";
+    std::cout << e.help();
   }
 }
 ```
@@ -245,10 +242,8 @@ STRUCTOPT(GrepOptions, v, search, pathspec);
 
 int main(int argc, char *argv[]) {
 
-  auto app = structopt::app("my_app");
-
   try {
-    auto options = app.parse<GrepOptions>(argc, argv);
+    auto options = structopt::app("my_app").parse<GrepOptions>(argc, argv);
 
     if (options.v == true) {
       std::cout << "`-v` provided - Matching is now reversed\n";
@@ -257,9 +252,9 @@ int main(int argc, char *argv[]) {
     std::cout << "Search   : " << options.search << "\n";
     std::cout << "Pathspec : " << options.pathspec << "\n";
   }
-  catch (std::exception& e) {
+  catch (structopt::exception& e) {
     std::cout << e.what();
-    app.print_help();
+    std::cout << e.help();
   }
 
 }
@@ -369,10 +364,8 @@ STRUCTOPT(StyleOptions, color);
 
 int main(int argc, char *argv[]) {
 
-  auto app = structopt::app("my_app");
-
   try {
-    auto options = app.parse<StyleOptions>(argc, argv);
+    auto options = structopt::app("my_app").parse<StyleOptions>(argc, argv);
 
     // Use parsed argument `options.color`
 
@@ -386,9 +379,9 @@ int main(int argc, char *argv[]) {
         std::cout << "#00ff00\n";
     }
 
-  } catch (std::exception& e) {
+  } catch (structopt::exception& e) {
     std::cout << e.what() << "\n";
-    app.print_help();
+    std::cout << e.help();
   }
 }
 ```
@@ -432,10 +425,8 @@ STRUCTOPT(CalculatorOptions, input);
 
 int main(int argc, char *argv[]) {
 
-  auto app = structopt::app("my_app");
-
   try {
-    auto options = app.parse<CalculatorOptions>(argc, argv);
+    auto options = structopt::app("my_app").parse<CalculatorOptions>(argc, argv);
 
     auto op = std::get<0>(options.input);
     auto lhs = std::get<1>(options.input);
@@ -456,9 +447,9 @@ int main(int argc, char *argv[]) {
             break;
     }
   }
-  catch (std::exception& e) {
+  catch (structopt::exception& e) {
     std::cout << e.what();
-    app.print_help();
+    std::cout << e.help();
   }
 
 }
@@ -691,10 +682,10 @@ STRUCTOPT(Git, config, init);
 
 
 int main(int argc, char *argv[]) {
-  auto app = structopt::app("my_app");
+
   
   try {
-    auto options = app.parse<Git>(argc, argv);
+    auto options = structopt::app("my_app").parse<Git>(argc, argv);
 
     if (options.config.has_value()) {
       // config was invoked
@@ -709,9 +700,9 @@ int main(int argc, char *argv[]) {
     }
 
 
-  } catch (std::exception& e) {
-    std::cout << e.what() << std::endl;
-    app.print_help();
+  } catch (structopt::exception& e) {
+    std::cout << e.what() << "\n";
+    std::cout << e.help();
   }
 }
 ```

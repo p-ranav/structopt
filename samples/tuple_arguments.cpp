@@ -15,10 +15,8 @@ STRUCTOPT(CalculatorOptions, input);
 
 int main(int argc, char *argv[]) {
 
-  auto app = structopt::app("my_app");
-
   try {
-    auto options = app.parse<CalculatorOptions>(argc, argv);
+    auto options = structopt::app("my_app").parse<CalculatorOptions>(argc, argv);
 
     auto op = std::get<0>(options.input);
     auto lhs = std::get<1>(options.input);
@@ -38,10 +36,9 @@ int main(int argc, char *argv[]) {
             std::cout << lhs / rhs << "\n";
             break;
     }
-  }
-  catch (std::exception& e) {
-    std::cout << e.what();
-    app.print_help();
+  } catch (structopt::exception& e) {
+    std::cout << e.what() << "\n";
+    std::cout << e.help() << "\n";
   }
 
 }

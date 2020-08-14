@@ -15,10 +15,8 @@ STRUCTOPT(GrepOptions, v, search, pathspec);
 
 int main(int argc, char *argv[]) {
 
-  auto app = structopt::app("my_app");
-
   try {
-    auto options = app.parse<GrepOptions>(argc, argv);
+    auto options = structopt::app("my_app").parse<GrepOptions>(argc, argv);
 
     if (options.v == true) {
       std::cout << "`-v` provided - Matching is now reversed\n";
@@ -27,9 +25,9 @@ int main(int argc, char *argv[]) {
     std::cout << "Search   : " << options.search << "\n";
     std::cout << "Pathspec : " << options.pathspec << "\n";
   }
-  catch (std::exception& e) {
-    std::cout << e.what();
-    app.print_help();
+ catch (structopt::exception& e) {
+    std::cout << e.what() << "\n";
+    std::cout << e.help() << "\n";
   }
 
 }

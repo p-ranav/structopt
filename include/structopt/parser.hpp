@@ -7,12 +7,12 @@
 #include <sstream>
 #include <string>
 #include <structopt/array_size.hpp>
+#include <structopt/exception.hpp>
 #include <structopt/is_number.hpp>
 #include <structopt/is_specialization.hpp>
 #include <structopt/sub_command.hpp>
 #include <structopt/third_party/magic_enum/magic_enum.hpp>
 #include <structopt/third_party/visit_struct/visit_struct.hpp>
-#include <structopt/visitor.hpp>
 #include <tuple>
 #include <type_traits>
 #include <utility>
@@ -176,26 +176,27 @@ struct parser {
   inline typename std::enable_if<visit_struct::traits::is_visitable<T>::value, T>::type
   parse_nested_struct(const char *name) {
 
-    if (!sub_command_invoked) {
-      sub_command_invoked = true;
-      already_invoked_subcommand_name = name;
-    } else {
-      // a sub-command has already been invoked
-      throw std::runtime_error("Error: failed to invoke sub-command `"
-        + std::string{name} + "` because a different sub-command, `"
-        + already_invoked_subcommand_name 
-        + "`, has already been invoked.");
-    }
-
     T argument_struct;
-    argument_struct.structopt_sub_command__name__ = name;
 
     if constexpr (std::is_base_of<structopt::sub_command, T>::value) {
       argument_struct.structopt_sub_command__invoked__ = true;
     }
 
     // Save struct field names
+    argument_struct.structopt_sub_command__visitor__.name = name; // sub-command name; not the program
+    argument_struct.structopt_sub_command__visitor__.version = visitor.version;
     visit_struct::for_each(argument_struct, argument_struct.structopt_sub_command__visitor__);
+
+    if (!sub_command_invoked) {
+      sub_command_invoked = true;
+      already_invoked_subcommand_name = name;
+    } else {
+      // a sub-command has already been invoked
+      throw structopt::exception("Error: failed to invoke sub-command `"
+        + std::string{name} + "` because a different sub-command, `"
+        + already_invoked_subcommand_name 
+        + "`, has already been invoked.", argument_struct.structopt_sub_command__visitor__);
+    }
 
     structopt::details::parser parser;
     parser.next_index = 0;
@@ -226,7 +227,8 @@ struct parser {
           parser.visitor.vector_like_positional_field_names.end()) {
         // this positional argument is not a vector-like argument
         // it expects values
-        throw std::runtime_error("Error: expected value for positional argument `" + front + "`.");
+        throw structopt::exception("Error: expected value for positional argument `" + front + "`.", 
+          argument_struct.structopt_sub_command__visitor__);
       }
     }
 
@@ -267,9 +269,9 @@ struct parser {
 
     const auto arguments_left = arguments.size() - next_index;
     if (arguments_left == 0 or arguments_left < N) {
-      throw std::runtime_error("Error: expected " 
+      throw structopt::exception("Error: expected " 
         + std::to_string(N) + " values for std::array argument `" + name 
-        + "` - instead got only " + std::to_string(arguments_left) + " arguments.");
+        + "` - instead got only " + std::to_string(arguments_left) + " arguments.", visitor);
     }
 
     for (std::size_t i = 0; i < N; i++) {
@@ -397,12 +399,12 @@ struct parser {
         allowed_names_string += allowed_names[allowed_names.size() - 1];
       }
 
-      throw std::runtime_error("Error: unexpected input `"
+      throw structopt::exception("Error: unexpected input `"
                               + std::string{arguments[next_index]}
                               + "` provided for enum argument `" + std::string{name}
                               + "`. Allowed values are {" 
                               + allowed_names_string
-                              + "}");
+                              + "}", visitor);
       // TODO: Throw error invalid enum option
     }
     return result;

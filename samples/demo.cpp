@@ -39,10 +39,9 @@ struct Options {
 STRUCTOPT(Options, config_file, bind_address, verbose, log_level, user, files);
 
 int main(int argc, char *argv[]) {
-  auto app = structopt::app("my_app");
 
   try {
-    auto options = app.parse<Options>(argc, argv);
+    auto options = structopt::app("my_app").parse<Options>(argc, argv);
 
     // Print out parsed arguments:
 
@@ -58,8 +57,8 @@ int main(int argc, char *argv[]) {
     std::copy(options.files.begin(), options.files.end(), std::ostream_iterator<std::string>(std::cout, " "));
     std::cout << "}" << std::endl; 
 
-  } catch (std::exception& e) {
+  } catch (structopt::exception& e) {
     std::cout << e.what() << "\n";
-    app.print_help();
+    std::cout << e.help() << "\n";
   }
 }

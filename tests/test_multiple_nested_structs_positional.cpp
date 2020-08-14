@@ -59,7 +59,7 @@ TEST_CASE("structopt can parse multiple nested struct arguments" * test_suite("n
     bool exception_thrown = false;
     try {
       auto arguments = structopt::app("test").parse<Command>(std::vector<std::string>{"./main", "foo", "15", "3.14", "--verbose", "true", "config", "-g", "false"});
-    } catch (std::exception& e) {
+    } catch (structopt::exception& e) {
       exception_thrown = true;
     }
     REQUIRE(exception_thrown);
@@ -68,7 +68,7 @@ TEST_CASE("structopt can parse multiple nested struct arguments" * test_suite("n
     bool exception_thrown = false;
     try {
       auto arguments = structopt::app("test").parse<Command>(std::vector<std::string>{"./main", "config", "-g", "false", "foo", "15", "3.14", "--verbose", "true"});
-    } catch (std::exception &e) {
+    } catch (structopt::exception &e) {
       exception_thrown = true;
     }
     REQUIRE(exception_thrown);

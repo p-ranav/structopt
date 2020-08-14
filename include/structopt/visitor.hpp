@@ -1,9 +1,13 @@
 
 #pragma once
 #include <algorithm>
+#include <iostream>
 #include <string>
 #include <queue>
+#include <structopt/is_specialization.hpp>
+#include <structopt/string.hpp>
 #include <structopt/third_party/visit_struct/visit_struct.hpp>
+#include <type_traits>
 #include <vector>
 
 namespace structopt {
@@ -13,12 +17,18 @@ class app;
 namespace details {
 
 struct visitor {
+  std::string name;
+  std::string version;
   std::vector<std::string> field_names;
   std::deque<std::string> positional_field_names;
   std::deque<std::string> vector_like_positional_field_names;
   std::deque<std::string> flag_field_names;
   std::deque<std::string> optional_field_names;
   std::deque<std::string> nested_struct_field_names;
+
+  visitor() = default;
+
+  explicit visitor(const std::string &name, const std::string& version) : name(name), version(version) {}
 
   // Visitor function for std::optional - could be an option or a flag
   template <typename T>
@@ -61,6 +71,74 @@ struct visitor {
 
   bool is_field_name(const std::string &name) {
     return std::find(field_names.begin(), field_names.end(), name) != field_names.end();
+  }
+
+  void print_help(std::ostream& os) const {
+    os << "\nUSAGE: " << name << " ";
+    
+    bool optional_arguments_available = false;
+
+    if (flag_field_names.empty() == false) {
+      optional_arguments_available = true;
+      os << "[FLAGS] "; 
+    } 
+
+    if (optional_field_names.empty() == false) {
+      optional_arguments_available = true;
+      os << "[OPTIONS] "; 
+    }
+
+    if (nested_struct_field_names.empty() == false) {
+      os << "[SUBCOMMANDS] ";
+    }
+
+    for (auto& field : positional_field_names) {
+      os << field << " ";
+    }
+
+    if (flag_field_names.empty() == false) {
+      os << "\n\nFLAGS:\n";
+      for (auto& flag : flag_field_names) {
+        os << "    -" << flag[0] << ", --" << flag << "\n";
+      }
+    } else {
+      os << "\n";
+    }
+
+    if (optional_field_names.empty() == false) {
+      os << "\nOPTIONS:\n";
+      for (auto& option : optional_field_names) {
+
+        // Generate kebab case and present as option
+        auto kebab_case = option;
+        details::string_replace(kebab_case, "_", "-");
+        std::string long_form = "";
+        if (kebab_case != option) {
+          long_form = kebab_case;
+        } else {
+          long_form = option;
+        }
+
+        os << "    -" << option[0] << ", --" << long_form << " <" << option << ">" << "\n";
+      }
+    }
+
+    // if (!optional_arguments_available)
+    //   os << "\n";
+
+    if (nested_struct_field_names.empty() == false) {
+      os << "\nSUBCOMMANDS:\n";
+      for (auto& sc: nested_struct_field_names) {
+        os << "    " << sc << "\n";
+      }
+    }
+
+    if (positional_field_names.empty() == false) {
+      os << "\nARGS:\n";
+      for (auto& arg : positional_field_names) {
+        os << "    " << arg << "\n";
+      }
+    }
   }
 };
 
