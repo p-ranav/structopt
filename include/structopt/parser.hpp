@@ -171,19 +171,19 @@ struct parser {
     T argument_struct;
 
     if constexpr (std::is_base_of<structopt::sub_command, T>::value) {
-      argument_struct.structopt_sub_command__invoked__ = true;
+      argument_struct.invoked_ = true;
     }
 
     // Save struct field names
-    argument_struct.structopt_sub_command__visitor__.name =
+    argument_struct.visitor_.name =
         name; // sub-command name; not the program
-    argument_struct.structopt_sub_command__visitor__.version = visitor.version;
+    argument_struct.visitor_.version = visitor.version;
     visit_struct::for_each(argument_struct,
-                           argument_struct.structopt_sub_command__visitor__);
+                           argument_struct.visitor_);
 
     // add `help` and `version` optional arguments
-    argument_struct.structopt_sub_command__visitor__.optional_field_names.push_back("help");
-    argument_struct.structopt_sub_command__visitor__.optional_field_names.push_back("version");
+    argument_struct.visitor_.optional_field_names.push_back("help");
+    argument_struct.visitor_.optional_field_names.push_back("version");
 
     if (!sub_command_invoked) {
       sub_command_invoked = true;
@@ -194,14 +194,14 @@ struct parser {
           "Error: failed to invoke sub-command `" + std::string{name} +
               "` because a different sub-command, `" + already_invoked_subcommand_name +
               "`, has already been invoked.",
-          argument_struct.structopt_sub_command__visitor__);
+          argument_struct.visitor_);
     }
 
     structopt::details::parser parser;
     parser.next_index = 0;
     parser.current_index = 0;
     parser.double_dash_encountered = double_dash_encountered;
-    parser.visitor = argument_struct.structopt_sub_command__visitor__;
+    parser.visitor = argument_struct.visitor_;
 
     std::copy(arguments.begin() + next_index, arguments.end(),
               std::back_inserter(parser.arguments));
@@ -224,11 +224,11 @@ struct parser {
 
       if (help == true) {
         // if help is requested, print help and exit
-        argument_struct.structopt_sub_command__visitor__.print_help(std::cout);
+        argument_struct.visitor_.print_help(std::cout);
         exit(EXIT_SUCCESS);
       } else if (version == true) {
         // if version is requested, print version and exit
-        std::cout << argument_struct.structopt_sub_command__visitor__.version << "\n";
+        std::cout << argument_struct.visitor_.version << "\n";
         exit(EXIT_SUCCESS);
       }
     }
@@ -244,7 +244,7 @@ struct parser {
         // it expects values
         throw structopt::exception("Error: expected value for positional argument `" +
                                        front + "`.",
-                                   argument_struct.structopt_sub_command__visitor__);
+                                   argument_struct.visitor_);
       }
     }
 
