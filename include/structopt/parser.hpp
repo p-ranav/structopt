@@ -125,7 +125,13 @@ struct parser {
       auto [value, success] = parse_argument<T>(name);
       if (success) {
         result = value;
+      } else {
+        throw structopt::exception("Error: failed to correctly parse optional argument `"
+         + std::string{name} + "`.", visitor);
       }
+    } else {
+      throw structopt::exception("Error: expected value for optional argument `"
+        + std::string{name} + "`.", visitor);
     }
     return result;
   }
