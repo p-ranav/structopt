@@ -2065,15 +2065,18 @@ public:
 
 namespace structopt {
 
-struct sub_command {
+namespace details {
+  struct parser;
+}
+
+class sub_command {
   std::optional<bool> invoked_;
   details::visitor visitor_;
 
-  bool has_value() const { return invoked_.has_value(); }
+  friend struct structopt::details::parser;
 
-  void print_help(std::ostream &os = std::cout) const {
-    visitor_.print_help(os);
-  }
+public:
+  bool has_value() const { return invoked_.has_value(); }
 };
 
 } // namespace structopt
@@ -2203,7 +2206,13 @@ struct parser {
       auto [value, success] = parse_argument<T>(name);
       if (success) {
         result = value;
+      } else {
+        throw structopt::exception("Error: failed to correctly parse optional argument `"
+         + std::string{name} + "`.", visitor);
       }
+    } else {
+      throw structopt::exception("Error: expected value for optional argument `"
+        + std::string{name} + "`.", visitor);
     }
     return result;
   }
@@ -2786,7 +2795,12 @@ template <> inline bool parser::parse_single_argument<bool>(const char *name) {
                false_strings.end()) {
       return false;
     } else {
-      // TODO: report error? Invalid argument, bool expected
+      throw structopt::exception("Error: failed to parse boolean argument `"
+                                 + std::string{name}
+                                 + "`."
+                                 + " `" + current_argument + "`"
+                                 + " is invalid.",
+                                 visitor);
       return false;
     }
   } else {
