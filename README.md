@@ -19,6 +19,8 @@
 ## Quick Start
 
 ```cpp
+#include <structopt/app.hpp>
+
 struct Options {
    // positional argument
    //   e.g., ./main <file>
@@ -141,6 +143,8 @@ Include `<structopt/app.hpp>` and you're good to go.
 Here's an example of two positional arguments: `input_file` and `output_file`. `input_file` is expected to be the first argument and `output_file` is expected to be the second argument
 
 ```cpp
+#include <structopt/app.hpp>
+
 struct FileOptions {
   // Positional arguments
   // ./main <input_file> <output_file>
@@ -188,6 +192,8 @@ ARGS:
 Now, let's look at optional arguments. To configure an optional argument, use `std::optional` in the options struct:
 
 ```cpp
+#include <structopt/app.hpp>
+
 struct Options {
   // Optional argument
   // -f, --fixed_point, --fixed-point <fixed_point...>
@@ -225,6 +231,8 @@ A double dash (`--`) is used in most bash built-in commands and many other comma
 Example use: lets say you want to `grep` a file for the string `-v` - normally `-v` will be considered the option to reverse the matching meaning (only show lines that do not match), but with `--` you can `grep` for string `-v` like this:
 
 ```cpp
+#include <structopt/app.hpp>
+
 struct GrepOptions {
   // reverse the matching
   // enable with `-v`
@@ -272,6 +280,8 @@ Pathspec : bar.txt
 #### Combining Positional and Optional Arguments
 
 ```cpp
+#include <structopt/app.hpp>
+
 struct Option {
   // positional argument
   // input number
@@ -316,6 +326,8 @@ Flag arguments are `std::optional<bool>` with a default value.
 ***NOTE*** If `--verbose` is a flag argument with a default value of `false`, then providing the argument will set it to `true`. If `--verbose` does not have a default value, then `structopt` will expect the user to provide a value, e.g., `--verbose true`. 
 
 ```cpp
+#include <structopt/app.hpp>
+
 struct Options {
   // verbosity flag
   // -v, --verbose
@@ -350,6 +362,8 @@ Verbosity enabled
 Thanks to [magic_enum](https://github.com/Neargye/magic_enum), `structopt` supports enum classes. You can use an enum classes to ask the user to provide a value given a choice of values, restricting the possible set of allowed input arguments.
 
 ```cpp
+#include <structopt/app.hpp>
+
 struct StyleOptions {
   enum class Color {red, green, blue};
 
@@ -408,6 +422,8 @@ OPTIONS:
 Now that we've looked at enum class support, let's build a simple calculator. In this sample, we will use an `std::tuple` to pack all the arguments to the calculator:
 
 ```cpp
+#include <structopt/app.hpp>
+
 struct CalculatorOptions {
 
   // types of operations supported
@@ -488,6 +504,8 @@ Do this by using an `std::vector<T>` (or other STL containers with `.push_back()
 ***NOTE*** Vector arguments have a cardinality of `0..*`, i.e., zero or more arguments. Unlike array types, you can provide zero arguments to a vector and `structopt` will (try to) not complain.
 
 ```cpp
+#include <structopt/app.hpp>
+
 struct CompilerOptions {
   // Language standard
   // e.g., --std c++17
@@ -533,6 +551,8 @@ Files    : { file1.cpp file2.cpp }
 Compound arguments are optional arguments that are combined and provided as a single argument. Example: `ps -aux`
 
 ```cpp
+#include <structopt/app.hpp>
+
 struct Options {
   // Flag arguments
   std::optional<bool> a = false;
@@ -569,6 +589,8 @@ c = [1.5, 3]
 #### Positional and Compound Toggle Arguments
 
 ```cpp
+#include <structopt/app.hpp>
+
 struct Options {
   // Positional arguments
   std::array<int, 3> numbers = {0, 0, 0};
@@ -609,6 +631,8 @@ files = a.txt b.txt c.txt
 `structopt` supports parsing integer literals including hexadecimal, octal, and binary notation. 
 
 ```cpp
+#include <structopt/app.hpp>
+
 struct IntegerLiterals {
   std::vector<int> numbers;
 };
@@ -632,6 +656,8 @@ STRUCTOPT(IntegerLiterals, numbers);
 As for floating point numbers, `structopt` supports parsing scientific notation (e/E-notation):
 
 ```cpp
+#include <structopt/app.hpp>
+
 struct FloatLiterals {
   std::vector<float> numbers;
 };
@@ -661,6 +687,8 @@ With `structopt`, you can define sub-commands, e.g., `git init args` or `git con
 The following program support two sub-commands: `config` and `init`:
 
 ```cpp
+#include <structopt/app.hpp>
+
 struct Git {
   // Subcommand: git config
   struct Config : structopt::sub_command {
@@ -788,6 +816,8 @@ Error: failed to invoke sub-command `init` because a different sub-command, `con
 Here's a second example for nested structures with vector arguments and the double dash (`--`) delimiter
 
 ```cpp
+#include <structopt/app.hpp>
+
 struct CommandOptions {
   struct Sed : structopt::sub_command {
     // --trace
@@ -870,6 +900,8 @@ File    : foo.txt
 * Using `-v` or `--version` will print the program version and exit. 
 
 ```cpp
+#include <structopt/app.hpp>
+
 struct Options {
   // positional arguments
   std::string input_file;
