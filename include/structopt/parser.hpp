@@ -708,7 +708,12 @@ template <> inline bool parser::parse_single_argument<bool>(const char *name) {
                false_strings.end()) {
       return false;
     } else {
-      // TODO: report error? Invalid argument, bool expected
+      throw structopt::exception("Error: failed to parse boolean argument `"
+                                 + std::string{name}
+                                 + "`."
+                                 + " `" + current_argument + "`"
+                                 + " is invalid.",
+                                 visitor);
       return false;
     }
   } else {
