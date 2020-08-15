@@ -55,7 +55,14 @@ struct visitor {
     positional_field_names_for_help.push_back(name);
     if constexpr (structopt::is_specialization<T, std::deque>::value 
       or structopt::is_specialization<T, std::list>::value
-      or structopt::is_specialization<T, std::vector>::value) {
+      or structopt::is_specialization<T, std::vector>::value
+      or structopt::is_specialization<T, std::set>::value 
+      or structopt::is_specialization<T, std::multiset>::value
+      or structopt::is_specialization<T, std::unordered_set>::value
+      or structopt::is_specialization<T, std::unordered_multiset>::value
+      or structopt::is_specialization<T, std::queue>::value 
+      or structopt::is_specialization<T, std::stack>::value
+      or structopt::is_specialization<T, std::priority_queue>::value) {
       // keep track of vector-like fields as these (even though positional) 
       // can be happy without any arguments
       vector_like_positional_field_names.push_back(name);

@@ -466,6 +466,14 @@ int main(int argc, char *argv[]) {
 
 ▶ ./main divide 1331 11
 121
+
+▶ ./main add 5
+Error: failed to correctly parse tuple `input`. Expected 3 arguments, 2 provided.
+
+USAGE: my_app input
+
+ARGS:
+    input
 ```
 
 ### Vector Arguments

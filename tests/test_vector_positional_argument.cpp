@@ -45,3 +45,20 @@ TEST_CASE("structopt can parse vector positional argument" * test_suite("vector_
     REQUIRE(arguments.foo == true);
   }
 }
+
+struct VectorOfPairs {
+  std::vector<std::pair<std::string, int>> values = {};
+};
+
+STRUCTOPT(VectorOfPairs, values);
+
+TEST_CASE("structopt can parse vector of pairs positional argument" * test_suite("vector_positional")) {
+  {
+    auto arguments = structopt::app("test").parse<VectorOfPairs>(std::vector<std::string>{"./main"});
+    REQUIRE(arguments.values == std::vector<std::pair<std::string, int>>{});
+  }
+  {
+    auto arguments = structopt::app("test").parse<VectorOfPairs>(std::vector<std::string>{"./main", "a", "1", "b", "2"});
+    REQUIRE(arguments.values == std::vector<std::pair<std::string, int>>{{"a", 1}, {"b", 2}});
+  }
+}

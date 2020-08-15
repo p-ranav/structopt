@@ -24,6 +24,11 @@ STRUCTOPT(SetIntArgumentWithOtherFlags, value, foo);
 
 TEST_CASE("structopt can parse set positional argument" * test_suite("set_positional")) {
   {
+    auto arguments = structopt::app("test").parse<SetIntArgumentWithOtherFlags>(std::vector<std::string>{"./main"});
+    REQUIRE(arguments.value.empty());
+    REQUIRE(arguments.foo == false);
+  }
+  {
     auto arguments = structopt::app("test").parse<SetIntArgumentWithOtherFlags>(std::vector<std::string>{"./main", "1", "2", "3", "4", "5", "3", "--foo"});
     REQUIRE(arguments.value == std::set<int>{1, 2, 3, 4, 5});
     REQUIRE(arguments.foo == true);

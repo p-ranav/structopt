@@ -35,6 +35,9 @@ target_link_libraries(float_literals PRIVATE structopt::structopt)
 add_executable(double_dash_argument double_dash_argument.cpp)
 target_link_libraries(double_dash_argument PRIVATE structopt::structopt)
 
+add_executable(pair_argument pair_argument.cpp)
+target_link_libraries(pair_argument PRIVATE structopt::structopt)
+
 add_executable(tuple_arguments tuple_arguments.cpp)
 target_link_libraries(tuple_arguments PRIVATE structopt::structopt)
 
