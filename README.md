@@ -737,6 +737,11 @@ Error: failed to invoke sub-command `init` because a different sub-command, `con
 
 ### Printing Help
 
+`structopt` will insert two optional arguments for the user: `help` and `version`. 
+
+* Using `-h` or `--help` will print the help message and exit.
+* Using `-v` or `--version` will print the program version and exit. 
+
 ```cpp
 struct Options {
   // positional arguments
@@ -746,42 +751,38 @@ struct Options {
   // optional arguments
   std::optional<std::string> bind_address;
 
-  // flag arguments
-  std::optional<bool> help = false;
-  std::optional<bool> version = false;
-
   // remaining arguments
   std::vector<std::string> files;
 };
-STRUCTOPT(Options, input_file, output_file, bind_address, help, verssion, files);
-
+STRUCTOPT(Options, input_file, output_file, bind_address, files);
 
 
 
 int main(int argc, char *argv[]) {
-  auto app = structopt::app("my_app", "1.0.3");
-
-  try {
-    
-    auto options = app.parse<Options>(argc, argv);
-
-    if (options.help == true) {
-      app.print_help();
-    }
-    else if (options.version == true) {
-      std::cout << app.get_version() << "\n";
-    }
-    else {
-      // do work
-    }
-
-  } catch (structopt::exception& e) {
-    std::cout << e.what() << "\n";
-    std::cout << e.help();
-  }
+  auto options = structopt::app("my_app", "1.0.3").parse<Options>(argc, argv);
 }
 ```
 
+```bash
+▶ ./main -h
+
+USAGE: my_app [OPTIONS] input_file output_file files
+
+OPTIONS:
+    -b, --bind-address <bind_address>
+    -h, --help <help>
+    -v, --version <version>
+
+ARGS:
+    input_file
+    output_file
+    files
+
+▶ ./main -v
+1.0.3
+```
+
+***NOTE*** Admittedly, the above help message doesn't look great; none of the arguments have a description - something that is configurable in other argument parsers. `structopt` does its best to infer details about arguments from the user-defined struct including argument name, data type, and argument type. Unforunately, `structopt` is not capable of reading doc string comments written by the user. So, for now, `structopt` does not provide any API to the user to configure (e.g., by providing a map) documentation for each of the fields in the struct. 
 
 ## Building Samples
 
