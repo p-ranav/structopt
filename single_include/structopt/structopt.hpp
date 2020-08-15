@@ -2468,7 +2468,11 @@ struct parser {
     // Parse from current till end
     for (std::size_t i = next_index; i < arguments.size(); i++) {
       const auto next = arguments[next_index];
-      if (is_optional_field(next)) {
+      if (is_optional_field(next) or std::string{next} == "--") {
+        if (std::string{next} == "--") {
+          double_dash_encountered = true;
+          next_index += 1;
+        }
         // this marks the end of the container (break here)
         break;
       }
@@ -2486,7 +2490,11 @@ struct parser {
     // Parse from current till end
     for (std::size_t i = next_index; i < arguments.size(); i++) {
       const auto next = arguments[next_index];
-      if (is_optional_field(next)) {
+      if (is_optional_field(next) or std::string{next} == "--") {
+        if (std::string{next} == "--") {
+          double_dash_encountered = true;
+          next_index += 1;
+        }
         // this marks the end of the container (break here)
         break;
       }
@@ -2504,7 +2512,11 @@ struct parser {
     // Parse from current till end
     for (std::size_t i = next_index; i < arguments.size(); i++) {
       const auto next = arguments[next_index];
-      if (is_optional_field(next)) {
+      if (is_optional_field(next) or std::string{next} == "--") {
+        if (std::string{next} == "--") {
+          double_dash_encountered = true;
+          next_index += 1;
+        }
         // this marks the end of the container (break here)
         break;
       }
