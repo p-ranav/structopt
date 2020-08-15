@@ -4,14 +4,12 @@ struct GrepOptions {
   // reverse the matching
   // enable with `-v`
   std::optional<bool> v = false;
-  
+
   // positional arguments
   std::string search;
   std::string pathspec;
 };
 STRUCTOPT(GrepOptions, v, search, pathspec);
-
-
 
 int main(int argc, char *argv[]) {
 
@@ -24,10 +22,8 @@ int main(int argc, char *argv[]) {
 
     std::cout << "Search   : " << options.search << "\n";
     std::cout << "Pathspec : " << options.pathspec << "\n";
-  }
- catch (structopt::exception& e) {
+  } catch (structopt::exception &e) {
     std::cout << e.what() << "\n";
     std::cout << e.help();
   }
-
 }

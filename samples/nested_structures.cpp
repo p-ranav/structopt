@@ -18,10 +18,8 @@ STRUCTOPT(Git::Config, global, name_value_pair);
 STRUCTOPT(Git::Init, name);
 STRUCTOPT(Git, config, init);
 
-
-
 int main(int argc, char *argv[]) {
-  
+
   try {
     auto options = structopt::app("my_app").parse<Git>(argc, argv);
 
@@ -29,16 +27,15 @@ int main(int argc, char *argv[]) {
       // config was invoked
       std::cout << "You invoked `git config`:\n";
       std::cout << "Global : " << std::boolalpha << options.config.global.value() << "\n";
-      std::cout << "Input  : (" << options.config.name_value_pair[0] << ", " << options.config.name_value_pair[1] << ")\n";
-    }
-    else if (options.init.has_value()) {
+      std::cout << "Input  : (" << options.config.name_value_pair[0] << ", "
+                << options.config.name_value_pair[1] << ")\n";
+    } else if (options.init.has_value()) {
       // init was invoked
       std::cout << "You invoked `git init`:\n";
       std::cout << "Repository name : " << options.init.name << "\n";
     }
 
-
-  }  catch (structopt::exception& e) {
+  } catch (structopt::exception &e) {
     std::cout << e.what() << "\n";
     std::cout << e.help();
   }

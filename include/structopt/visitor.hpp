@@ -2,8 +2,8 @@
 #pragma once
 #include <algorithm>
 #include <iostream>
-#include <string>
 #include <queue>
+#include <string>
 #include <structopt/is_specialization.hpp>
 #include <structopt/string.hpp>
 #include <structopt/third_party/visit_struct/visit_struct.hpp>
@@ -29,7 +29,8 @@ struct visitor {
 
   visitor() = default;
 
-  explicit visitor(const std::string &name, const std::string& version) : name(name), version(version) {}
+  explicit visitor(const std::string &name, const std::string &version)
+      : name(name), version(version) {}
 
   // Visitor function for std::optional - could be an option or a flag
   template <typename T>
@@ -53,17 +54,17 @@ struct visitor {
     field_names.push_back(name);
     positional_field_names.push_back(name);
     positional_field_names_for_help.push_back(name);
-    if constexpr (structopt::is_specialization<T, std::deque>::value 
-      or structopt::is_specialization<T, std::list>::value
-      or structopt::is_specialization<T, std::vector>::value
-      or structopt::is_specialization<T, std::set>::value 
-      or structopt::is_specialization<T, std::multiset>::value
-      or structopt::is_specialization<T, std::unordered_set>::value
-      or structopt::is_specialization<T, std::unordered_multiset>::value
-      or structopt::is_specialization<T, std::queue>::value 
-      or structopt::is_specialization<T, std::stack>::value
-      or structopt::is_specialization<T, std::priority_queue>::value) {
-      // keep track of vector-like fields as these (even though positional) 
+    if constexpr (structopt::is_specialization<T, std::deque>::value or
+                  structopt::is_specialization<T, std::list>::value or
+                  structopt::is_specialization<T, std::vector>::value or
+                  structopt::is_specialization<T, std::set>::value or
+                  structopt::is_specialization<T, std::multiset>::value or
+                  structopt::is_specialization<T, std::unordered_set>::value or
+                  structopt::is_specialization<T, std::unordered_multiset>::value or
+                  structopt::is_specialization<T, std::queue>::value or
+                  structopt::is_specialization<T, std::stack>::value or
+                  structopt::is_specialization<T, std::priority_queue>::value) {
+      // keep track of vector-like fields as these (even though positional)
       // can be happy without any arguments
       vector_like_positional_field_names.push_back(name);
     }
@@ -71,8 +72,7 @@ struct visitor {
 
   // Visitor function for nested structs
   template <typename T>
-  inline typename std::enable_if<visit_struct::traits::is_visitable<T>::value,
-                                 void>::type
+  inline typename std::enable_if<visit_struct::traits::is_visitable<T>::value, void>::type
   operator()(const char *name, T &value) {
     field_names.push_back(name);
     nested_struct_field_names.push_back(name);
@@ -82,32 +82,32 @@ struct visitor {
     return std::find(field_names.begin(), field_names.end(), name) != field_names.end();
   }
 
-  void print_help(std::ostream& os) const {
+  void print_help(std::ostream &os) const {
     os << "\nUSAGE: " << name << " ";
-    
+
     bool optional_arguments_available = false;
 
     if (flag_field_names.empty() == false) {
       optional_arguments_available = true;
-      os << "[FLAGS] "; 
-    } 
+      os << "[FLAGS] ";
+    }
 
     if (optional_field_names.empty() == false) {
       optional_arguments_available = true;
-      os << "[OPTIONS] "; 
+      os << "[OPTIONS] ";
     }
 
     if (nested_struct_field_names.empty() == false) {
       os << "[SUBCOMMANDS] ";
     }
 
-    for (auto& field : positional_field_names_for_help) {
+    for (auto &field : positional_field_names_for_help) {
       os << field << " ";
     }
 
     if (flag_field_names.empty() == false) {
       os << "\n\nFLAGS:\n";
-      for (auto& flag : flag_field_names) {
+      for (auto &flag : flag_field_names) {
         os << "    -" << flag[0] << ", --" << flag << "\n";
       }
     } else {
@@ -116,7 +116,7 @@ struct visitor {
 
     if (optional_field_names.empty() == false) {
       os << "\nOPTIONS:\n";
-      for (auto& option : optional_field_names) {
+      for (auto &option : optional_field_names) {
 
         // Generate kebab case and present as option
         auto kebab_case = option;
@@ -128,7 +128,8 @@ struct visitor {
           long_form = option;
         }
 
-        os << "    -" << option[0] << ", --" << long_form << " <" << option << ">" << "\n";
+        os << "    -" << option[0] << ", --" << long_form << " <" << option << ">"
+           << "\n";
       }
     }
 
@@ -137,14 +138,14 @@ struct visitor {
 
     if (nested_struct_field_names.empty() == false) {
       os << "\nSUBCOMMANDS:\n";
-      for (auto& sc: nested_struct_field_names) {
+      for (auto &sc : nested_struct_field_names) {
         os << "    " << sc << "\n";
       }
     }
 
     if (positional_field_names_for_help.empty() == false) {
       os << "\nARGS:\n";
-      for (auto& arg : positional_field_names_for_help) {
+      for (auto &arg : positional_field_names_for_help) {
         os << "    " << arg << "\n";
       }
     }

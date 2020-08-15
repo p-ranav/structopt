@@ -11,11 +11,12 @@ int main(int argc, char *argv[]) {
   try {
     auto options = structopt::app("my_app").parse<Option>(argc, argv);
     if (options.verbose == true) {
-        std::cout << "The square of " << options.input << " is " << (options.input * options.input) << "\n";
+      std::cout << "The square of " << options.input << " is "
+                << (options.input * options.input) << "\n";
     } else {
-        std::cout << options.input * options.input << "\n";
+      std::cout << options.input * options.input << "\n";
     }
-  }  catch (structopt::exception& e) {
+  } catch (structopt::exception &e) {
     std::cout << e.what() << "\n";
     std::cout << e.help();
   }

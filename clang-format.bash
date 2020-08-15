@@ -1,2 +1,2 @@
 #!/usr/bin/env bash
-find ./include -type f \( -iname \*.cpp -o -iname \*.hpp \) | xargs clang-format -style="{ColumnLimit : 90}" -i
+find ./include ./samples -type f \( -iname \*.cpp -o -iname \*.hpp \) | xargs clang-format -style="{ColumnLimit : 90}" -i

@@ -726,6 +726,31 @@ Input  : (user.name, John Doe)
 ▶ ./main init my_repo
 You invoked `git init`:
 Repository name : my_repo
+
+▶ ./main config -h
+
+USAGE: config [FLAGS] [OPTIONS] name_value_pair
+
+FLAGS:
+    -g, --global
+
+OPTIONS:
+    -h, --help <help>
+    -v, --version <version>
+
+ARGS:
+    name_value_pair
+
+▶ ./main init -h
+
+USAGE: init [OPTIONS] name
+
+OPTIONS:
+    -h, --help <help>
+    -v, --version <version>
+
+ARGS:
+    name
 ```
 
 ***NOTE*** `structopt` does not allow to invoke multiple sub-commands. If one has already been invoked, you will see the following error:

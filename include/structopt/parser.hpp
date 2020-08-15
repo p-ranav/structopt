@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <array>
 #include <iostream>
+#include <iterator>
 #include <set>
 #include <sstream>
 #include <string>
@@ -17,8 +18,6 @@
 #include <type_traits>
 #include <utility>
 #include <vector>
-#include <algorithm>
-#include <iterator>
 
 namespace structopt {
 
@@ -77,8 +76,7 @@ struct parser {
     return result;
   }
 
-  template <typename T>
-  std::pair<T, bool> parse_argument(const char *name) {
+  template <typename T> std::pair<T, bool> parse_argument(const char *name) {
     if (next_index >= arguments.size()) {
       return {T(), false};
     }
@@ -86,13 +84,11 @@ struct parser {
     bool success = true;
     if constexpr (visit_struct::traits::is_visitable<T>::value) {
       result = parse_nested_struct<T>(name);
-    }
-    else if constexpr (std::is_enum<T>::value) {
+    } else if constexpr (std::is_enum<T>::value) {
       result = parse_enum_argument<T>(name);
       next_index += 1;
     } else if constexpr (structopt::is_specialization<T, std::pair>::value) {
-      result =
-          parse_pair_argument<typename T::first_type, typename T::second_type>(name);
+      result = parse_pair_argument<typename T::first_type, typename T::second_type>(name);
     } else if constexpr (structopt::is_specialization<T, std::tuple>::value) {
       result = parse_tuple_argument<T>(name);
     } else if constexpr (!is_stl_container<T>::value) {
@@ -101,20 +97,19 @@ struct parser {
     } else if constexpr (structopt::is_array<T>::value) {
       constexpr std::size_t N = structopt::array_size<T>::size;
       result = parse_array_argument<typename T::value_type, N>(name);
-    } else if constexpr (structopt::is_specialization<T, std::deque>::value 
-      or structopt::is_specialization<T, std::list>::value
-      or structopt::is_specialization<T, std::vector>::value) {
+    } else if constexpr (structopt::is_specialization<T, std::deque>::value or
+                         structopt::is_specialization<T, std::list>::value or
+                         structopt::is_specialization<T, std::vector>::value) {
       result = parse_vector_like_argument<T>(name);
-    } else if constexpr (
-      structopt::is_specialization<T, std::set>::value 
-      or structopt::is_specialization<T, std::multiset>::value
-      or structopt::is_specialization<T, std::unordered_set>::value
-      or structopt::is_specialization<T, std::unordered_multiset>::value) {
+    } else if constexpr (structopt::is_specialization<T, std::set>::value or
+                         structopt::is_specialization<T, std::multiset>::value or
+                         structopt::is_specialization<T, std::unordered_set>::value or
+                         structopt::is_specialization<T,
+                                                      std::unordered_multiset>::value) {
       result = parse_set_argument<T>(name);
-    } else if constexpr (
-      structopt::is_specialization<T, std::queue>::value 
-      or structopt::is_specialization<T, std::stack>::value
-      or structopt::is_specialization<T, std::priority_queue>::value) {
+    } else if constexpr (structopt::is_specialization<T, std::queue>::value or
+                         structopt::is_specialization<T, std::stack>::value or
+                         structopt::is_specialization<T, std::priority_queue>::value) {
       result = parse_container_adapter_argument<T>(name);
     } else {
       success = false;
@@ -148,15 +143,12 @@ struct parser {
     if constexpr (std::is_integral<T>::value) {
       if (is_hex_notation(argument)) {
         ss >> std::hex >> result;
-      }
-      else if (is_octal_notation(argument)) {
+      } else if (is_octal_notation(argument)) {
         ss >> std::oct >> result;
-      }
-      else if (is_binary_notation(argument)) {
+      } else if (is_binary_notation(argument)) {
         argument.erase(0, 2); // remove "0b"
         result = std::stoi(argument, nullptr, 2);
-      }
-      else {
+      } else {
         ss >> std::dec >> result;
       }
     } else {
@@ -177,25 +169,32 @@ struct parser {
     }
 
     // Save struct field names
-    argument_struct.structopt_sub_command__visitor__.name = name; // sub-command name; not the program
+    argument_struct.structopt_sub_command__visitor__.name =
+        name; // sub-command name; not the program
     argument_struct.structopt_sub_command__visitor__.version = visitor.version;
-    visit_struct::for_each(argument_struct, argument_struct.structopt_sub_command__visitor__);
+    visit_struct::for_each(argument_struct,
+                           argument_struct.structopt_sub_command__visitor__);
+
+    // add `help` and `version` optional arguments
+    argument_struct.structopt_sub_command__visitor__.optional_field_names.push_back("help");
+    argument_struct.structopt_sub_command__visitor__.optional_field_names.push_back("version");
 
     if (!sub_command_invoked) {
       sub_command_invoked = true;
       already_invoked_subcommand_name = name;
     } else {
       // a sub-command has already been invoked
-      throw structopt::exception("Error: failed to invoke sub-command `"
-        + std::string{name} + "` because a different sub-command, `"
-        + already_invoked_subcommand_name 
-        + "`, has already been invoked.", argument_struct.structopt_sub_command__visitor__);
+      throw structopt::exception(
+          "Error: failed to invoke sub-command `" + std::string{name} +
+              "` because a different sub-command, `" + already_invoked_subcommand_name +
+              "`, has already been invoked.",
+          argument_struct.structopt_sub_command__visitor__);
     }
 
     structopt::details::parser parser;
     parser.next_index = 0;
     parser.current_index = 0;
-    parser.double_dash_encountered = double_dash_encountered; 
+    parser.double_dash_encountered = double_dash_encountered;
     parser.visitor = argument_struct.structopt_sub_command__visitor__;
 
     std::copy(arguments.begin() + next_index, arguments.end(),
@@ -211,18 +210,35 @@ struct parser {
       visit_struct::for_each(argument_struct, parser);
     }
 
+    // directly call the parser to check for `help` and `version` flags
+    std::optional<bool> help = false, version = false;
+    for (std::size_t i = 0; i < parser.arguments.size(); i++) {
+      parser.operator()("help", help);
+      parser.operator()("version", version);
+
+      if (help == true) {
+        // if help is requested, print help and exit
+        argument_struct.structopt_sub_command__visitor__.print_help(std::cout);
+        exit(EXIT_SUCCESS);
+      } else if (version == true) {
+        // if version is requested, print version and exit
+        std::cout << argument_struct.structopt_sub_command__visitor__.version << "\n";
+        exit(EXIT_SUCCESS);
+      }
+    }
+
     if (!parser.visitor.positional_field_names.empty()) {
       // if all positional arguments were provided
       // this list would be empty
       auto front = parser.visitor.positional_field_names.front();
       if (std::find(parser.visitor.vector_like_positional_field_names.begin(),
                     parser.visitor.vector_like_positional_field_names.end(),
-                    front) == 
-          parser.visitor.vector_like_positional_field_names.end()) {
+                    front) == parser.visitor.vector_like_positional_field_names.end()) {
         // this positional argument is not a vector-like argument
         // it expects values
-        throw structopt::exception("Error: expected value for positional argument `" + front + "`.", 
-          argument_struct.structopt_sub_command__visitor__);
+        throw structopt::exception("Error: expected value for positional argument `" +
+                                       front + "`.",
+                                   argument_struct.structopt_sub_command__visitor__);
       }
     }
 
@@ -247,14 +263,15 @@ struct parser {
         if (next_index == arguments.size()) {
           // end of arguments list
           // first argument not provided
-          throw structopt::exception("Error: failed to correctly parse the pair `"
-                                  + std::string{name} + "`. Expected 2 arguments, 0 provided.", 
-                                  visitor);
-        }
-        else {
-          throw structopt::exception("Error: failed to correctly parse first element of pair `"
-                                  + std::string{name} + "`", 
-                                  visitor);
+          throw structopt::exception("Error: failed to correctly parse the pair `" +
+                                         std::string{name} +
+                                         "`. Expected 2 arguments, 0 provided.",
+                                     visitor);
+        } else {
+          throw structopt::exception(
+              "Error: failed to correctly parse first element of pair `" +
+                  std::string{name} + "`",
+              visitor);
         }
       }
     }
@@ -267,13 +284,15 @@ struct parser {
         if (next_index == arguments.size()) {
           // end of arguments list
           // second argument not provided
-          throw structopt::exception("Error: failed to correctly parse the pair `"
-                                  + std::string{name} + "`. Expected 2 arguments, only 1 provided.", 
-                                  visitor);
+          throw structopt::exception("Error: failed to correctly parse the pair `" +
+                                         std::string{name} +
+                                         "`. Expected 2 arguments, only 1 provided.",
+                                     visitor);
         } else {
-          throw structopt::exception("Error: failed to correctly parse second element of pair `"
-                                  + std::string{name} + "`", 
-                                  visitor);
+          throw structopt::exception(
+              "Error: failed to correctly parse second element of pair `" +
+                  std::string{name} + "`",
+              visitor);
         }
       }
     }
@@ -288,9 +307,11 @@ struct parser {
 
     const auto arguments_left = arguments.size() - next_index;
     if (arguments_left == 0 or arguments_left < N) {
-      throw structopt::exception("Error: expected " 
-        + std::to_string(N) + " values for std::array argument `" + name 
-        + "` - instead got only " + std::to_string(arguments_left) + " arguments.", visitor);
+      throw structopt::exception("Error: expected " + std::to_string(N) +
+                                     " values for std::array argument `" + name +
+                                     "` - instead got only " +
+                                     std::to_string(arguments_left) + " arguments.",
+                                 visitor);
     }
 
     for (std::size_t i = 0; i < N; i++) {
@@ -303,19 +324,22 @@ struct parser {
   }
 
   template <class Tuple, class F, std::size_t... I>
-  constexpr F for_each_impl(Tuple&& t, F&& f, std::index_sequence<I...>) {
-      return (void)std::initializer_list<int>{(std::forward<F>(f)(std::get<I>(std::forward<Tuple>(t))),0)...}, f;
+  constexpr F for_each_impl(Tuple &&t, F &&f, std::index_sequence<I...>) {
+    return (void)std::initializer_list<int>{
+               (std::forward<F>(f)(std::get<I>(std::forward<Tuple>(t))), 0)...},
+           f;
   }
 
-  template <class Tuple, class F>
-  constexpr F for_each(Tuple&& t, F&& f) {
-      return for_each_impl(std::forward<Tuple>(t), std::forward<F>(f),
-                          std::make_index_sequence<std::tuple_size<std::remove_reference_t<Tuple>>::value>{});
+  template <class Tuple, class F> constexpr F for_each(Tuple &&t, F &&f) {
+    return for_each_impl(std::forward<Tuple>(t), std::forward<F>(f),
+                         std::make_index_sequence<
+                             std::tuple_size<std::remove_reference_t<Tuple>>::value>{});
   }
 
   // Parse single tuple element
   template <typename T>
-  void parse_tuple_element(const char *name, std::size_t index, std::size_t size, T&& result) {
+  void parse_tuple_element(const char *name, std::size_t index, std::size_t size,
+                           T &&result) {
     auto [value, success] = parse_argument<typename std::remove_reference<T>::type>(name);
     if (success) {
       result = value;
@@ -323,33 +347,27 @@ struct parser {
       if (next_index == arguments.size()) {
         // end of arguments list
         // failed to parse tuple <>. expected `size` arguments, `index` provided
-        throw structopt::exception("Error: failed to correctly parse tuple `"
-                                + std::string{name} 
-                                + "`. Expected "
-                                + std::to_string(size)
-                                + " arguments, "
-                                + std::to_string(index) + " provided.", 
-                                visitor);
-      }
-      else {
-        throw structopt::exception("Error: failed to correctly parse tuple `"
-                                + std::string{name} 
-                                + "` {size = "
-                                + std::to_string(size)
-                                + "} at index "
-                                + std::to_string(index) + ".", 
-                                visitor);
+        throw structopt::exception("Error: failed to correctly parse tuple `" +
+                                       std::string{name} + "`. Expected " +
+                                       std::to_string(size) + " arguments, " +
+                                       std::to_string(index) + " provided.",
+                                   visitor);
+      } else {
+        throw structopt::exception("Error: failed to correctly parse tuple `" +
+                                       std::string{name} +
+                                       "` {size = " + std::to_string(size) +
+                                       "} at index " + std::to_string(index) + ".",
+                                   visitor);
       }
     }
   }
 
   // Tuple argument
-  template<typename Tuple>
-  Tuple parse_tuple_argument(const char *name) {
+  template <typename Tuple> Tuple parse_tuple_argument(const char *name) {
     Tuple result;
     std::size_t i = 0;
     constexpr auto tuple_size = std::tuple_size<Tuple>::value;
-    for_each(result, [&](auto&& arg) { 
+    for_each(result, [&](auto &&arg) {
       parse_tuple_element(name, i, tuple_size, arg);
       i += 1;
     });
@@ -427,12 +445,11 @@ struct parser {
         allowed_names_string += allowed_names[allowed_names.size() - 1];
       }
 
-      throw structopt::exception("Error: unexpected input `"
-                              + std::string{arguments[next_index]}
-                              + "` provided for enum argument `" + std::string{name}
-                              + "`. Allowed values are {" 
-                              + allowed_names_string
-                              + "}", visitor);
+      throw structopt::exception(
+          "Error: unexpected input `" + std::string{arguments[next_index]} +
+              "` provided for enum argument `" + std::string{name} +
+              "`. Allowed values are {" + allowed_names_string + "}",
+          visitor);
       // TODO: Throw error invalid enum option
     }
     return result;
@@ -494,7 +511,7 @@ struct parser {
       // }
 
       if (field_name != std::string{name}) {
-        // current field is not the one we want to parse 
+        // current field is not the one we want to parse
         return;
       }
 
@@ -582,15 +599,14 @@ struct parser {
           // Parse the argument type <T>
           value = parse_optional_argument<typename T::value_type>(name);
         }
-      }
-      else {
+      } else {
         if (double_dash_encountered == false) {
           // A direct match of optional argument with field_name has not happened
           // This _could_ be a combined argument
           // e.g., -abc => -a, -b, and -c where each of these is a flag argument
           std::vector<std::string> potential_combined_argument;
 
-          // if next is of the form `-abc` or `-de` and NOT of the form `--abc` 
+          // if next is of the form `-abc` or `-de` and NOT of the form `--abc`
           // `--abc` is not a combined argument
           // `-abc` might be
           if (next[0] == '-' and (next.size() > 1 and next[1] != '-')) {
@@ -601,7 +617,7 @@ struct parser {
 
           if (!potential_combined_argument.empty()) {
             bool is_combined_argument = true;
-            for (auto& arg : potential_combined_argument) {
+            for (auto &arg : potential_combined_argument) {
               if (!is_optional_field(arg)) {
                 is_combined_argument = false;
                 // TODO: report error unrecognized option in combined argument
@@ -610,7 +626,7 @@ struct parser {
 
             if (is_combined_argument) {
 
-              // check and make sure the current field_name is 
+              // check and make sure the current field_name is
               // in `potential_combined_argument`
               //
               // Let's say the argument `next` is `-abc`
@@ -621,7 +637,7 @@ struct parser {
               //       push the list of arguments (split up) into `arguments`
               //    2. If no, nothing to do here
               bool field_name_matched = false;
-              for (auto& arg : potential_combined_argument) {
+              for (auto &arg : potential_combined_argument) {
                 if (arg == "-" + std::string(1, field_name[0])) {
                   field_name_matched = true;
                 }
@@ -633,11 +649,14 @@ struct parser {
                 // insert the individual options that make up the combined argument
                 // right after the combined argument
                 // e.g., ""./main -abc" becomes "./main -abc -a -b -c"
-                // Once this is done, increment `next_index` so that the parser loop will service
-                // `-a`, `-b` and `-c` like any other optional arguments (flags and otherwise)
-                for (std::vector<std::string>::reverse_iterator it = potential_combined_argument.rbegin(); 
-                      it != potential_combined_argument.rend(); ++it) { 
-                  auto& arg = *it;
+                // Once this is done, increment `next_index` so that the parser loop will
+                // service
+                // `-a`, `-b` and `-c` like any other optional arguments (flags and
+                // otherwise)
+                for (std::vector<std::string>::reverse_iterator it =
+                         potential_combined_argument.rbegin();
+                     it != potential_combined_argument.rend(); ++it) {
+                  auto &arg = *it;
                   if (next_index < arguments.size()) {
                     auto begin = arguments.begin();
                     arguments.insert(begin + next_index + 1, arg);

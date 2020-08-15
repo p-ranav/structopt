@@ -8,10 +8,8 @@ struct FileOptions {
 };
 STRUCTOPT(FileOptions, input_file, output_file);
 
-
-
 int main(int argc, char *argv[]) {
-  
+
   try {
     auto options = structopt::app("my_app").parse<FileOptions>(argc, argv);
 
@@ -19,7 +17,7 @@ int main(int argc, char *argv[]) {
     std::cout << "\nInput file  : " << options.input_file << "\n";
     std::cout << "Output file : " << options.output_file << "\n";
 
-  }  catch (structopt::exception& e) {
+  } catch (structopt::exception &e) {
     std::cout << e.what() << "\n";
     std::cout << e.help();
   }

@@ -5,8 +5,6 @@ struct Options {
 };
 STRUCTOPT(Options, name);
 
-
-
 int main(int argc, char *argv[]) {
 
   try {
@@ -14,9 +12,8 @@ int main(int argc, char *argv[]) {
 
     std::cout << "First name : " << options.name.first << "\n";
     std::cout << "Last name  : " << options.name.second << "\n";
-  } catch (structopt::exception& e) {
+  } catch (structopt::exception &e) {
     std::cout << e.what() << "\n";
     std::cout << e.help();
   }
-
 }

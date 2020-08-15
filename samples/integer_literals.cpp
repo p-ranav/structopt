@@ -8,5 +8,6 @@ STRUCTOPT(IntegerLiterals, numbers);
 int main(int argc, char *argv[]) {
   auto options = structopt::app("my_app").parse<IntegerLiterals>(argc, argv);
 
-  for (auto& n : options.numbers) std::cout << n << "\n";
+  for (auto &n : options.numbers)
+    std::cout << n << "\n";
 }

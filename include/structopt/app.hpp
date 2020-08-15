@@ -21,8 +21,7 @@ public:
   explicit app(const std::string name, const std::string version = "")
       : visitor(name, version) {}
 
-  template <typename T>
-  T parse(const std::vector<std::string> &arguments) {
+  template <typename T> T parse(const std::vector<std::string> &arguments) {
     T argument_struct;
 
     // Visit the struct and save flag, optional and positional field names
@@ -52,8 +51,7 @@ public:
         // if help is requested, print help and exit
         visitor.print_help(std::cout);
         exit(EXIT_SUCCESS);
-      }
-      else if (version == true) {
+      } else if (version == true) {
         // if version is requested, print version and exit
         std::cout << visitor.version << "\n";
         exit(EXIT_SUCCESS);
@@ -66,19 +64,19 @@ public:
       auto front = parser.visitor.positional_field_names.front();
       if (std::find(parser.visitor.vector_like_positional_field_names.begin(),
                     parser.visitor.vector_like_positional_field_names.end(),
-                    front) == 
-          parser.visitor.vector_like_positional_field_names.end()) {
+                    front) == parser.visitor.vector_like_positional_field_names.end()) {
         // this positional argument is not a vector-like argument
         // it expects values
-        throw structopt::exception("Error: expected value for positional argument `" + front + "`.", parser.visitor);
+        throw structopt::exception("Error: expected value for positional argument `" +
+                                       front + "`.",
+                                   parser.visitor);
       }
     }
 
     return argument_struct;
   }
 
-  template <typename T>
-  T parse(int argc, char *argv[]) {
+  template <typename T> T parse(int argc, char *argv[]) {
     std::vector<std::string> arguments;
     std::copy(argv, argv + argc, std::back_inserter(arguments));
     return parse<T>(arguments);
