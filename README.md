@@ -727,6 +727,18 @@ Input  : (user.name, John Doe)
 You invoked `git init`:
 Repository name : my_repo
 
+▶ ./main -h
+
+USAGE: my_app [OPTIONS] [SUBCOMMANDS]
+
+OPTIONS:
+    -h, --help <help>
+    -v, --version <version>
+
+SUBCOMMANDS:
+    config
+    init
+
 ▶ ./main config -h
 
 USAGE: config [FLAGS] [OPTIONS] name_value_pair
@@ -752,6 +764,8 @@ OPTIONS:
 ARGS:
     name
 ```
+
+***NOTE*** Notice in the above stdout that the `-h` help option supports printing help both at the top-level struct and at the sub-command level.
 
 ***NOTE*** `structopt` does not allow to invoke multiple sub-commands. If one has already been invoked, you will see the following error:
 
