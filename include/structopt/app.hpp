@@ -43,19 +43,19 @@ public:
     }
 
     // directly call the parser to check for `help` and `version` flags
-    std::optional<bool> help = false, app_version = false;
+    std::optional<bool> help = false, version = false;
     for (std::size_t i = 1; i < parser.arguments.size(); i++) {
       parser.operator()("help", help);
-      parser.operator()("version", app_version);
+      parser.operator()("version", version);
 
       if (help == true) {
         // if help is requested, print help and exit
         visitor.print_help(std::cout);
         exit(EXIT_SUCCESS);
       }
-      else if (app_version == true) {
+      else if (version == true) {
         // if version is requested, print version and exit
-        std::cout << version() << "\n";
+        std::cout << visitor.version << "\n";
         exit(EXIT_SUCCESS);
       }
     }
@@ -82,18 +82,6 @@ public:
     std::vector<std::string> arguments;
     std::copy(argv, argv + argc, std::back_inserter(arguments));
     return parse<T>(arguments);
-  }
-
-  void print_help(std::ostream& os = std::cout) const {
-    visitor.print_help(os);
-  }
-
-  std::string name() const {
-    return visitor.name;
-  }
-
-  std::string version() const {
-    return visitor.version;
   }
 };
 
