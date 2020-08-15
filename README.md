@@ -807,7 +807,7 @@ ARGS:
 1.0.3
 ```
 
-***NOTE*** Admittedly, the above help message doesn't look great; none of the arguments have a description - something that is configurable in other argument parsers. `structopt` does its best to infer details about arguments from the user-defined struct including argument name, data type, and argument type. Unforunately, `structopt` is not capable of reading doc string comments written by the user. So, for now, `structopt` does not provide any API to the user to configure (e.g., by providing a map) documentation for each of the fields in the struct. 
+***NOTE*** Admittedly, the above help message doesn't look great; none of the arguments have a description - something that is configurable in other argument parsers. `structopt` does its best to infer details about arguments from the user-defined struct including argument name, data type, and argument type. Unforunately, `structopt` (for now) does not provide any API to the user to configure (e.g., by providing a map) documentation for each of the fields in the struct. 
 
 ## Building Samples
 
