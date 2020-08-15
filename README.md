@@ -123,6 +123,7 @@ files        = { file1.txt file3.txt file4.txt }
           *    [Integer Literals](#integer-literals)
           *    [Floating point Literals](#floating-point-literals)
      *    [Nested Structures (Sub-commands)](#nested-structures)
+     *    [Printing Help](#printing-help)
 *    [Building Samples](#building-samples)
 *    [Generating Single Header](#generating-single-header)
 *    [Contributing](#contributing)
@@ -733,6 +734,54 @@ Repository name : my_repo
 ▶ ./main config user.name "John Doe" init my_repo
 Error: failed to invoke sub-command `init` because a different sub-command, `config`, has already been invoked.
 ```
+
+### Printing Help
+
+```cpp
+struct Options {
+  // positional arguments
+  std::string input_file;
+  std::string output_file;
+
+  // optional arguments
+  std::optional<std::string> bind_address;
+
+  // flag arguments
+  std::optional<bool> help = false;
+  std::optional<bool> version = false;
+
+  // remaining arguments
+  std::vector<std::string> files;
+};
+STRUCTOPT(Options, input_file, output_file, bind_address, help, verssion, files);
+
+
+
+
+int main(int argc, char *argv[]) {
+  auto app = structopt::app("my_app", "1.0.3");
+
+  try {
+    
+    auto options = app.parse<Options>(argc, argv);
+
+    if (options.help == true) {
+      app.print_help();
+    }
+    else if (options.version == true) {
+      std::cout << app.get_version() << "\n";
+    }
+    else {
+      // do work
+    }
+
+  } catch (structopt::exception& e) {
+    std::cout << e.what() << "\n";
+    std::cout << e.help();
+  }
+}
+```
+
 
 ## Building Samples
 

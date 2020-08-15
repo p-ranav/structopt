@@ -43,3 +43,6 @@ target_link_libraries(tuple_arguments PRIVATE structopt::structopt)
 
 add_executable(nested_structures nested_structures.cpp)
 target_link_libraries(nested_structures PRIVATE structopt::structopt)
+
+add_executable(printing_help printing_help.cpp)
+target_link_libraries(printing_help PRIVATE structopt::structopt)
