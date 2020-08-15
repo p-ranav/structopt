@@ -611,7 +611,7 @@ STRUCTOPT(IntegerLiterals, numbers);
 ```
 
 ```bash
-./main 1 0x5B 071 0b0101 -35 +98
+▶ ./main 1 0x5B 071 0b0101 -35 +98
 1
 91
 57
@@ -634,7 +634,7 @@ STRUCTOPT(FloatLiterals, numbers);
 ```
 
 ```bash
-./main -3.15 +2.717 2E-4 0.1e2 .5 -.3 +5.999
+▶ ./main -3.15 +2.717 2E-4 0.1e2 .5 -.3 +5.999
 -3.15
 2.717
 0.0002
