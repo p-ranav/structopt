@@ -123,6 +123,7 @@ files        = { file1.txt file3.txt file4.txt }
           *    [Integer Literals](#integer-literals)
           *    [Floating point Literals](#floating-point-literals)
      *    [Nested Structures (Sub-commands)](#nested-structures)
+     *    [Sub-Commands, Vector Arguments, and Double dash delimited position](#sub-commands-vector-arguments-and-double-dash-delimiter)
      *    [Printing Help](#printing-help)
 *    [Building Samples and Tests](#building-samples-and-tests)
 *    [Generating Single Header](#generating-single-header)
@@ -782,7 +783,7 @@ ARGS:
 Error: failed to invoke sub-command `init` because a different sub-command, `config`, has already been invoked.
 ```
 
-#### Commands, Vector Arguments, and Double dash delimiter
+### Sub-Commands, Vector Arguments, and Double dash delimited position
 
 Here's a second example for nested structures with vector arguments and the double dash (`--`) delimiter
 
