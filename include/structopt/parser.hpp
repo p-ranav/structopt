@@ -207,11 +207,6 @@ struct parser {
     std::copy(arguments.begin() + next_index, arguments.end(),
               std::back_inserter(parser.arguments));
 
-    // std::cout << "Nested structures:\n";
-    // for (auto& ns : parser.arguments) {
-    //   std::cout << ns << " ";
-    // }
-
     for (std::size_t i = 0; i < parser.arguments.size(); i++) {
       parser.current_index = i;
       visit_struct::for_each(argument_struct, parser);
@@ -479,7 +474,6 @@ struct parser {
   template <typename T>
   inline typename std::enable_if<visit_struct::traits::is_visitable<T>::value, void>::type
   operator()(const char *name, T &value) {
-    // std::cout << "Parssing nested struct" << std::endl;
     if (next_index > current_index) {
       current_index = next_index;
     }
@@ -487,8 +481,6 @@ struct parser {
     if (current_index < arguments.size()) {
       const auto next = arguments[current_index];
       const auto field_name = std::string{name};
-
-      // std::cout << "Next: " << next << "; Name: " << name << "\n";
 
       // Check if `next` is the start of a subcommand
       if (visitor.is_field_name(next) && next == field_name) {
@@ -504,7 +496,6 @@ struct parser {
                                      !visit_struct::traits::is_visitable<T>::value,
                                  void>::type
   operator()(const char *name, T &result) {
-    // std::cout << "Parsing positional: " << name << std::endl;
     if (next_index > current_index) {
       current_index = next_index;
     }
@@ -553,7 +544,6 @@ struct parser {
   inline typename std::enable_if<structopt::is_specialization<T, std::optional>::value,
                                  void>::type
   operator()(const char *name, T &value) {
-    // std::cout << "Parsing optional " << name << std::endl;
     if (next_index > current_index) {
       current_index = next_index;
     }
@@ -586,8 +576,6 @@ struct parser {
                                             [](char c) { return !std::isalpha(c); }),
                              field_name_alpha.end());
 
-      // std::cout << "Trying to parse optional: " << field_name << " " << next << "\n";
-
       // if `next` looks like an optional argument
       // i.e., starts with `-` or `--`
       // see if you can find an optional field in the struct with a matching name
@@ -596,8 +584,6 @@ struct parser {
       if ((double_dash_encountered == false) and
           ((next == "--" + field_name or next == "-" + std::string(1, field_name[0])) or
            (next_alpha == field_name_alpha))) {
-
-        // std::cout << "Parsing optional: " << field_name << " " << next << "\n";
 
         // this is an optional argument matching the current struct field
         if constexpr (std::is_same<typename T::value_type, bool>::value) {
@@ -632,6 +618,45 @@ struct parser {
           if (next[0] == '-' and (next.size() > 1 and next[1] != '-')) {
             for (std::size_t i = 1; i < next.size(); i++) {
               potential_combined_argument.push_back("-" + std::string(1, next[i]));
+            }
+          } else {
+            if (next.size() > 1 and next[0] == '-' and next[1] == '-') {
+              // maybe this is an optional argument that is delimited with '=' or ':'
+              // e.g., --foo=bar or --foo:BAR
+              const std::vector<char> option_delimiters = {'=', ':'};
+              for (auto& c : option_delimiters) {
+                std::string key, value;
+                bool delimiter_found = false;
+                for (size_t i = 0; i < next.size(); i++) {
+                  if (next[i] == c and !delimiter_found) {
+                    delimiter_found = true;
+                  } else {
+                    if (!delimiter_found) {
+                      key += next[i];
+                    } else {
+                      value += next[i];
+                    }
+                  }
+                }
+
+                // if an alternate option delimiter is used,
+                // we have, at this point, split `--foo=bar` into `foo` and `bar`
+
+                if (delimiter_found and is_optional_field(key)) {
+                  // found a delimiter in current argument
+
+                  // update next_index and return
+                  // the parser will take care of the rest
+                  for (auto& arg : {value, key}) {
+                    const auto begin = arguments.begin();
+                    arguments.insert(begin + next_index + 1, arg);
+                  }
+
+                  // get past the current argument, e.g., `--foo=bar`
+                  next_index += 1;
+                  return;
+                }
+              }
             }
           }
 
