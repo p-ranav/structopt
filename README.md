@@ -31,15 +31,13 @@ struct Options {
    //   e.g., --bind-address "192.168.5.3"
    std::optional<std::string> bind_address;
  
-   // You want a flag?
+   // flag argument
    // Use `std::optional<bool>` and provide a default value. 
    //   e.g., -v
    //   e.g., --verbose
    std::optional<bool> verbose = false;
 
    // Directly define and use enum classes
-   // The argument (string) will be converted (if possible)
-   // into the equivalent enum value
    //   e.g., --log-level debug
    //   e.g., -l error
    enum class LogLevel { debug, info, warn, error, critical };
@@ -49,9 +47,8 @@ struct Options {
    // and parse the next 2 arguments into an `std::pair`
    std::optional<std::pair<std::string, std::string>> user;
 
-   // You can use containers like std::vector
-   // when you don't know the total number of arguments
-   // but want to collect them all into a list
+   // Use containers like std::vector
+   // to collect "remaining arguments" into a list
    std::vector<std::string> files;
 };
 STRUCTOPT(Options, config_file, bind_address, verbose, log_level, user, files);
