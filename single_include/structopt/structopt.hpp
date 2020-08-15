@@ -1934,7 +1934,14 @@ struct visitor {
     positional_field_names_for_help.push_back(name);
     if constexpr (structopt::is_specialization<T, std::deque>::value 
       or structopt::is_specialization<T, std::list>::value
-      or structopt::is_specialization<T, std::vector>::value) {
+      or structopt::is_specialization<T, std::vector>::value
+      or structopt::is_specialization<T, std::set>::value 
+      or structopt::is_specialization<T, std::multiset>::value
+      or structopt::is_specialization<T, std::unordered_set>::value
+      or structopt::is_specialization<T, std::unordered_multiset>::value
+      or structopt::is_specialization<T, std::queue>::value 
+      or structopt::is_specialization<T, std::stack>::value
+      or structopt::is_specialization<T, std::priority_queue>::value) {
       // keep track of vector-like fields as these (even though positional) 
       // can be happy without any arguments
       vector_like_positional_field_names.push_back(name);
@@ -2191,12 +2198,6 @@ struct parser {
       or structopt::is_specialization<T, std::unordered_multiset>::value) {
       result = parse_set_argument<T>(name);
     } else if constexpr (
-      structopt::is_specialization<T, std::map>::value 
-      or structopt::is_specialization<T, std::multimap>::value
-      or structopt::is_specialization<T, std::unordered_map>::value
-      or structopt::is_specialization<T, std::unordered_multimap>::value) {
-      result = parse_map_argument<T>(name);
-    } else if constexpr (
       structopt::is_specialization<T, std::queue>::value 
       or structopt::is_specialization<T, std::stack>::value
       or structopt::is_specialization<T, std::priority_queue>::value) {
@@ -2328,6 +2329,19 @@ struct parser {
       auto [value, success] = parse_argument<T1>(name);
       if (success) {
         result.first = value;
+      } else {
+        if (next_index == arguments.size()) {
+          // end of arguments list
+          // first argument not provided
+          throw structopt::exception("Error: failed to correctly parse the pair `"
+                                  + std::string{name} + "`. Expected 2 arguments, 0 provided.", 
+                                  visitor);
+        }
+        else {
+          throw structopt::exception("Error: failed to correctly parse first element of pair `"
+                                  + std::string{name} + "`", 
+                                  visitor);
+        }
       }
     }
     {
@@ -2335,6 +2349,18 @@ struct parser {
       auto [value, success] = parse_argument<T2>(name);
       if (success) {
         result.second = value;
+      } else {
+        if (next_index == arguments.size()) {
+          // end of arguments list
+          // second argument not provided
+          throw structopt::exception("Error: failed to correctly parse the pair `"
+                                  + std::string{name} + "`. Expected 2 arguments, only 1 provided.", 
+                                  visitor);
+        } else {
+          throw structopt::exception("Error: failed to correctly parse second element of pair `"
+                                  + std::string{name} + "`", 
+                                  visitor);
+        }
       }
     }
     return result;
@@ -2362,21 +2388,6 @@ struct parser {
     return result;
   }
 
-  // Map, Unordered_Map Argument
-  template <typename T> T parse_map_argument(const char *name) {
-    T result;
-    // Parse from current till end
-    for (std::size_t i = next_index; i < arguments.size(); i++) {
-      const auto next = arguments[next_index];
-      if (is_optional_field(next)) {
-        // this marks the end of the container (break here)
-        break;
-      }
-      result.insert(parse_pair_argument<typename T::key_type, typename T::mapped_type>(name));
-    }
-    return result;
-  }
-
   template <class Tuple, class F, std::size_t... I>
   constexpr F for_each_impl(Tuple&& t, F&& f, std::index_sequence<I...>) {
       return (void)std::initializer_list<int>{(std::forward<F>(f)(std::get<I>(std::forward<Tuple>(t))),0)...}, f;
@@ -2390,10 +2401,31 @@ struct parser {
 
   // Parse single tuple element
   template <typename T>
-  void parse_tuple_element(const char *name, T&& result) {
+  void parse_tuple_element(const char *name, std::size_t index, std::size_t size, T&& result) {
     auto [value, success] = parse_argument<typename std::remove_reference<T>::type>(name);
     if (success) {
       result = value;
+    } else {
+      if (next_index == arguments.size()) {
+        // end of arguments list
+        // failed to parse tuple <>. expected `size` arguments, `index` provided
+        throw structopt::exception("Error: failed to correctly parse tuple `"
+                                + std::string{name} 
+                                + "`. Expected "
+                                + std::to_string(size)
+                                + " arguments, "
+                                + std::to_string(index) + " provided.", 
+                                visitor);
+      }
+      else {
+        throw structopt::exception("Error: failed to correctly parse tuple `"
+                                + std::string{name} 
+                                + "` {size = "
+                                + std::to_string(size)
+                                + "} at index "
+                                + std::to_string(index) + ".", 
+                                visitor);
+      }
     }
   }
 
@@ -2401,8 +2433,11 @@ struct parser {
   template<typename Tuple>
   Tuple parse_tuple_argument(const char *name) {
     Tuple result;
+    std::size_t i = 0;
+    constexpr auto tuple_size = std::tuple_size<Tuple>::value;
     for_each(result, [&](auto&& arg) { 
-      parse_tuple_element(name, arg);
+      parse_tuple_element(name, i, tuple_size, arg);
+      i += 1;
     });
     return result;
   }
