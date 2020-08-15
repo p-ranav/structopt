@@ -782,6 +782,85 @@ ARGS:
 Error: failed to invoke sub-command `init` because a different sub-command, `config`, has already been invoked.
 ```
 
+#### Commands, Vector Arguments, and Double dash delimiter
+
+Here's a second example for nested structures with vector arguments and the double dash (`--`) delimiter
+
+```cpp
+struct CommandOptions {
+  struct Sed : structopt::sub_command {
+    // --trace
+    std::optional<bool> trace = false;
+
+    // remaining args
+    std::vector<std::string> args;
+
+    // pattern
+    std::string pattern;
+
+    // file
+    std::string file;
+  };
+  Sed sed;
+};
+STRUCTOPT(CommandOptions::Sed, trace, args, pattern, file);
+STRUCTOPT(CommandOptions, sed);
+
+
+
+int main(int argc, char *argv[]) {
+
+  auto app = structopt::app("my_app");
+
+  try {
+
+    auto options = app.parse<CommandOptions>(argc, argv);
+
+    if (options.sed.has_value()) {
+      // sed has been invoked
+
+      if (options.sed.trace == true) {
+        std::cout << "Trace enabled!\n";
+      }
+
+      std::cout << "Args    : ";
+      for (auto& a : options.sed.args) std::cout << a << " "; 
+      std::cout << "\n";
+      std::cout << "Pattern : " << options.sed.pattern << "\n";
+      std::cout << "File    : " << options.sed.file << "\n";
+    }
+    else {
+      std::cout << app.help();
+    }
+
+  } catch (structopt::exception &e) {
+    std::cout << e.what() << "\n";
+    std::cout << e.help();
+  }
+}
+```
+
+```bash
+▶ ./main
+
+USAGE: my_app [OPTIONS] [SUBCOMMANDS]
+
+OPTIONS:
+    -h, --help <help>
+    -v, --version <version>
+
+SUBCOMMANDS:
+    sed
+
+
+
+▶ ./main sed --trace X=1 Y=2 Z=3 -- 's/foo/bar/g' foo.txt
+Trace enabled!
+Args    : X=1 Y=2 Z=3
+Pattern : s/foo/bar/g
+File    : foo.txt
+```
+
 ### Printing Help
 
 `structopt` will insert two optional arguments for the user: `help` and `version`. 
