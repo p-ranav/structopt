@@ -324,10 +324,6 @@ struct parser {
       auto [value, success] = parse_argument<T>(name);
       if (success) {
         result[i] = value;
-      } else {
-        throw structopt::exception("Error: failed to parse value at index `"
-          + std::to_string(i) + "` for std::array argument `" 
-          + std::string{name} + "`.", visitor);
       }
     }
     return result;
