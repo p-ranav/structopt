@@ -725,7 +725,7 @@ Repository name : my_repo
 ***NOTE*** `structopt` does not allow to invoke multiple sub-commands. If one has already been invoked, you will see the following error:
 
 ```bash
-./samples/nested_structures config user.name Foo   init my_repo
+▶ ./main config user.name "John Doe" init my_repo
 Error: failed to invoke sub-command `init` because a different sub-command, `config`, has already been invoked.
 ```
 
