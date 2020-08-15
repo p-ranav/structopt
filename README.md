@@ -727,6 +727,8 @@ Input  : (user.name, John Doe)
 You invoked `git init`:
 Repository name : my_repo
 
+
+
 ▶ ./main -h
 
 USAGE: my_app [OPTIONS] [SUBCOMMANDS]
@@ -738,6 +740,9 @@ OPTIONS:
 SUBCOMMANDS:
     config
     init
+
+
+
 
 ▶ ./main config -h
 
@@ -752,6 +757,9 @@ OPTIONS:
 
 ARGS:
     name_value_pair
+
+
+
 
 ▶ ./main init -h
 
