@@ -21,6 +21,6 @@ int main(int argc, char *argv[]) {
 
   }  catch (structopt::exception& e) {
     std::cout << e.what() << "\n";
-    std::cout << e.help() << "\n";
+    std::cout << e.help();
   }
 }

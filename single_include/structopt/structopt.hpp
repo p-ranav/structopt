@@ -1899,7 +1899,8 @@ struct visitor {
   std::string name;
   std::string version;
   std::vector<std::string> field_names;
-  std::deque<std::string> positional_field_names;
+  std::deque<std::string> positional_field_names; // mutated by parser
+  std::deque<std::string> positional_field_names_for_help;
   std::deque<std::string> vector_like_positional_field_names;
   std::deque<std::string> flag_field_names;
   std::deque<std::string> optional_field_names;
@@ -1930,6 +1931,7 @@ struct visitor {
   operator()(const char *name, T &value) {
     field_names.push_back(name);
     positional_field_names.push_back(name);
+    positional_field_names_for_help.push_back(name);
     if constexpr (structopt::is_specialization<T, std::deque>::value 
       or structopt::is_specialization<T, std::list>::value
       or structopt::is_specialization<T, std::vector>::value) {
@@ -1952,7 +1954,7 @@ struct visitor {
     return std::find(field_names.begin(), field_names.end(), name) != field_names.end();
   }
 
-  void print_help(std::ostream& os) {
+  void print_help(std::ostream& os) const {
     os << "\nUSAGE: " << name << " ";
     
     bool optional_arguments_available = false;
@@ -1971,7 +1973,7 @@ struct visitor {
       os << "[SUBCOMMANDS] ";
     }
 
-    for (auto& field : positional_field_names) {
+    for (auto& field : positional_field_names_for_help) {
       os << field << " ";
     }
 
@@ -2012,9 +2014,9 @@ struct visitor {
       }
     }
 
-    if (positional_field_names.empty() == false) {
+    if (positional_field_names_for_help.empty() == false) {
       os << "\nARGS:\n";
-      for (auto& arg : positional_field_names) {
+      for (auto& arg : positional_field_names_for_help) {
         os << "    " << arg << "\n";
       }
     }
@@ -2057,14 +2059,20 @@ public:
 }
 #pragma once
 #include <optional>
+// #include <structopt/visitor.hpp>
 
 namespace structopt {
 
 struct sub_command {
   std::optional<bool> structopt_sub_command__invoked__;
+  details::visitor structopt_sub_command__visitor__;
 
   bool has_value() const {
     return structopt_sub_command__invoked__.has_value();
+  }
+
+  void print_help(std::ostream& os = std::cout) const {
+    structopt_sub_command__visitor__.print_help(os);
   }
 
 };
@@ -2254,10 +2262,9 @@ struct parser {
     }
 
     // Save struct field names
-    details::visitor nested_visitor;
-    nested_visitor.name = name; // sub-command name; not program name
-    nested_visitor.version = visitor.version;
-    visit_struct::for_each(argument_struct, nested_visitor);
+    argument_struct.structopt_sub_command__visitor__.name = name; // sub-command name; not the program
+    argument_struct.structopt_sub_command__visitor__.version = visitor.version;
+    visit_struct::for_each(argument_struct, argument_struct.structopt_sub_command__visitor__);
 
     if (!sub_command_invoked) {
       sub_command_invoked = true;
@@ -2267,14 +2274,14 @@ struct parser {
       throw structopt::exception("Error: failed to invoke sub-command `"
         + std::string{name} + "` because a different sub-command, `"
         + already_invoked_subcommand_name 
-        + "`, has already been invoked.", nested_visitor);
+        + "`, has already been invoked.", argument_struct.structopt_sub_command__visitor__);
     }
 
     structopt::details::parser parser;
     parser.next_index = 0;
     parser.current_index = 0;
     parser.double_dash_encountered = double_dash_encountered; 
-    parser.visitor = nested_visitor;
+    parser.visitor = argument_struct.structopt_sub_command__visitor__;
 
     std::copy(arguments.begin() + next_index, arguments.end(),
               std::back_inserter(parser.arguments));
@@ -2300,7 +2307,7 @@ struct parser {
         // this positional argument is not a vector-like argument
         // it expects values
         throw structopt::exception("Error: expected value for positional argument `" + front + "`.", 
-          nested_visitor);
+          argument_struct.structopt_sub_command__visitor__);
       }
     }
 
@@ -2806,6 +2813,10 @@ public:
     std::vector<std::string> arguments;
     std::copy(argv, argv + argc, std::back_inserter(arguments));
     return parse<T>(arguments);
+  }
+
+  void print_help(std::ostream& os = std::cout) const {
+    visitor.print_help(os);
   }
 };
 

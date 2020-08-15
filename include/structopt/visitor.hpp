@@ -20,7 +20,7 @@ struct visitor {
   std::string name;
   std::string version;
   std::vector<std::string> field_names;
-  std::deque<std::string> positional_field_names;
+  std::deque<std::string> positional_field_names; // mutated by parser
   std::deque<std::string> positional_field_names_for_help;
   std::deque<std::string> vector_like_positional_field_names;
   std::deque<std::string> flag_field_names;
