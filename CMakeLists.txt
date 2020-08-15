@@ -65,7 +65,7 @@ if(NOT STRUCTOPT_SUBPROJECT)
           DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
           USE_SOURCE_PERMISSIONS
           PATTERN "*.hpp")
-  install(FILES LICENSE LICENSE.termcolor
+  install(FILES LICENSE LICENSE.magic_enum LICENSE.visit_struct
           DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/licenses/structopt)
 
   if(EXISTS "${PROJECT_SOURCE_DIR}/.gitignore")

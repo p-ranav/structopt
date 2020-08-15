@@ -124,7 +124,7 @@ files        = { file1.txt file3.txt file4.txt }
           *    [Floating point Literals](#floating-point-literals)
      *    [Nested Structures (Sub-commands)](#nested-structures)
      *    [Printing Help](#printing-help)
-*    [Building Samples](#building-samples)
+*    [Building Samples and Tests](#building-samples-and-tests)
 *    [Generating Single Header](#generating-single-header)
 *    [Contributing](#contributing)
 *    [License](#license)
@@ -823,7 +823,7 @@ ARGS:
 
 ***NOTE*** Admittedly, the above help message doesn't look great; none of the arguments have a description - something that is configurable in other argument parsers. `structopt` does its best to infer details about arguments from the user-defined struct including argument name, data type, and argument type. Unforunately, `structopt` (for now) does not provide any API to the user to configure (e.g., by providing a map) documentation for each of the fields in the struct. 
 
-## Building Samples
+## Building Samples and Tests
 
 ```bash
 git clone https://github.com/p-ranav/structopt
