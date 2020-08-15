@@ -6,7 +6,7 @@
 namespace structopt {
 
 namespace details {
-  struct parser;
+struct parser;
 }
 
 class sub_command {

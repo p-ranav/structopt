@@ -2066,7 +2066,7 @@ public:
 namespace structopt {
 
 namespace details {
-  struct parser;
+struct parser;
 }
 
 class sub_command {
@@ -2207,12 +2207,15 @@ struct parser {
       if (success) {
         result = value;
       } else {
-        throw structopt::exception("Error: failed to correctly parse optional argument `"
-         + std::string{name} + "`.", visitor);
+        throw structopt::exception(
+            "Error: failed to correctly parse optional argument `" + std::string{name} +
+                "`.",
+            visitor);
       }
     } else {
-      throw structopt::exception("Error: expected value for optional argument `"
-        + std::string{name} + "`.", visitor);
+      throw structopt::exception("Error: expected value for optional argument `" +
+                                     std::string{name} + "`.",
+                                 visitor);
     }
     return result;
   }
@@ -2256,11 +2259,9 @@ struct parser {
     }
 
     // Save struct field names
-    argument_struct.visitor_.name =
-        name; // sub-command name; not the program
+    argument_struct.visitor_.name = name; // sub-command name; not the program
     argument_struct.visitor_.version = visitor.version;
-    visit_struct::for_each(argument_struct,
-                           argument_struct.visitor_);
+    visit_struct::for_each(argument_struct, argument_struct.visitor_);
 
     // add `help` and `version` optional arguments
     argument_struct.visitor_.optional_field_names.push_back("help");
@@ -2795,11 +2796,9 @@ template <> inline bool parser::parse_single_argument<bool>(const char *name) {
                false_strings.end()) {
       return false;
     } else {
-      throw structopt::exception("Error: failed to parse boolean argument `"
-                                 + std::string{name}
-                                 + "`."
-                                 + " `" + current_argument + "`"
-                                 + " is invalid.",
+      throw structopt::exception("Error: failed to parse boolean argument `" +
+                                     std::string{name} + "`." + " `" + current_argument +
+                                     "`" + " is invalid.",
                                  visitor);
       return false;
     }

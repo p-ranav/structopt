@@ -9,9 +9,14 @@ struct Options {
 STRUCTOPT(Options, verbose);
 
 int main(int argc, char *argv[]) {
-  auto options = structopt::app("my_app").parse<Options>(argc, argv);
+  try {
+    auto options = structopt::app("my_app").parse<Options>(argc, argv);
 
-  if (options.verbose == true) {
-    std::cout << "Verbosity enabled\n";
+    if (options.verbose == true) {
+      std::cout << "Verbosity enabled\n";
+    }
+  } catch (structopt::exception &e) {
+    std::cout << e.what() << "\n";
+    std::cout << e.help();
   }
 }
