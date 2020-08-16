@@ -252,6 +252,7 @@ struct parser {
     } else {
       ss >> result;
     }
+
     return result;
   }
 
@@ -352,7 +353,7 @@ struct parser {
       if (success) {
         result.first = value;
       } else {
-        if (next_index == arguments.size()) {
+        if (next_index == arguments.size()) {	  
           // end of arguments list
           // first argument not provided
           throw structopt::exception("Error: failed to correctly parse the pair `" +
@@ -394,7 +395,7 @@ struct parser {
   // Array argument
   template <typename T, std::size_t N>
   std::array<T, N> parse_array_argument(const char *name) {
-    std::array<T, N> result;
+    std::array<T, N> result{};
 
     const auto arguments_left = arguments.size() - next_index;
     if (arguments_left == 0 or arguments_left < N) {
@@ -468,8 +469,9 @@ struct parser {
   // Vector, deque, list
   template <typename T> T parse_vector_like_argument(const char *name) {
     T result;
+
     // Parse from current till end
-    for (std::size_t i = next_index; i < arguments.size(); i++) {
+    while (next_index < arguments.size()) {
       const auto next = arguments[next_index];
       if (is_optional_field(next) or std::string{next} == "--" or
           is_delimited_optional_argument(next).first) {
@@ -482,7 +484,7 @@ struct parser {
       }
       auto [value, success] = parse_argument<typename T::value_type>(name);
       if (success) {
-        result.push_back(value);
+	result.push_back(value);
       }
     }
     return result;
@@ -492,7 +494,7 @@ struct parser {
   template <typename T> T parse_container_adapter_argument(const char *name) {
     T result;
     // Parse from current till end
-    for (std::size_t i = next_index; i < arguments.size(); i++) {
+    while (next_index < arguments.size()) {
       const auto next = arguments[next_index];
       if (is_optional_field(next) or std::string{next} == "--" or
           is_delimited_optional_argument(next).first) {
@@ -515,7 +517,7 @@ struct parser {
   template <typename T> T parse_set_argument(const char *name) {
     T result;
     // Parse from current till end
-    for (std::size_t i = next_index; i < arguments.size(); i++) {
+    while (next_index < arguments.size()) {
       const auto next = arguments[next_index];
       if (is_optional_field(next) or std::string{next} == "--" or
           is_delimited_optional_argument(next).first) {
