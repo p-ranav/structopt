@@ -47,6 +47,7 @@ struct Options {
    std::optional<bool> verbose = false;
 
    // Directly define and use enum classes
+   // Enum classes are perfect for limiting user choice
    //   e.g., --log-level debug
    //   e.g., -l error
    enum class LogLevel { debug, info, warn, error, critical };
