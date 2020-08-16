@@ -1,44 +1,100 @@
-language: generic
-
+os: linux # Use linux unless specified otherwise.
 dist: bionic
+sudo: required
+
+language: cpp
 
 matrix:
-    include:
-    - env: CXX=g++-9 CC=gcc-9
+  include:
+    - os: linux
+      compiler: g++
       addons:
         apt:
+          sources:
+            - ubuntu-toolchain-r-test
           packages:
             - g++-9
-          sources:
-            - sourceline: 'ppa:ubuntu-toolchain-r/test'
-    - env: CXX=clang++-9 CC=clang-9
+      env:
+        - CXX_COMPILER=g++-9 CC_COMPILER=gcc-9
+
+    - os: linux
+      compiler: clang++
       addons:
         apt:
-          packages:
-            - clang-9
-            - libc++-9-dev
-            - libc++abi-9-dev
           sources:
-            - sourceline: 'deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-9 main'
+            - sourceline: 'deb https://apt.llvm.org/bionic/ llvm-toolchain-bionic-7 main'
               key_url: 'https://apt.llvm.org/llvm-snapshot.gpg.key'
-    - env: CXX=clang++-8 CC=clang-8
-      addons:
-        apt:
-          packages:
-            - clang-8
-            - libc++-8-dev
-            - libc++abi-8-dev
-    - env: CXX=clang++-7 CC=clang-7
-      addons:
-        apt:
           packages:
             - clang-7
-            - libc++-7-dev
-            - libc++abi-7-dev
+      env:
+        - CXX_COMPILER=clang++-7 CC_COMPILER=clang-7
 
+    - os: linux
+      compiler: clang++
+      addons:
+        apt:
+          sources:
+            - sourceline: 'deb https://apt.llvm.org/bionic/ llvm-toolchain-bionic-8 main'
+              key_url: 'https://apt.llvm.org/llvm-snapshot.gpg.key'
+          packages:
+            - clang-8
+      env:
+        - CXX_COMPILER=clang++-8 CC_COMPILER=clang-8
+
+    - os: linux
+      compiler: clang++
+      addons:
+        apt:
+          sources:
+            - sourceline: 'deb https://apt.llvm.org/bionic/ llvm-toolchain-bionic-9 main'
+              key_url: 'https://apt.llvm.org/llvm-snapshot.gpg.key'
+          packages:
+            - clang-9
+      env:
+        - CXX_COMPILER=clang++-9 CC_COMPILER=clang-9
+
+    - os: linux
+      compiler: clang++
+      addons:
+        apt:
+          sources:
+            - sourceline: 'deb https://apt.llvm.org/bionic/ llvm-toolchain-bionic-10 main'
+              key_url: 'https://apt.llvm.org/llvm-snapshot.gpg.key'
+          packages:
+            - clang-10
+      env:
+        - CXX_COMPILER=clang++-10 CC_COMPILER=clang-10
+
+    - os: osx
+      compiler: clang++
+      osx_image: xcode10.3
+      env:
+        - CXX_COMPILER=clang++ CC_COMPILER=clang
+
+    - os: osx
+      compiler: clang++
+      osx_image: xcode11.6
+      env:
+        - CXX_COMPILER=clang++ CC_COMPILER=clang
+
+    - os: osx
+      compiler: clang++
+      osx_image: xcode12
+      env:
+        - CXX_COMPILER=clang++ CC_COMPILER=clang
+
+install:
+  - export CC=${CC_COMPILER}
+  - export CXX=${CXX_COMPILER}
+  - JOBS=2 # Travis machines have 2 cores.
+
+before_script:
+  - rm -rf build
+  - mkdir -p build
+  - cd build
 
 script:
-    - if [[ "$CXX" == clang* ]]; then export CXXFLAGS="-stdlib=libc++"; fi
-    - mkdir build && cd build
-    - cmake -DSTRUCTOPT_SAMPLES=ON -DSTRUCTOPT_TESTS=ON ..
-    - make
+  - if [[ "$CXX" == clang* ]]; then export CXXFLAGS="-stdlib=libc++"; fi
+  - cmake -DSTRUCTOPT_SAMPLES=ON -DSTRUCTOPT_TESTS=ON ..
+  - make -j${JOBS}
+  - ./tests/structopt_tests
