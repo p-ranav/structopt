@@ -41,7 +41,7 @@ struct Options {
 };
 STRUCTOPT(Options, config_file, bind_address, verbose, log_level, user, files);
 
-TEST_CASE("structopt can parse trailing positional arguments" * test_suite("single_optional")) {
+TEST_CASE("structopt can parse trailing positional arguments" * test_suite("test_trailing_args")) {
   {
     auto arguments = structopt::app("test").parse<Options>(std::vector<std::string>
         {"./main", "--bind-address", "localhost:9000", "-v", "-log-level", "error", "--user", "Pranav Kumar", "pranav.kumar@foo.com", "config.csv"});
@@ -51,5 +51,26 @@ TEST_CASE("structopt can parse trailing positional arguments" * test_suite("sing
     REQUIRE(arguments.log_level == Options::LogLevel::error);
     REQUIRE(arguments.user == std::pair<std::string, std::string>{"Pranav Kumar", "pranav.kumar@foo.com"});
     REQUIRE(arguments.files == std::vector<std::string>{});
+  } 
+  {
+    auto arguments = structopt::app("test").parse<Options>(std::vector<std::string>
+        {"./main", "config_2.csv", "--bind-address", "192.168.7.3", "-log-level=debug", "file1.txt", "file2.txt", "file3.txt", "file4.txt", "--user", "John Doe", "john.doe@foo.com"});
+    REQUIRE(arguments.config_file == "config_2.csv");
+    REQUIRE(arguments.bind_address == "192.168.7.3");
+    REQUIRE(arguments.verbose == false);
+    REQUIRE(arguments.log_level == Options::LogLevel::debug);
+    REQUIRE(arguments.user == std::pair<std::string, std::string>{"John Doe", "john.doe@foo.com"});
+    REQUIRE(arguments.files == std::vector<std::string>{"file1.txt", "file2.txt", "file3.txt", "file4.txt"});
+  }
+  {
+    auto arguments = structopt::app("test").parse<Options>(std::vector<std::string>
+        {"./main", "config_2.csv", "--bind-address", "192.168.7.3", "-log-level", 
+         "debug", "file1.txt", "file2.txt", "file3.txt", "file4.txt", "--user", "John Doe", "john.doe@foo.com"});
+    REQUIRE(arguments.config_file == "config_2.csv");
+    REQUIRE(arguments.bind_address == "192.168.7.3");
+    REQUIRE(arguments.verbose == false);
+    REQUIRE(arguments.log_level == Options::LogLevel::debug);
+    REQUIRE(arguments.user == std::pair<std::string, std::string>{"John Doe", "john.doe@foo.com"});
+    REQUIRE(arguments.files == std::vector<std::string>{"file1.txt", "file2.txt", "file3.txt", "file4.txt"});
   }
 }

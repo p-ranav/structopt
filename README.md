@@ -127,7 +127,6 @@ files        = { file1.txt file3.txt file4.txt }
      *    [Tuple Arguments](#tuple-arguments)
      *    [Vector Arguments](#vector-arguments)
      *    [Compound Arguments](#compound-arguments)
-          *    [Positional and Compound Toggle Arguments](#positional-and-compound-toggle-arguments)
      *    [Parsing Numbers](#parsing-numbers)
           *    [Integer Literals](#integer-literals)
           *    [Floating point Literals](#floating-point-literals)
@@ -199,6 +198,8 @@ ARGS:
 Now, let's look at optional arguments. To configure an optional argument, use `std::optional` in the options struct like below.
 
 ```cpp
+#include <structopt/app.hpp>
+
 struct GccOptions {
   // language standard
   // e.g., -std=c++17
@@ -222,6 +223,25 @@ struct GccOptions {
   std::string input_file;
 };
 STRUCTOPT(GccOptions, std, verbose, Wall, Compile, output, input_file);
+
+
+int main(int argc, char *argv[]) {
+  try {
+    auto options = structopt::app("gcc").parse<GccOptions>(argc, argv);
+
+    // Print parsed arguments
+
+    std::cout << "std        : " << options.std.value() << "\n";
+    std::cout << "verbose    : " << std::boolalpha << options.verbose.value() << "\n";
+    std::cout << "Wall       : " << std::boolalpha << options.Wall.value() << "\n";
+    std::cout << "Compile    : " << std::boolalpha << options.Compile.value() << "\n";
+    std::cout << "Output     : " << options.output.value() << "\n";
+    std::cout << "Input file : " << options.input_file << "\n";
+  } catch (structopt::exception &e) {
+    std::cout << e.what() << "\n";
+    std::cout << e.help();
+  }
+}
 ```
 
 ***NOTE*** `structopt` supports two option delimiters, `=` and `:` for optional arguments. This is meaningful and commonly used in single-valued optional arguments, e.g., `--std=c++17`.
@@ -531,9 +551,18 @@ STRUCTOPT(CompilerOptions, std, files);
 
 
 int main(int argc, char *argv[]) {
-  auto options = structopt::app("my_app").parse<CompilerOptions>(argc, argv);
+  try {
+    auto options = structopt::app("my_app").parse<CompilerOptions>(argc, argv);
 
-  // Some code to print parsed arguments
+    std::cout << "Standard : " << options.std.value_or("not provided") << "\n";
+    std::cout << "Files    : { ";
+    std::copy(options.files.begin(), options.files.end(),
+              std::ostream_iterator<std::string>(std::cout, " "));
+    std::cout << "}" << std::endl;
+  } catch (structopt::exception &e) {
+    std::cout << e.what() << "\n";
+    std::cout << e.help();
+  }
 }
 ```
 
@@ -578,9 +607,21 @@ STRUCTOPT(Options, a, b, c);
 
 
 int main(int argc, char *argv[]) {
-  auto options = structopt::app("my_app").parse<Options>(argc, argv);
+  try {
+    auto options = structopt::app("my_app").parse<Options>(argc, argv);
 
-  // Some code to print parsed arguments
+    // Print parsed arguments:
+
+    std::cout << std::boolalpha << "a = " << options.a.value()
+              << ", b = " << options.b.value() << "\n";
+    if (options.c.has_value()) {
+      std::cout << "c = [" << options.c.value()[0] << ", " << options.c.value()[1]
+                << "]\n";
+    }
+  } catch (structopt::exception &e) {
+    std::cout << e.what() << "\n";
+    std::cout << e.help();
+  }
 }
 ```
 
@@ -597,44 +638,6 @@ a = true, b = true
 c = [1.5, 3]
 ```
 
-#### Positional and Compound Toggle Arguments
-
-```cpp
-#include <structopt/app.hpp>
-
-struct Options {
-  // Positional arguments
-  std::array<int, 3> numbers = {0, 0, 0};
-
-  // Flag arguments
-  std::optional<bool> a = false;
-  std::optional<bool> b = false;
-
-  // Optional argument
-  // e.g., -c 1.1 2.2
-  std::optional<std::array<float, 2>> c = {};
-
-  // Remaining arguments
-  std::optional<std::vector<std::string>> files;
-};
-STRUCTOPT(Options, numbers, a, b, c, files);
-
-
-int main(int argc, char *argv[]) {
-  auto options = structopt::app("my_app").parse<Options>(argc, argv);
-
-  // Some code to print parsed arguments
-}
-```
-
-```bash
-▶ ./main 1 2 3 -abc 3.14 2.718 --files a.txt b.txt c.txt
-numbers = [1, 2, 3]
-a = true, b = true
-c = [3.14, 2.718]
-files = a.txt b.txt c.txt
-```
-
 ### Parsing Numbers
 
 #### Integer Literals
@@ -649,7 +652,17 @@ struct IntegerLiterals {
 };
 STRUCTOPT(IntegerLiterals, numbers);
 
-// main() omitted for brevity
+int main(int argc, char *argv[]) {
+  try {
+    auto options = structopt::app("my_app").parse<IntegerLiterals>(argc, argv);
+
+    for (auto &n : options.numbers)
+      std::cout << n << "\n";
+  } catch (structopt::exception &e) {
+    std::cout << e.what() << "\n";
+    std::cout << e.help();
+  }
+}
 ```
 
 ```bash
@@ -674,7 +687,17 @@ struct FloatLiterals {
 };
 STRUCTOPT(FloatLiterals, numbers);
 
-// main() omitted for brevity
+int main(int argc, char *argv[]) {
+  try {
+    auto options = structopt::app("my_app").parse<FloatLiterals>(argc, argv);
+
+    for (auto &n : options.numbers)
+      std::cout << n << "\n";
+  } catch (structopt::exception &e) {
+    std::cout << e.what() << "\n";
+    std::cout << e.help();
+  }
+}
 ```
 
 ```bash

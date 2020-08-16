@@ -2158,12 +2158,12 @@ struct parser {
 
   bool is_optional_field(const std::string &next, const std::string &field_name) {
     bool result = false;
-    if (next == "-" + field_name or next == "--" + field_name or
-        next == "-" + std::string(1, field_name[0])) {
+    if (next == "-" + field_name or 
+        next == "--" + field_name or
+        next == "-" + std::string(1, field_name[0]) or
+        is_kebab_case(next, field_name)) {
       // okay `next` matches _a_ field name (which is an optional field)
       result = true;
-    } else {
-      result = is_kebab_case(next, field_name);
     }
     return result;
   }
@@ -2230,28 +2230,6 @@ struct parser {
         success = true;
       }
     }
-
-    // for (auto& c : option_delimiters) {
-    //   std::string key, value;
-    //   bool delimiter_found = false;
-    //   for (size_t i = 0; i < next.size(); i++) {
-    //     if (next[i] == c and !delimiter_found) {
-    //       delimiter = c;
-    //       delimiter_found = true;
-    //     } else {
-    //       if (!delimiter_found) {
-    //         key += next[i];
-    //       } else {
-    //         value += next[i];
-    //       }
-    //     }
-    //   }
-
-    //   if (delimiter_found && is_optional_field(key)) {
-    //     success = true;
-    //     break;
-    //   }
-    // }
     return {success, delimiter};
   }
 
@@ -2759,24 +2737,6 @@ struct parser {
         return;
       }
 
-      // // Remove special characters from argument
-      // // e.g., --verbose => verbose
-      // // e.g., -v => v
-      // // e.g., --input-file => inputfile
-      // auto next_alpha = next;
-      // next_alpha.erase(std::remove_if(next_alpha.begin(), next_alpha.end(),
-      //                                 [](char c) { return !std::isalpha(c); }),
-      //                  next_alpha.end());
-
-      // // Remove special characters from field name
-      // // e.g., verbose => verbose
-      // // e.g., input_file => inputfile
-      // auto field_name_alpha = field_name;
-      // field_name_alpha.erase(std::remove_if(field_name_alpha.begin(),
-      //                                       field_name_alpha.end(),
-      //                                       [](char c) { return !std::isalpha(c); }),
-      //                        field_name_alpha.end());
-
       // if `next` looks like an optional argument
       // i.e., starts with `-` or `--`
       // see if you can find an optional field in the struct with a matching name
@@ -2829,12 +2789,11 @@ struct parser {
           // A direct match of optional argument with field_name has not happened
           // This _could_ be a combined argument
           // e.g., -abc => -a, -b, and -c where each of these is a flag argument
+
           std::vector<std::string> potential_combined_argument;
 
-          // if next is of the form `-abc` or `-de` and NOT of the form `--abc`
-          // `--abc` is not a combined argument
-          // `-abc` might be
-          if (next[0] == '-' and (next.size() > 1 and next[1] != '-')) {
+          if (is_optional_field(next) == false and 
+              next[0] == '-' and (next.size() > 1 and next[1] != '-')) {
             for (std::size_t i = 1; i < next.size(); i++) {
               potential_combined_argument.push_back("-" + std::string(1, next[i]));
             }

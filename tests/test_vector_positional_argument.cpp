@@ -78,7 +78,6 @@ TEST_CASE("structopt can parse vector of files with an optional argument in the 
   {
     auto arguments = structopt::app("test").parse<CompilerOptionsForVectorOfFiles>(std::vector<std::string>{"./main"});
     REQUIRE(arguments.std.has_value() == false);
-    for (auto& a : arguments.files) std::cout << a << " "; std::cout << "\n";
     REQUIRE(arguments.files == std::vector<std::string>{});
   }
   {
