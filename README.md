@@ -201,9 +201,10 @@ Now, let's look at optional arguments. To configure an optional argument, use `s
 
 ```cpp
 struct GccOptions {
+  // language standard
+  // e.g., -std=c++17
+  // e.g., --std c++20
   std::optional<std::string> std = "c++11";
-
-  // flag arguments:
 
   // verbosity enabled with `-v` or `--verbose`
   // or `-verbose`
