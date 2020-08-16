@@ -31,18 +31,19 @@ struct Options {
    //   e.g., --bind_address "192.168.5.3"
    //
    // options can be delimited with `=` or `:`
-   //   e.g., -std=c++17
-   //   e.g., -BUILD_TYPE=RELEASE
+   // note: single dash (`-`) is enough for short & long option
+   //   e.g., -bind_address=localhost
+   //   e.g., -b:192.168.5.3
    //
    // the long option can also be provided in kebab case:
-   //   e.g., --fixed-point 1.4 -3.6 9.6 
+   //   e.g., --bind-address 192.168.5.3
    std::optional<std::string> bind_address;
  
    // flag argument
    // Use `std::optional<bool>` and provide a default value. 
    //   e.g., -v
    //   e.g., --verbose
-   //   e.g., -Wall -Wextra
+   //   e.g., -verbose
    std::optional<bool> verbose = false;
 
    // Directly define and use enum classes
@@ -51,8 +52,9 @@ struct Options {
    enum class LogLevel { debug, info, warn, error, critical };
    std::optional<LogLevel> log_level = LogLevel::info;
 
-   // Here, structopt will check for `-u` or `--user` 
-   // and parse the next 2 arguments into an `std::pair`
+   // pair argument
+   // e.g., -u <first> <second>
+   // e.g., --user <first> <second>
    std::optional<std::pair<std::string, std::string>> user;
 
    // Use containers like std::vector

@@ -69,6 +69,16 @@ TEST_CASE("structopt can parse single optional argument with underscore-separate
     REQUIRE(arguments.config_file == "foo.csv");
   }
   {
+    auto arguments = structopt::app("test").parse<SingleOptionalStringArgument>(std::vector<std::string>{"./main", "-b:192.168.7.1", "foo.csv"});
+    REQUIRE(arguments.bind_address == "192.168.7.1");
+    REQUIRE(arguments.config_file == "foo.csv");
+  }
+  {
+    auto arguments = structopt::app("test").parse<SingleOptionalStringArgument>(std::vector<std::string>{"./main", "-b=192.168.7.1", "foo.csv"});
+    REQUIRE(arguments.bind_address == "192.168.7.1");
+    REQUIRE(arguments.config_file == "foo.csv");
+  }
+  {
     auto arguments = structopt::app("test").parse<SingleOptionalStringArgument>(std::vector<std::string>{"./main", "-bind-address", "localhost", "foo.csv"});
     REQUIRE(arguments.bind_address == "localhost");
     REQUIRE(arguments.config_file == "foo.csv");
