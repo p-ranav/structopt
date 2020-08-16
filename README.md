@@ -7,6 +7,9 @@
 </p>
 
 <p align="center">
+  <a href="https://travis-ci.com/p-ranav/structopt">
+    <img src="https://travis-ci.com/p-ranav/structopt.svg?branch=master" alt="ci status"/>
+  </a>
   <a href="https://en.wikipedia.org/wiki/C%2B%2B17">
     <img src="https://img.shields.io/badge/C%2B%2B-17-blue.svg" alt="standard"/>
   </a>
@@ -134,6 +137,7 @@ files        = { file1.txt file3.txt file4.txt }
      *    [Sub-Commands, Vector Arguments, and Delimited Positional Arguments](#sub-commands-vector-arguments-and-delimited-positional-arguments)
      *    [Printing Help](#printing-help)
 *    [Building Samples and Tests](#building-samples-and-tests)
+*    [Compiler Compatibility](#compiler-compatibility)
 *    [Generating Single Header](#generating-single-header)
 *    [Contributing](#contributing)
 *    [License](#license)
@@ -986,6 +990,13 @@ mkdir build && cd build
 cmake -DSTRUCTOPT_SAMPLES=ON -DSTRUCTOPT_TESTS=ON ..
 make
 ```
+
+## Compiler Compatibility
+
+* Clang/LLVM >= 5
+* MSVC++ >= 14.11 / Visual Studio >= 2017
+* Xcode >= 10
+* GCC >= 9
 
 ## Generating Single Header
 
