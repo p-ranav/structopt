@@ -62,3 +62,59 @@ TEST_CASE("structopt can parse vector of pairs positional argument" * test_suite
     REQUIRE(arguments.values == std::vector<std::pair<std::string, int>>{{"a", 1}, {"b", 2}});
   }
 }
+
+struct CompilerOptionsForVectorOfFiles {
+  // Language standard
+  // e.g., --std c++17
+  std::optional<std::string> std;
+
+  // remaining arguments
+  // e.g., ./compiler file1 file2 file3
+  std::vector<std::string> files{};
+};
+STRUCTOPT(CompilerOptionsForVectorOfFiles, std, files);
+
+TEST_CASE("structopt can parse vector of files with an optional argument in the way" * test_suite("vector_positional")) {
+  {
+    auto arguments = structopt::app("test").parse<CompilerOptionsForVectorOfFiles>(std::vector<std::string>{"./main"});
+    REQUIRE(arguments.std.has_value() == false);
+    for (auto& a : arguments.files) std::cout << a << " "; std::cout << "\n";
+    REQUIRE(arguments.files == std::vector<std::string>{});
+  }
+  {
+    auto arguments = structopt::app("test").parse<CompilerOptionsForVectorOfFiles>(std::vector<std::string>{"./main", "file1", "file2", "file3", "-std=c++17"});
+    REQUIRE(arguments.std.has_value() == true);
+    REQUIRE(arguments.std.value() == "c++17");
+    REQUIRE(arguments.files == std::vector<std::string>{"file1", "file2", "file3"});
+  }
+  {
+    auto arguments = structopt::app("test").parse<CompilerOptionsForVectorOfFiles>(std::vector<std::string>{"./main", "file1", "file2", "file3", "-std:c++17"});
+    REQUIRE(arguments.std.has_value() == true);
+    REQUIRE(arguments.std.value() == "c++17");
+    REQUIRE(arguments.files == std::vector<std::string>{"file1", "file2", "file3"});
+  }
+  {
+    auto arguments = structopt::app("test").parse<CompilerOptionsForVectorOfFiles>(std::vector<std::string>{"./main", "file1", "file2", "file3", "--std", "c++17"});
+    REQUIRE(arguments.std.has_value() == true);
+    REQUIRE(arguments.std.value() == "c++17");
+    REQUIRE(arguments.files == std::vector<std::string>{"file1", "file2", "file3"});
+  }
+  {
+    auto arguments = structopt::app("test").parse<CompilerOptionsForVectorOfFiles>(std::vector<std::string>{"./main", "-std=c++20", "file1", "file2", "file3"});
+    REQUIRE(arguments.std.has_value() == true);
+    REQUIRE(arguments.std.value() == "c++20");
+    REQUIRE(arguments.files == std::vector<std::string>{"file1", "file2", "file3"});
+  }
+  {
+    auto arguments = structopt::app("test").parse<CompilerOptionsForVectorOfFiles>(std::vector<std::string>{"./main", "-std", "c++20", "file1", "file2", "file3"});
+    REQUIRE(arguments.std.has_value() == true);
+    REQUIRE(arguments.std.value() == "c++20");
+    REQUIRE(arguments.files == std::vector<std::string>{"file1", "file2", "file3"});
+  }
+  {
+    auto arguments = structopt::app("test").parse<CompilerOptionsForVectorOfFiles>(std::vector<std::string>{"./main", "-std:c++20"});
+    REQUIRE(arguments.std.has_value() == true);
+    REQUIRE(arguments.std.value() == "c++20");
+    REQUIRE(arguments.files == std::vector<std::string>{});
+  }
+}
