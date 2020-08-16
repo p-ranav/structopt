@@ -1962,15 +1962,11 @@ struct visitor {
   void print_help(std::ostream &os) const {
     os << "\nUSAGE: " << name << " ";
 
-    bool optional_arguments_available = false;
-
     if (flag_field_names.empty() == false) {
-      optional_arguments_available = true;
       os << "[FLAGS] ";
     }
 
     if (optional_field_names.empty() == false) {
-      optional_arguments_available = true;
       os << "[OPTIONS] ";
     }
 
@@ -2010,9 +2006,6 @@ struct visitor {
       }
     }
 
-    // if (!optional_arguments_available)
-    //   os << "\n";
-
     if (nested_struct_field_names.empty() == false) {
       os << "\nSUBCOMMANDS:\n";
       for (auto &sc : nested_struct_field_names) {
@@ -2032,6 +2025,7 @@ struct visitor {
 } // namespace details
 
 } // namespace structopt
+
 #pragma once
 #include <exception>
 #include <sstream>
@@ -2199,11 +2193,9 @@ struct parser {
     } else {
       // assume `=` comes first
       char c = '=';
-      auto first = equal_pos;
 
       if (colon_pos < equal_pos) {
         // confirmed: `:` comes first
-        first = colon_pos;
         c = ':';
       }
 
@@ -2293,7 +2285,6 @@ struct parser {
   template <typename T> std::optional<T> parse_optional_argument(const char *name) {
     next_index += 1;
     std::optional<T> result;
-    bool success;
     if (next_index < arguments.size()) {
       auto [value, success] = parse_argument<T>(name);
       if (success) {
@@ -2430,7 +2421,6 @@ struct parser {
   template <typename T1, typename T2>
   std::pair<T1, T2> parse_pair_argument(const char *name) {
     std::pair<T1, T2> result;
-    bool success;
     {
       // Pair first
       auto [value, success] = parse_argument<T1>(name);
@@ -2480,7 +2470,6 @@ struct parser {
   template <typename T, std::size_t N>
   std::array<T, N> parse_array_argument(const char *name) {
     std::array<T, N> result;
-    bool success;
 
     const auto arguments_left = arguments.size() - next_index;
     if (arguments_left == 0 or arguments_left < N) {
@@ -2928,7 +2917,7 @@ public:
       : visitor(name, version) {}
 
   template <typename T> T parse(const std::vector<std::string> &arguments) {
-    T argument_struct;
+    T argument_struct = T();
 
     // Visit the struct and save flag, optional and positional field names
     visit_struct::for_each(argument_struct, visitor);

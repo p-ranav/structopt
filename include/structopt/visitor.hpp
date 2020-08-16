@@ -85,15 +85,11 @@ struct visitor {
   void print_help(std::ostream &os) const {
     os << "\nUSAGE: " << name << " ";
 
-    bool optional_arguments_available = false;
-
     if (flag_field_names.empty() == false) {
-      optional_arguments_available = true;
       os << "[FLAGS] ";
     }
 
     if (optional_field_names.empty() == false) {
-      optional_arguments_available = true;
       os << "[OPTIONS] ";
     }
 
@@ -132,9 +128,6 @@ struct visitor {
            << "\n";
       }
     }
-
-    // if (!optional_arguments_available)
-    //   os << "\n";
 
     if (nested_struct_field_names.empty() == false) {
       os << "\nSUBCOMMANDS:\n";

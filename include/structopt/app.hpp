@@ -22,7 +22,7 @@ public:
       : visitor(name, version) {}
 
   template <typename T> T parse(const std::vector<std::string> &arguments) {
-    T argument_struct;
+    T argument_struct = T();
 
     // Visit the struct and save flag, optional and positional field names
     visit_struct::for_each(argument_struct, visitor);
