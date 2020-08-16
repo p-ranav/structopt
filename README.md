@@ -30,14 +30,12 @@ struct Options {
    //   e.g., -b "192.168.5.3"
    //   e.g., --bind_address "192.168.5.3"
    //
-   // the long option can be provided with a single leading dash (`-`)
-   //   e.g., -Wall
-   //
    // options can be delimited with `=` or `:`
-   //   e.g. -std=c++17
+   //   e.g., -std=c++17
+   //   e.g., -BUILD_TYPE=RELEASE
    //
    // the long option can also be provided in kebab case:
-   //   e.g. --fixed-point 1.4 -3.6 9.6 
+   //   e.g., --fixed-point 1.4 -3.6 9.6 
    std::optional<std::string> bind_address;
  
    // flag argument
