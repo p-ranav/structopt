@@ -288,7 +288,7 @@ Input file : main.cpp
   * `-bind_address=<value>`
   * `--bind-address=<value>`
   * `-bind-address=<value>`
-* Comma `':'` option delimiter
+* Colon `':'` option delimiter
   * `-b:<value>`
   * `--bind_address:<value>`
   * `-bind_address:<value>`
