@@ -46,8 +46,7 @@ struct Options {
    //   e.g., -verbose
    std::optional<bool> verbose = false;
 
-   // Directly define and use enum classes
-   // Enum classes are perfect for limiting user choice
+   // directly define and use enum classes to limit user choice
    //   e.g., --log-level debug
    //   e.g., -l error
    enum class LogLevel { debug, info, warn, error, critical };
@@ -58,7 +57,7 @@ struct Options {
    // e.g., --user <first> <second>
    std::optional<std::pair<std::string, std::string>> user;
 
-   // Use containers like std::vector
+   // use containers like std::vector
    // to collect "remaining arguments" into a list
    std::vector<std::string> files;
 };
