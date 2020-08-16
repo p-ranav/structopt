@@ -263,12 +263,12 @@ Input file : main.cpp
 * Kebab case:
   * `--bind-address <value>`
   * `-bind-address <value>`
-* `=` option delimiter
+* `'='` option delimiter
   * `--bind_address=<value>`
   * `-bind_address=<value>`
   * `--bind-address=<value>`
   * `-bind-address=<value>`
-* `:` option delimiter
+* `':'` option delimiter
   * `--bind_address:<value>`
   * `-bind_address:<value>`
   * `--bind-address:<value>`
