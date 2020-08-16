@@ -46,3 +46,76 @@ TEST_CASE("structopt can parse single optional argument" * test_suite("single_op
     REQUIRE(arguments.verbose.value() == false);
   }
 }
+
+struct SingleOptionalStringArgument {
+  std::optional<std::string> bind_address;
+  std::string config_file;
+};
+STRUCTOPT(SingleOptionalStringArgument, bind_address, config_file);
+
+TEST_CASE("structopt can parse single optional argument with underscore-separated long name " * test_suite("single_optional")) {
+  {
+    bool exception_thrown = false;
+    try {
+      auto arguments = structopt::app("test").parse<SingleOptionalStringArgument>(std::vector<std::string>{"./main", "--bind_address"});
+    } catch (structopt::exception& e) {
+      exception_thrown = true;
+    }
+    REQUIRE(exception_thrown == true);
+  }
+  {
+    auto arguments = structopt::app("test").parse<SingleOptionalStringArgument>(std::vector<std::string>{"./main", "-b", "localhost", "foo.csv"});
+    REQUIRE(arguments.bind_address == "localhost");
+    REQUIRE(arguments.config_file == "foo.csv");
+  }
+  {
+    auto arguments = structopt::app("test").parse<SingleOptionalStringArgument>(std::vector<std::string>{"./main", "-bind-address", "localhost", "foo.csv"});
+    REQUIRE(arguments.bind_address == "localhost");
+    REQUIRE(arguments.config_file == "foo.csv");
+  }
+  {
+    auto arguments = structopt::app("test").parse<SingleOptionalStringArgument>(std::vector<std::string>{"./main", "-bind_address", "localhost", "foo.csv"});
+    REQUIRE(arguments.bind_address == "localhost");
+    REQUIRE(arguments.config_file == "foo.csv");
+  }
+  {
+    auto arguments = structopt::app("test").parse<SingleOptionalStringArgument>(std::vector<std::string>{"./main", "--bind-address", "192.168.153.47", "foo.csv"});
+    REQUIRE(arguments.bind_address == "192.168.153.47");
+    REQUIRE(arguments.config_file == "foo.csv");
+  }
+  {
+    auto arguments = structopt::app("test").parse<SingleOptionalStringArgument>(std::vector<std::string>{"./main", "--bind_address", "192.168.153.47", "foo.csv"});
+    REQUIRE(arguments.bind_address == "192.168.153.47");
+    REQUIRE(arguments.config_file == "foo.csv");
+  }
+  {
+    auto arguments = structopt::app("test").parse<SingleOptionalStringArgument>(std::vector<std::string>{"./main", "foo.csv", "-b", "localhost"});
+    REQUIRE(arguments.bind_address == "localhost");
+    REQUIRE(arguments.config_file == "foo.csv");
+  }
+  {
+    auto arguments = structopt::app("test").parse<SingleOptionalStringArgument>(std::vector<std::string>{"./main", "foo.csv", "--bind-address", "localhost"});
+    REQUIRE(arguments.bind_address == "localhost");
+    REQUIRE(arguments.config_file == "foo.csv");
+  }
+  {
+    auto arguments = structopt::app("test").parse<SingleOptionalStringArgument>(std::vector<std::string>{"./main", "foo.csv", "--bind_address", "localhost"});
+    REQUIRE(arguments.bind_address == "localhost");
+    REQUIRE(arguments.config_file == "foo.csv");
+  }
+  {
+    auto arguments = structopt::app("test").parse<SingleOptionalStringArgument>(std::vector<std::string>{"./main", "foo.csv", "-bind-address", "localhost"});
+    REQUIRE(arguments.bind_address == "localhost");
+    REQUIRE(arguments.config_file == "foo.csv");
+  }
+  {
+    auto arguments = structopt::app("test").parse<SingleOptionalStringArgument>(std::vector<std::string>{"./main", "foo.csv", "-bind_address", "localhost"});
+    REQUIRE(arguments.bind_address == "localhost");
+    REQUIRE(arguments.config_file == "foo.csv");
+  }
+  {
+    auto arguments = structopt::app("test").parse<SingleOptionalStringArgument>(std::vector<std::string>{"./main", "foo.csv", "-bind_address", "localhost"});
+    REQUIRE(arguments.bind_address == "localhost");
+    REQUIRE(arguments.config_file == "foo.csv");
+  }
+}

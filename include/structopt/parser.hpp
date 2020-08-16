@@ -47,15 +47,56 @@ struct parser {
       // e.g., -b, -v
       if (name[0] == '-') {
         result = true;
-
-        // TODO: check if rest of name is NOT a decimal literal - this could be a negative
-        // number if (name is a decimal literal) {
-        //   result = false;
-        // }
-
+        // e.g., --verbose
         if (name[1] == '-') {
           result = true;
         }
+      }
+    }
+    return result;
+  }
+
+  bool is_kebab_case(const std::string& next, const std::string &field_name) {
+    bool result = false;
+    auto maybe_kebab_case = next;
+    if (maybe_kebab_case.size() > 1 and maybe_kebab_case[0] == '-') {
+      // remove first dash
+      maybe_kebab_case.erase(0, 1);
+      if (maybe_kebab_case[0] == '-') {
+        // there is a second leading dash
+        // remove it
+        maybe_kebab_case.erase(0, 1);
+      }
+      std::replace(maybe_kebab_case.begin(), maybe_kebab_case.end(), '-', '_');
+      if (maybe_kebab_case == field_name) {
+        result = true;
+      }
+    }
+    return result;
+  }
+
+  bool is_optional_field(const std::string& next, const std::string& field_name) {
+    bool result = false;
+    if (next == "-" + field_name or next == "--" + field_name or next == "-" + std::string(1, field_name[0])) {
+      // okay `next` matches _a_ field name (which is an optional field)
+      result = true;
+    }
+    else {
+      result = is_kebab_case(next, field_name);
+    }
+    return result;
+  }
+
+  bool is_optional_field(const std::string &next) {
+    if (!is_optional(next)) {
+      return false;
+    }
+
+    bool result = false;
+    for (auto &field_name : visitor.field_names) {
+      result = is_optional_field(next, field_name);
+      if (result) {
+        break;
       }
     }
     return result;
@@ -69,8 +110,26 @@ struct parser {
   std::pair<bool, char> is_delimited_optional_argument(const std::string &next) {
     bool success = false;
     char delimiter = '\0';
-    const std::vector<char> option_delimiters = {'=', ':'};
-    for (auto& c : option_delimiters) {
+
+    auto equal_pos = next.find('=');
+    auto colon_pos = next.find(':');
+
+    if (equal_pos == std::string::npos and colon_pos == std::string::npos) {
+      // not delimited
+      return {success, delimiter};
+    }
+    else {
+      // assume `=` comes first
+      char c = '=';
+      auto first = equal_pos;
+
+      if (colon_pos < equal_pos) {
+        // confirmed: `:` comes first
+        first = colon_pos;
+        c = ':';
+      }
+
+      // split `next` into key and value 
       std::string key, value;
       bool delimiter_found = false;
       for (size_t i = 0; i < next.size(); i++) {
@@ -86,11 +145,33 @@ struct parser {
         }
       }
 
+      // check if `key` is a valid optional field
       if (delimiter_found && is_optional_field(key)) {
         success = true;
-        break;
       }
     }
+
+    // for (auto& c : option_delimiters) {
+    //   std::string key, value;
+    //   bool delimiter_found = false;
+    //   for (size_t i = 0; i < next.size(); i++) {
+    //     if (next[i] == c and !delimiter_found) {
+    //       delimiter = c;
+    //       delimiter_found = true;
+    //     } else {
+    //       if (!delimiter_found) {
+    //         key += next[i];
+    //       } else {
+    //         value += next[i];
+    //       }
+    //     }
+    //   }
+
+    //   if (delimiter_found && is_optional_field(key)) {
+    //     success = true;
+    //     break;
+    //   }
+    // }
     return {success, delimiter};
   }
 
@@ -109,21 +190,6 @@ struct parser {
       }
     }
     return {key, value};
-  }
-
-  bool is_optional_field(const std::string &next) {
-    if (!is_optional(next)) {
-      return false;
-    }
-
-    bool result = false;
-    for (auto &field_name : visitor.field_names) {
-      if (next == "-" + field_name or next == "--" + field_name or next == "-" + std::string(1, field_name[0])) {
-        // okay `next` matches _a_ field name (which is an optional field)
-        result = true;
-      }
-    }
-    return result;
   }
 
   template <typename T> std::pair<T, bool> parse_argument(const char *name) {
@@ -608,32 +674,30 @@ struct parser {
         return;
       }
 
-      // Remove special characters from argument
-      // e.g., --verbose => verbose
-      // e.g., -v => v
-      // e.g., --input-file => inputfile
-      auto next_alpha = next;
-      next_alpha.erase(std::remove_if(next_alpha.begin(), next_alpha.end(),
-                                      [](char c) { return !std::isalpha(c); }),
-                       next_alpha.end());
+      // // Remove special characters from argument
+      // // e.g., --verbose => verbose
+      // // e.g., -v => v
+      // // e.g., --input-file => inputfile
+      // auto next_alpha = next;
+      // next_alpha.erase(std::remove_if(next_alpha.begin(), next_alpha.end(),
+      //                                 [](char c) { return !std::isalpha(c); }),
+      //                  next_alpha.end());
 
-      // Remove special characters from field name
-      // e.g., verbose => verbose
-      // e.g., input_file => inputfile
-      auto field_name_alpha = field_name;
-      field_name_alpha.erase(std::remove_if(field_name_alpha.begin(),
-                                            field_name_alpha.end(),
-                                            [](char c) { return !std::isalpha(c); }),
-                             field_name_alpha.end());
+      // // Remove special characters from field name
+      // // e.g., verbose => verbose
+      // // e.g., input_file => inputfile
+      // auto field_name_alpha = field_name;
+      // field_name_alpha.erase(std::remove_if(field_name_alpha.begin(),
+      //                                       field_name_alpha.end(),
+      //                                       [](char c) { return !std::isalpha(c); }),
+      //                        field_name_alpha.end());
 
       // if `next` looks like an optional argument
       // i.e., starts with `-` or `--`
       // see if you can find an optional field in the struct with a matching name
 
       // check if the current argument looks like it could be this optional field
-      if ((double_dash_encountered == false) and
-          ((next == "-" + field_name or next == "--" + field_name or next == "-" + std::string(1, field_name[0])) or
-           (next_alpha == field_name_alpha))) {
+      if (double_dash_encountered == false and is_optional_field(next, field_name)) {
 
         // this is an optional argument matching the current struct field
         if constexpr (std::is_same<typename T::value_type, bool>::value) {
