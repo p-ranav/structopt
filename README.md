@@ -200,14 +200,56 @@ ARGS:
 Now, let's look at optional arguments. To configure an optional argument, use `std::optional` in the options struct like below.
 
 ```cpp
+struct GccOptions {
+  std::optional<std::string> std = "c++11";
 
+  // flag arguments:
+
+  // verbosity enabled with `-v` or `--verbose`
+  // or `-verbose`
+  std::optional<bool> verbose = false;
+
+  // enable all warnings with `-Wall`
+  std::optional<bool> Wall = false;
+
+  // produce only the compiled code
+  // e.g., gcc -C main.c
+  std::optional<bool> Compile = false;
+
+  // produce output with `-o <exec_name>`
+  std::optional<std::string> output = "a.out";
+
+  std::string input_file;
+};
+STRUCTOPT(GccOptions, std, verbose, Wall, Compile, output, input_file);
 ```
 
-***NOTE*** `structopt` supports two option delimiters, `=` and `:` for optional arguments. This is meaningful and commonly used in single-valued optional arguments, e.g., `--std=c++17` and `--VERBOSE=on`
-
+***NOTE*** `structopt` supports two option delimiters, `=` and `:` for optional arguments. This is meaningful and commonly used in single-valued optional arguments, e.g., `--std=c++17`.
 
 ```bash
+▶ ./main -C main.cpp
+std        : c++11
+verbose    : false
+Wall       : false
+Compile    : true
+Output     : a.out
+Input file : main.cpp
 
+▶ ./main -std=c++17 -o main main.cpp
+std        : c++17
+verbose    : false
+Wall       : false
+Compile    : false
+Output     : main
+Input file : main.cpp
+
+▶ ./main main.cpp -v -std:c++14 --output:main -Wall
+std        : c++14
+verbose    : true
+Wall       : true
+Compile    : false
+Output     : main
+Input file : main.cpp
 ```
 
 #### Double dash (`--`) Argument
