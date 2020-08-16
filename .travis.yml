@@ -94,7 +94,10 @@ before_script:
   - cd build
 
 script:
-  - if [[ "$CXX" == clang* ]]; then export CXXFLAGS="-stdlib=libc++"; fi
-  - cmake -DSTRUCTOPT_SAMPLES=ON -DSTRUCTOPT_TESTS=ON ..
-  - make -j${JOBS}
+  - cmake -G "Unix Makefiles" -DSTRUCTOPT_SAMPLES=on -DSTRUCTOPT_TESTS=on -DCMAKE_BUILD_TYPE=Debug ..
+  - cmake --build . --config Debug -- -j${JOBS}
+  - ./tests/structopt_tests
+  - rm -rf ./*
+  - cmake -G "Unix Makefiles" -DSTRUCTOPT_SAMPLES=on -DSTRUCTOPT_TESTS=on -DCMAKE_BUILD_TYPE=Release ..
+  - cmake --build . --config Release -- -j${JOBS}
   - ./tests/structopt_tests
