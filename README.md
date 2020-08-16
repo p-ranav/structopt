@@ -91,7 +91,7 @@ int main(int argc, char *argv[]) {
 Now let's pass some arguments to this program:
 
 ```bash
-▶ ./my_app config.csv file5.csv file6.json
+▶ ./main config.csv file5.csv file6.json
 config_file  = config.csv
 bind_address = not provided
 verbose      = false
@@ -99,7 +99,7 @@ log_level    = 1
 user         = not provided
 files        = { file5.csv file6.json }
 
-▶ ./my_app config.csv --bind-address localhost:9000 -v -log-level error file1.txt file2.txt
+▶ ./main config.csv --bind-address localhost:9000 -v -log-level error file1.txt file2.txt
 config_file  = config.csv
 bind_address = localhost:9000
 verbose      = true
@@ -107,7 +107,7 @@ log_level    = 3
 user         = not provided
 files        = { file1.txt file2.txt }
 
-▶ ./my_app config_2.csv --bind-address 192.168.7.3 -log-level debug file1.txt file3.txt file4.txt --user "John Doe" "john.doe@foo.com"
+▶ ./main config_2.csv --bind-address 192.168.7.3 -log-level debug file1.txt file3.txt file4.txt --user "John Doe" "john.doe@foo.com"
 config_file  = config_2.csv
 bind_address = 192.168.7.3
 verbose      = false
