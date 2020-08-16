@@ -2158,10 +2158,8 @@ struct parser {
 
   bool is_optional_field(const std::string &next, const std::string &field_name) {
     bool result = false;
-    if (next == "-" + field_name or 
-        next == "--" + field_name or
-        next == "-" + std::string(1, field_name[0]) or
-        is_kebab_case(next, field_name)) {
+    if (next == "-" + field_name or next == "--" + field_name or
+        next == "-" + std::string(1, field_name[0]) or is_kebab_case(next, field_name)) {
       // okay `next` matches _a_ field name (which is an optional field)
       result = true;
     }
@@ -2792,8 +2790,8 @@ struct parser {
 
           std::vector<std::string> potential_combined_argument;
 
-          if (is_optional_field(next) == false and 
-              next[0] == '-' and (next.size() > 1 and next[1] != '-')) {
+          if (is_optional_field(next) == false and next[0] == '-' and
+              (next.size() > 1 and next[1] != '-')) {
             for (std::size_t i = 1; i < next.size(); i++) {
               potential_combined_argument.push_back("-" + std::string(1, next[i]));
             }
