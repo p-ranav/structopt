@@ -61,15 +61,16 @@ public:
     // if all positional arguments were provided
     // this list would be empty
     if (!parser.visitor.positional_field_names.empty()) {
-      for (auto& field_name: parser.visitor.positional_field_names) {
+      for (auto &field_name : parser.visitor.positional_field_names) {
         if (std::find(parser.visitor.vector_like_positional_field_names.begin(),
                       parser.visitor.vector_like_positional_field_names.end(),
-                      field_name) == parser.visitor.vector_like_positional_field_names.end()) {
+                      field_name) ==
+            parser.visitor.vector_like_positional_field_names.end()) {
           // this positional argument is not a vector-like argument
           // it expects value(s)
           throw structopt::exception("Error: expected value for positional argument `" +
-                                        field_name + "`.",
-                                    parser.visitor);
+                                         field_name + "`.",
+                                     parser.visitor);
         }
       }
     }

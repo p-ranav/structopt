@@ -25,7 +25,7 @@ STRUCTOPT(GccOptions, std, verbose, Wall, Compile, output, input_file);
 
 int main(int argc, char *argv[]) {
   try {
-    auto options = structopt::app("gcc").parse<GccOptions>(argc, argv);  
+    auto options = structopt::app("gcc").parse<GccOptions>(argc, argv);
 
     // Print parsed arguments
 
@@ -35,8 +35,7 @@ int main(int argc, char *argv[]) {
     std::cout << "Compile    : " << std::boolalpha << options.Compile.value() << "\n";
     std::cout << "Output     : " << options.output.value() << "\n";
     std::cout << "Input file : " << options.input_file << "\n";
-  }
-  catch (structopt::exception& e) {
+  } catch (structopt::exception &e) {
     std::cout << e.what() << "\n";
     std::cout << e.help();
   }

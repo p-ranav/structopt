@@ -1,4 +1,4 @@
-#include <doctest.hpp>
+ #include <doctest.hpp>
 #include <structopt/app.hpp>
 
 using doctest::test_suite;

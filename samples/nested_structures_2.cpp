@@ -19,7 +19,6 @@ struct CommandOptions {
 STRUCTOPT(CommandOptions::Sed, trace, args, pattern, file);
 STRUCTOPT(CommandOptions, sed);
 
-
 int main(int argc, char *argv[]) {
 
   auto app = structopt::app("my_app");
@@ -36,12 +35,12 @@ int main(int argc, char *argv[]) {
       }
 
       std::cout << "Args    : ";
-      for (auto& a : options.sed.args) std::cout << a << " "; 
+      for (auto &a : options.sed.args)
+        std::cout << a << " ";
       std::cout << "\n";
       std::cout << "Pattern : " << options.sed.pattern << "\n";
       std::cout << "File    : " << options.sed.file << "\n";
-    }
-    else {
+    } else {
       std::cout << app.help();
     }
 

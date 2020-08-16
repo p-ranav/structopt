@@ -56,7 +56,7 @@ struct parser {
     return result;
   }
 
-  bool is_kebab_case(const std::string& next, const std::string &field_name) {
+  bool is_kebab_case(const std::string &next, const std::string &field_name) {
     bool result = false;
     auto maybe_kebab_case = next;
     if (maybe_kebab_case.size() > 1 and maybe_kebab_case[0] == '-') {
@@ -75,13 +75,13 @@ struct parser {
     return result;
   }
 
-  bool is_optional_field(const std::string& next, const std::string& field_name) {
+  bool is_optional_field(const std::string &next, const std::string &field_name) {
     bool result = false;
-    if (next == "-" + field_name or next == "--" + field_name or next == "-" + std::string(1, field_name[0])) {
+    if (next == "-" + field_name or next == "--" + field_name or
+        next == "-" + std::string(1, field_name[0])) {
       // okay `next` matches _a_ field name (which is an optional field)
       result = true;
-    }
-    else {
+    } else {
       result = is_kebab_case(next, field_name);
     }
     return result;
@@ -103,7 +103,7 @@ struct parser {
   }
 
   // checks if the next argument is a delimited optional field
-  // e.g., -std=c++17, where std matches a field name 
+  // e.g., -std=c++17, where std matches a field name
   // and it is delimited by one of the two allowed delimiters: `=` and `:`
   //
   // if true, the return value includes the delimiter that was used
@@ -117,8 +117,7 @@ struct parser {
     if (equal_pos == std::string::npos and colon_pos == std::string::npos) {
       // not delimited
       return {success, delimiter};
-    }
-    else {
+    } else {
       // assume `=` comes first
       char c = '=';
       auto first = equal_pos;
@@ -129,7 +128,7 @@ struct parser {
         c = ':';
       }
 
-      // split `next` into key and value 
+      // split `next` into key and value
       std::string key, value;
       bool delimiter_found = false;
       for (size_t i = 0; i < next.size(); i++) {
@@ -175,7 +174,8 @@ struct parser {
     return {success, delimiter};
   }
 
-  std::pair<std::string, std::string> split_delimited_argument(char delimiter, const std::string& next) {
+  std::pair<std::string, std::string> split_delimited_argument(char delimiter,
+                                                               const std::string &next) {
     std::string key, value;
     bool delimiter_found = false;
     for (size_t i = 0; i < next.size(); i++) {
@@ -348,15 +348,16 @@ struct parser {
     // if all positional arguments were provided
     // this list would be empty
     if (!parser.visitor.positional_field_names.empty()) {
-      for (auto& field_name : parser.visitor.positional_field_names) {
+      for (auto &field_name : parser.visitor.positional_field_names) {
         if (std::find(parser.visitor.vector_like_positional_field_names.begin(),
                       parser.visitor.vector_like_positional_field_names.end(),
-                      field_name) == parser.visitor.vector_like_positional_field_names.end()) {
+                      field_name) ==
+            parser.visitor.vector_like_positional_field_names.end()) {
           // this positional argument is not a vector-like argument
           // it expects value(s)
           throw structopt::exception("Error: expected value for positional argument `" +
-                                        field_name + "`.",
-                                    argument_struct.visitor_);
+                                         field_name + "`.",
+                                     argument_struct.visitor_);
         }
       }
     }
@@ -499,7 +500,8 @@ struct parser {
     // Parse from current till end
     for (std::size_t i = next_index; i < arguments.size(); i++) {
       const auto next = arguments[next_index];
-      if (is_optional_field(next) or std::string{next} == "--" or is_delimited_optional_argument(next).first) {
+      if (is_optional_field(next) or std::string{next} == "--" or
+          is_delimited_optional_argument(next).first) {
         if (std::string{next} == "--") {
           double_dash_encountered = true;
           next_index += 1;
@@ -521,7 +523,8 @@ struct parser {
     // Parse from current till end
     for (std::size_t i = next_index; i < arguments.size(); i++) {
       const auto next = arguments[next_index];
-      if (is_optional_field(next) or std::string{next} == "--" or is_delimited_optional_argument(next).first) {
+      if (is_optional_field(next) or std::string{next} == "--" or
+          is_delimited_optional_argument(next).first) {
         if (std::string{next} == "--") {
           double_dash_encountered = true;
           next_index += 1;
@@ -543,7 +546,8 @@ struct parser {
     // Parse from current till end
     for (std::size_t i = next_index; i < arguments.size(); i++) {
       const auto next = arguments[next_index];
-      if (is_optional_field(next) or std::string{next} == "--" or is_delimited_optional_argument(next).first) {
+      if (is_optional_field(next) or std::string{next} == "--" or
+          is_delimited_optional_argument(next).first) {
         if (std::string{next} == "--") {
           double_dash_encountered = true;
           next_index += 1;
@@ -730,7 +734,7 @@ struct parser {
               const auto [key, value] = split_delimited_argument(delimiter, next);
               // update next_index and return
               // the parser will take care of the rest
-              for (auto& arg : {value, key}) {
+              for (auto &arg : {value, key}) {
                 const auto begin = arguments.begin();
                 arguments.insert(begin + next_index + 1, arg);
               }
