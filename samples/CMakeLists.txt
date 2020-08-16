@@ -49,3 +49,6 @@ target_link_libraries(nested_structures_2 PRIVATE structopt::structopt)
 
 add_executable(printing_help printing_help.cpp)
 target_link_libraries(printing_help PRIVATE structopt::structopt)
+
+add_executable(option_delimiters option_delimiters.cpp)
+target_link_libraries(option_delimiters PRIVATE structopt::structopt)

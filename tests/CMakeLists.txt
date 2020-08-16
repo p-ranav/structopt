@@ -50,6 +50,7 @@ file(GLOB structopt_TEST_SOURCES
     test_container_adapter_positional_argument.cpp
     test_combined_flag_arguments.cpp
     test_equal_delimiter_optional_argument.cpp
+    test_option_delimiter.cpp
 )
 set_source_files_properties(main.cpp
     PROPERTIES

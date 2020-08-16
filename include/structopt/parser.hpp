@@ -68,7 +68,7 @@ struct parser {
 
     bool result = false;
     for (auto &field_name : visitor.field_names) {
-      if (next == "--" + field_name or next == "-" + std::string(1, field_name[0])) {
+      if (next == "-" + field_name or next == "--" + field_name or next == "-" + std::string(1, field_name[0])) {
         // okay `next` matches _a_ field name (which is an optional field)
         result = true;
       }
@@ -582,7 +582,7 @@ struct parser {
 
       // check if the current argument looks like it could be this optional field
       if ((double_dash_encountered == false) and
-          ((next == "--" + field_name or next == "-" + std::string(1, field_name[0])) or
+          ((next == "-" + field_name or next == "--" + field_name or next == "-" + std::string(1, field_name[0])) or
            (next_alpha == field_name_alpha))) {
 
         // this is an optional argument matching the current struct field
@@ -607,6 +607,46 @@ struct parser {
         }
       } else {
         if (double_dash_encountered == false) {
+
+          // maybe this is an optional argument that is delimited with '=' or ':'
+          // e.g., --foo=bar or --foo:BAR
+          if (next.size() > 1 and next[0] == '-') {
+            const std::vector<char> option_delimiters = {'=', ':'};
+            for (auto& c : option_delimiters) {
+              std::string key, value;
+              bool delimiter_found = false;
+              for (size_t i = 0; i < next.size(); i++) {
+                if (next[i] == c and !delimiter_found) {
+                  delimiter_found = true;
+                } else {
+                  if (!delimiter_found) {
+                    key += next[i];
+                  } else {
+                    value += next[i];
+                  }
+                }
+              }
+
+              // if an alternate option delimiter is used,
+              // we have, at this point, split `--foo=bar` into `foo` and `bar`
+
+              if (delimiter_found and is_optional_field(key)) {
+                // found a delimiter in current argument
+
+                // update next_index and return
+                // the parser will take care of the rest
+                for (auto& arg : {value, key}) {
+                  const auto begin = arguments.begin();
+                  arguments.insert(begin + next_index + 1, arg);
+                }
+
+                // get past the current argument, e.g., `--foo=bar`
+                next_index += 1;
+                return;
+              }
+            }
+          }
+
           // A direct match of optional argument with field_name has not happened
           // This _could_ be a combined argument
           // e.g., -abc => -a, -b, and -c where each of these is a flag argument
@@ -618,45 +658,6 @@ struct parser {
           if (next[0] == '-' and (next.size() > 1 and next[1] != '-')) {
             for (std::size_t i = 1; i < next.size(); i++) {
               potential_combined_argument.push_back("-" + std::string(1, next[i]));
-            }
-          } else {
-            if (next.size() > 1 and next[0] == '-' and next[1] == '-') {
-              // maybe this is an optional argument that is delimited with '=' or ':'
-              // e.g., --foo=bar or --foo:BAR
-              const std::vector<char> option_delimiters = {'=', ':'};
-              for (auto& c : option_delimiters) {
-                std::string key, value;
-                bool delimiter_found = false;
-                for (size_t i = 0; i < next.size(); i++) {
-                  if (next[i] == c and !delimiter_found) {
-                    delimiter_found = true;
-                  } else {
-                    if (!delimiter_found) {
-                      key += next[i];
-                    } else {
-                      value += next[i];
-                    }
-                  }
-                }
-
-                // if an alternate option delimiter is used,
-                // we have, at this point, split `--foo=bar` into `foo` and `bar`
-
-                if (delimiter_found and is_optional_field(key)) {
-                  // found a delimiter in current argument
-
-                  // update next_index and return
-                  // the parser will take care of the rest
-                  for (auto& arg : {value, key}) {
-                    const auto begin = arguments.begin();
-                    arguments.insert(begin + next_index + 1, arg);
-                  }
-
-                  // get past the current argument, e.g., `--foo=bar`
-                  next_index += 1;
-                  return;
-                }
-              }
             }
           }
 

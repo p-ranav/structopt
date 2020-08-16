@@ -40,4 +40,9 @@ TEST_CASE("structopt can parse single optional argument" * test_suite("single_op
     auto arguments = structopt::app("test").parse<SingleOptionalBoolArgument>(std::vector<std::string>{"./main"});
     REQUIRE(arguments.verbose.has_value() == false);
   }
+  {
+    auto arguments = structopt::app("test").parse<SingleOptionalBoolArgument>(std::vector<std::string>{"./main", "-v=false"});
+    REQUIRE(arguments.verbose.has_value() == true);
+    REQUIRE(arguments.verbose.value() == false);
+  }
 }

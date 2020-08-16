@@ -29,14 +29,22 @@ struct Options {
    // optional argument
    //   e.g., -b "192.168.5.3"
    //   e.g., --bind_address "192.168.5.3"
-   // The long option can be passed in kebab case
-   //   e.g., --bind-address "192.168.5.3"
+   //
+   // the long option can be provided with a single leading dash (`-`)
+   //   e.g., -Wall
+   //
+   // options can be delimited with `=` or `:`
+   //   e.g. -std=c++17
+   //
+   // the long option can also be provided in kebab case:
+   //   e.g. --fixed-point 1.4 -3.6 9.6 
    std::optional<std::string> bind_address;
  
    // flag argument
    // Use `std::optional<bool>` and provide a default value. 
    //   e.g., -v
    //   e.g., --verbose
+   //   e.g., -Wall -Wextra
    std::optional<bool> verbose = false;
 
    // Directly define and use enum classes
@@ -189,39 +197,17 @@ ARGS:
 
 ### Optional Arguments
 
-Now, let's look at optional arguments. To configure an optional argument, use `std::optional` in the options struct:
+Now, let's look at optional arguments. To configure an optional argument, use `std::optional` in the options struct like below.
 
 ```cpp
-#include <structopt/app.hpp>
 
-struct Options {
-  // Optional argument
-  // -f, --fixed_point, --fixed-point <fixed_point...>
-  std::optional<std::array<float, 3>> fixed_point;
-};
-STRUCTOPT(Options, fixed_point);
-
-
-
-int main(int argc, char *argv[]) {
-  auto options = structopt::app("my_app").parse<Options>(argc, argv);
-
-  if (options.fixed_point.has_value()) {
-    std::cout << "Point: {" << options.fixed_point.value()[0] << ", " 
-                            << options.fixed_point.value()[1] << ", "
-                            << options.fixed_point.value()[2] << "}\n";
-  }
-}
 ```
 
+***NOTE*** `structopt` supports two option delimiters, `=` and `:` for optional arguments. This is meaningful and commonly used in single-valued optional arguments, e.g., `--std=c++17` and `--VERBOSE=on`
+
+
 ```bash
-▶ ./main
 
-▶ ./main --fixed_point 1.1 -2.2 3.3
-Point: {1.1, -2.2, 3.3}
-
-▶ ./main -f 1 2 3
-Point: {1, 2, 3}
 ```
 
 #### Double dash (`--`) Argument

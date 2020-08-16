@@ -15,6 +15,10 @@ TEST_CASE("structopt can parse single optional argument with '_' separated name"
     REQUIRE(arguments.input_file == "foo.csv");
   }
   {
+    auto arguments = structopt::app("test").parse<OptionalArgumentLongName>(std::vector<std::string>{"./main", "-input_file", "foo.csv"});
+    REQUIRE(arguments.input_file == "foo.csv");
+  }
+  {
     auto arguments = structopt::app("test").parse<OptionalArgumentLongName>(std::vector<std::string>{"./main", "-i", "foo.csv"});
     REQUIRE(arguments.input_file == "foo.csv");
   }

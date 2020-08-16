@@ -15,6 +15,10 @@ TEST_CASE("structopt can parse single optional argument" * test_suite("single_op
     REQUIRE(arguments.verbose == true);
   }
   {
+    auto arguments = structopt::app("test").parse<SingleOptionalFlagArgument>(std::vector<std::string>{"./main", "-verbose"});
+    REQUIRE(arguments.verbose == true);
+  }
+  {
     auto arguments = structopt::app("test").parse<SingleOptionalFlagArgument>(std::vector<std::string>{"./main", "-v"});
     REQUIRE(arguments.verbose == true);
   }
