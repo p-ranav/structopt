@@ -250,6 +250,27 @@ Output     : main
 Input file : main.cpp
 ```
 
+***NOTE*** In summary, for an optional argument named `bind_address` in the struct, the following are all legal:
+
+* Short form:
+  * `-b <value>`
+* Long form:
+  * `--bind_address <value>`
+  * `-bind_address <value>`
+* Kebab case:
+  * `--bind-address <value>`
+  * `-bind-address <value>`
+* `=` option delimiter
+  * `--bind_address=<value>`
+  * `-bind_address=<value>`
+  * `--bind-address=<value>`
+  * `-bind-address=<value>`
+* `:` option delimiter
+  * `--bind_address:<value>`
+  * `-bind_address:<value>`
+  * `--bind-address:<value>`
+  * `-bind-address:<value>`
+
 #### Double dash (`--`) Argument
 
 A double dash (`--`) is used in most bash built-in commands and many other commands to signify the end of command options, after which only positional parameters are accepted.
