@@ -253,7 +253,7 @@ Output     : main
 Input file : main.cpp
 ```
 
-***NOTE*** In summary, for an optional argument named `bind_address` in the struct, the following are all legal:
+***NOTE*** In summary, for a field in your struct named `bind_address`, the following are all legal ways to provide a value:
 
 * Short form:
   * `-b <value>`
