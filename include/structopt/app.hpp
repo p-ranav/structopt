@@ -18,7 +18,7 @@ class app {
   details::visitor visitor;
 
 public:
-  explicit app(const std::string & name, const std::string & version = "")
+  explicit app(const std::string &name, const std::string &version = "")
       : visitor(name, version) {}
 
   template <typename T> T parse(const std::vector<std::string> &arguments) {

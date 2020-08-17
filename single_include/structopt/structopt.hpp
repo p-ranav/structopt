@@ -2079,6 +2079,7 @@ public:
 #pragma once
 #include <algorithm>
 #include <array>
+#include <cctype>
 #include <iostream>
 #include <iterator>
 #include <set>
@@ -2202,7 +2203,8 @@ struct parser {
       }
 
       // split `next` into key and value
-      std::string key, value;
+      // check if key is an optional field
+      std::string key;
       bool delimiter_found = false;
       for (size_t i = 0; i < next.size(); i++) {
         if (next[i] == c && !delimiter_found) {
@@ -2211,8 +2213,6 @@ struct parser {
         } else {
           if (!delimiter_found) {
             key += next[i];
-          } else {
-            value += next[i];
           }
         }
       }
@@ -2917,7 +2917,7 @@ class app {
   details::visitor visitor;
 
 public:
-  explicit app(const std::string name, const std::string version = "")
+  explicit app(const std::string &name, const std::string &version = "")
       : visitor(name, version) {}
 
   template <typename T> T parse(const std::vector<std::string> &arguments) {
