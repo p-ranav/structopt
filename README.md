@@ -21,6 +21,8 @@
 
 ## Quick Start
 
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/16fb174bf69141669fdb22fedcfb5918)](https://app.codacy.com/manual/p-ranav/structopt?utm_source=github.com&utm_medium=referral&utm_content=p-ranav/structopt&utm_campaign=Badge_Grade_Dashboard)
+
 ```cpp
 #include <structopt/app.hpp>
 
