@@ -14,7 +14,8 @@ TEST_CASE("structopt can parse single optional argument" * test_suite("single_op
     bool exception_thrown = false;
     try {
       structopt::app("test").parse<SingleOptionalBoolArgument>(std::vector<std::string>{"./main", "--verbose"});
-    } catch (structopt::exception& e) {
+    }
+    catch (structopt::exception&) {
       exception_thrown = true;
     }
     REQUIRE(exception_thrown == true);
@@ -27,7 +28,8 @@ TEST_CASE("structopt can parse single optional argument" * test_suite("single_op
     bool exception_thrown = false;
     try {
       structopt::app("test").parse<SingleOptionalBoolArgument>(std::vector<std::string>{"./main", "--verbose", "trueee"});
-    } catch (structopt::exception& e) {
+    }
+    catch (structopt::exception&) {
       exception_thrown = true;
     }
     REQUIRE(exception_thrown == true);
@@ -58,7 +60,8 @@ TEST_CASE("structopt can parse single optional argument with underscore-separate
     bool exception_thrown = false;
     try {
       structopt::app("test").parse<SingleOptionalStringArgument>(std::vector<std::string>{"./main", "--bind_address"});
-    } catch (structopt::exception& e) {
+    }
+    catch (structopt::exception&) {
       exception_thrown = true;
     }
     REQUIRE(exception_thrown == true);

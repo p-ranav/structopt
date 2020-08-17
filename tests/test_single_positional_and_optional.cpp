@@ -14,7 +14,7 @@ TEST_CASE("structopt can parse single positional and optional arguments" * test_
   {
     auto arguments = structopt::app("test").parse<PositionalAndOptionalArgument>(std::vector<std::string>{"./main", "19"});
     REQUIRE(arguments.foo == 19);
-    REQUIRE(not arguments.bar.has_value());
+    REQUIRE(!arguments.bar.has_value());
   }
   {
     auto arguments = structopt::app("test").parse<PositionalAndOptionalArgument>(std::vector<std::string>{"./main", "91", "--bar", "true"});
@@ -49,27 +49,27 @@ TEST_CASE("structopt can parse single positional and optional array arguments" *
   {
     auto arguments = structopt::app("test").parse<PositionalAndOptionalArrayArgument>(std::vector<std::string>{"./main", "1", "2"});
     REQUIRE(arguments.foo == std::array<int, 2>{1, 2});
-    REQUIRE(not arguments.bar.has_value());
+    REQUIRE(!arguments.bar.has_value());
   }
   {
     auto arguments = structopt::app("test").parse<PositionalAndOptionalArrayArgument>(std::vector<std::string>{"./main", "1", "5", "--bar", "1.1", "2.2", "3.3"});
     REQUIRE(arguments.foo == std::array<int, 2>{1, 5});
-    REQUIRE(arguments.bar.value() == std::array<float, 3>{1.1, 2.2, 3.3});
+    REQUIRE(arguments.bar.value() == std::array<float, 3>{1.1f, 2.2f, 3.3f});
   }
   {
     auto arguments = structopt::app("test").parse<PositionalAndOptionalArrayArgument>(std::vector<std::string>{"./main", "1", "5", "-b", "1.1", "2.2", "3.3"});
     REQUIRE(arguments.foo == std::array<int, 2>{1, 5});
-    REQUIRE(arguments.bar.value() == std::array<float, 3>{1.1, 2.2, 3.3});
+    REQUIRE(arguments.bar.value() == std::array<float, 3>{1.1f, 2.2f, 3.3f});
   }
   {
     auto arguments = structopt::app("test").parse<PositionalAndOptionalArrayArgument>(std::vector<std::string>{"./main", "--bar", "1.1", "2.2", "3.3", "1", "5"});
     REQUIRE(arguments.foo == std::array<int, 2>{1, 5});
-    REQUIRE(arguments.bar.value() == std::array<float, 3>{1.1, 2.2, 3.3});
+    REQUIRE(arguments.bar.value() == std::array<float, 3>{1.1f, 2.2f, 3.3f});
   }
   {
     auto arguments = structopt::app("test").parse<PositionalAndOptionalArrayArgument>(std::vector<std::string>{"./main", "-b", "1.1", "2.2", "3.3", "1", "5"});
     REQUIRE(arguments.foo == std::array<int, 2>{1, 5});
-    REQUIRE(arguments.bar.value() == std::array<float, 3>{1.1, 2.2, 3.3});
+    REQUIRE(arguments.bar.value() == std::array<float, 3>{1.1f, 2.2f, 3.3f});
   }
 }
 
@@ -88,12 +88,12 @@ TEST_CASE("structopt can parse single positional and optional arguments" * test_
   }
   {
     auto arguments = structopt::app("test").parse<ArrayVectorArgument>(std::vector<std::string>{"./main", "--point", "1.1", "2.2", "3.3", "1", "2", "3"});
-    REQUIRE(arguments.point == std::array<float, 3>{1.1, 2.2, 3.3});
+    REQUIRE(arguments.point == std::array<float, 3>{1.1f, 2.2f, 3.3f});
     REQUIRE(arguments.value == std::vector<int>{1, 2, 3});
   }
   {
     auto arguments = structopt::app("test").parse<ArrayVectorArgument>(std::vector<std::string>{"./main", "-p", "1.1", "2.2", "3.3", "1", "2", "3"});
-    REQUIRE(arguments.point == std::array<float, 3>{1.1, 2.2, 3.3});
+    REQUIRE(arguments.point == std::array<float, 3>{1.1f, 2.2f, 3.3f});
     REQUIRE(arguments.value == std::vector<int>{1, 2, 3});
   }
 }

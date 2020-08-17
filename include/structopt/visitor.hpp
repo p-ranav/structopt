@@ -2,6 +2,7 @@
 #pragma once
 #include <algorithm>
 #include <iostream>
+#include <optional>
 #include <queue>
 #include <string>
 #include <structopt/is_specialization.hpp>
@@ -12,139 +13,142 @@
 
 namespace structopt {
 
-class app;
+  class app;
 
-namespace details {
+  namespace details {
 
-struct visitor {
-  std::string name;
-  std::string version;
-  std::vector<std::string> field_names;
-  std::deque<std::string> positional_field_names; // mutated by parser
-  std::deque<std::string> positional_field_names_for_help;
-  std::deque<std::string> vector_like_positional_field_names;
-  std::deque<std::string> flag_field_names;
-  std::deque<std::string> optional_field_names;
-  std::deque<std::string> nested_struct_field_names;
+    struct visitor {
+      std::string name;
+      std::string version;
+      std::vector<std::string> field_names;
+      std::deque<std::string> positional_field_names; // mutated by parser
+      std::deque<std::string> positional_field_names_for_help;
+      std::deque<std::string> vector_like_positional_field_names;
+      std::deque<std::string> flag_field_names;
+      std::deque<std::string> optional_field_names;
+      std::deque<std::string> nested_struct_field_names;
 
-  visitor() = default;
+      visitor() = default;
 
-  explicit visitor(const std::string &name, const std::string &version)
-      : name(name), version(version) {}
+      explicit visitor(const std::string& name, const std::string& version)
+        : name(name), version(version) {}
 
-  // Visitor function for std::optional - could be an option or a flag
-  template <typename T>
-  inline typename std::enable_if<structopt::is_specialization<T, std::optional>::value,
-                                 void>::type
-  operator()(const char *name, T &value) {
-    field_names.push_back(name);
-    if constexpr (std::is_same<typename T::value_type, bool>::value) {
-      flag_field_names.push_back(name);
-    } else {
-      optional_field_names.push_back(name);
-    }
-  }
-
-  // Visitor function for any positional field (not std::optional)
-  template <typename T>
-  inline typename std::enable_if<!structopt::is_specialization<T, std::optional>::value &&
-                                     !visit_struct::traits::is_visitable<T>::value,
-                                 void>::type
-  operator()(const char *name, T &value) {
-    field_names.push_back(name);
-    positional_field_names.push_back(name);
-    positional_field_names_for_help.push_back(name);
-    if constexpr (structopt::is_specialization<T, std::deque>::value or
-                  structopt::is_specialization<T, std::list>::value or
-                  structopt::is_specialization<T, std::vector>::value or
-                  structopt::is_specialization<T, std::set>::value or
-                  structopt::is_specialization<T, std::multiset>::value or
-                  structopt::is_specialization<T, std::unordered_set>::value or
-                  structopt::is_specialization<T, std::unordered_multiset>::value or
-                  structopt::is_specialization<T, std::queue>::value or
-                  structopt::is_specialization<T, std::stack>::value or
-                  structopt::is_specialization<T, std::priority_queue>::value) {
-      // keep track of vector-like fields as these (even though positional)
-      // can be happy without any arguments
-      vector_like_positional_field_names.push_back(name);
-    }
-  }
-
-  // Visitor function for nested structs
-  template <typename T>
-  inline typename std::enable_if<visit_struct::traits::is_visitable<T>::value, void>::type
-  operator()(const char *name, T &value) {
-    field_names.push_back(name);
-    nested_struct_field_names.push_back(name);
-  }
-
-  bool is_field_name(const std::string &name) {
-    return std::find(field_names.begin(), field_names.end(), name) != field_names.end();
-  }
-
-  void print_help(std::ostream &os) const {
-    os << "\nUSAGE: " << name << " ";
-
-    if (flag_field_names.empty() == false) {
-      os << "[FLAGS] ";
-    }
-
-    if (optional_field_names.empty() == false) {
-      os << "[OPTIONS] ";
-    }
-
-    if (nested_struct_field_names.empty() == false) {
-      os << "[SUBCOMMANDS] ";
-    }
-
-    for (auto &field : positional_field_names_for_help) {
-      os << field << " ";
-    }
-
-    if (flag_field_names.empty() == false) {
-      os << "\n\nFLAGS:\n";
-      for (auto &flag : flag_field_names) {
-        os << "    -" << flag[0] << ", --" << flag << "\n";
+      // Visitor function for std::optional - could be an option or a flag
+      template <typename T>
+      inline typename std::enable_if<structopt::is_specialization<T, std::optional>::value,
+        void>::type
+        operator()(const char* name, T&) {
+        field_names.push_back(name);
+        if constexpr (std::is_same<typename T::value_type, bool>::value) {
+          flag_field_names.push_back(name);
+        }
+        else {
+          optional_field_names.push_back(name);
+        }
       }
-    } else {
-      os << "\n";
-    }
 
-    if (optional_field_names.empty() == false) {
-      os << "\nOPTIONS:\n";
-      for (auto &option : optional_field_names) {
+      // Visitor function for any positional field (not std::optional)
+      template <typename T>
+      inline typename std::enable_if<!structopt::is_specialization<T, std::optional>::value &&
+        !visit_struct::traits::is_visitable<T>::value,
+        void>::type
+        operator()(const char* name, T&) {
+        field_names.push_back(name);
+        positional_field_names.push_back(name);
+        positional_field_names_for_help.push_back(name);
+        if constexpr (structopt::is_specialization<T, std::deque>::value ||
+          structopt::is_specialization<T, std::list>::value ||
+          structopt::is_specialization<T, std::vector>::value ||
+          structopt::is_specialization<T, std::set>::value ||
+          structopt::is_specialization<T, std::multiset>::value ||
+          structopt::is_specialization<T, std::unordered_set>::value ||
+          structopt::is_specialization<T, std::unordered_multiset>::value ||
+          structopt::is_specialization<T, std::queue>::value ||
+          structopt::is_specialization<T, std::stack>::value ||
+          structopt::is_specialization<T, std::priority_queue>::value) {
+          // keep track of vector-like fields as these (even though positional)
+          // can be happy without any arguments
+          vector_like_positional_field_names.push_back(name);
+        }
+      }
 
-        // Generate kebab case and present as option
-        auto kebab_case = option;
-        details::string_replace(kebab_case, "_", "-");
-        std::string long_form = "";
-        if (kebab_case != option) {
-          long_form = kebab_case;
-        } else {
-          long_form = option;
+      // Visitor function for nested structs
+      template <typename T>
+      inline typename std::enable_if<visit_struct::traits::is_visitable<T>::value, void>::type
+        operator()(const char* name, T&) {
+        field_names.push_back(name);
+        nested_struct_field_names.push_back(name);
+      }
+
+      bool is_field_name(const std::string& field_name) {
+        return std::find(field_names.begin(), field_names.end(), field_name) != field_names.end();
+      }
+
+      void print_help(std::ostream& os) const {
+        os << "\nUSAGE: " << name << " ";
+
+        if (flag_field_names.empty() == false) {
+          os << "[FLAGS] ";
         }
 
-        os << "    -" << option[0] << ", --" << long_form << " <" << option << ">"
-           << "\n";
-      }
-    }
+        if (optional_field_names.empty() == false) {
+          os << "[OPTIONS] ";
+        }
 
-    if (nested_struct_field_names.empty() == false) {
-      os << "\nSUBCOMMANDS:\n";
-      for (auto &sc : nested_struct_field_names) {
-        os << "    " << sc << "\n";
-      }
-    }
+        if (nested_struct_field_names.empty() == false) {
+          os << "[SUBCOMMANDS] ";
+        }
 
-    if (positional_field_names_for_help.empty() == false) {
-      os << "\nARGS:\n";
-      for (auto &arg : positional_field_names_for_help) {
-        os << "    " << arg << "\n";
-      }
-    }
-  }
-};
+        for (auto& field : positional_field_names_for_help) {
+          os << field << " ";
+        }
 
-} // namespace details
+        if (flag_field_names.empty() == false) {
+          os << "\n\nFLAGS:\n";
+          for (auto& flag : flag_field_names) {
+            os << "    -" << flag[0] << ", --" << flag << "\n";
+          }
+        }
+        else {
+          os << "\n";
+        }
+
+        if (optional_field_names.empty() == false) {
+          os << "\nOPTIONS:\n";
+          for (auto& option : optional_field_names) {
+
+            // Generate kebab case and present as option
+            auto kebab_case = option;
+            details::string_replace(kebab_case, "_", "-");
+            std::string long_form = "";
+            if (kebab_case != option) {
+              long_form = kebab_case;
+            }
+            else {
+              long_form = option;
+            }
+
+            os << "    -" << option[0] << ", --" << long_form << " <" << option << ">"
+              << "\n";
+          }
+        }
+
+        if (nested_struct_field_names.empty() == false) {
+          os << "\nSUBCOMMANDS:\n";
+          for (auto& sc : nested_struct_field_names) {
+            os << "    " << sc << "\n";
+          }
+        }
+
+        if (positional_field_names_for_help.empty() == false) {
+          os << "\nARGS:\n";
+          for (auto& arg : positional_field_names_for_help) {
+            os << "    " << arg << "\n";
+          }
+        }
+      }
+    };
+
+  } // namespace details
 
 } // namespace structopt
