@@ -2,6 +2,7 @@
 #pragma once
 #include <algorithm>
 #include <array>
+#include <cctype>
 #include <iostream>
 #include <iterator>
 #include <set>
