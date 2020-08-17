@@ -22,4 +22,5 @@ build_script:
   - cmake --build . --config Release
 
 test_script:
-  - ./tests/structopt_tests
+  - tests/Debug/structopt_tests.exe
+  - tests/Release/structopt_tests.exe
