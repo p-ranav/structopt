@@ -1,0 +1,25 @@
+version: "{branch} #{build}"
+
+image:
+  - Visual Studio 2017
+  - Visual Studio 2019
+
+platform:
+  - Win32
+  - x64
+
+build:
+  parallel: true
+
+before_build:
+  - if exist build RMDIR /S /Q build
+  - if not exist build mkdir build
+  - cd build
+
+build_script:
+  - cmake -DSTRUCTOPT_SAMPLES=on -DSTRUCTOPT_TESTS=on -A %PLATFORM% ..
+  - cmake --build . --config Debug
+  - cmake --build . --config Release
+
+test_script:
+  - ./tests/structopt_tests
