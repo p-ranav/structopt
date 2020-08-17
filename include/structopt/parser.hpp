@@ -125,7 +125,8 @@ struct parser {
       }
 
       // split `next` into key and value
-      std::string key, value;
+      // check if key is an optional field
+      std::string key;
       bool delimiter_found = false;
       for (size_t i = 0; i < next.size(); i++) {
         if (next[i] == c && !delimiter_found) {
@@ -134,8 +135,6 @@ struct parser {
         } else {
           if (!delimiter_found) {
             key += next[i];
-          } else {
-            value += next[i];
           }
         }
       }
