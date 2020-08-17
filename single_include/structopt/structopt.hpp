@@ -1796,7 +1796,7 @@ static const bool is_octal_notation(std::string const &input) {
 }
 
 static inline bool is_valid_number(const std::string &input) {
-  if (is_binary_notation(input) or is_hex_notation(input) or is_octal_notation(input)) {
+  if (is_binary_notation(input) || is_hex_notation(input) || is_octal_notation(input)) {
     return true;
   }
 
@@ -1879,6 +1879,7 @@ static inline bool is_valid_number(const std::string &input) {
 #pragma once
 #include <algorithm>
 #include <iostream>
+#include <optional>
 #include <queue>
 #include <string>
 // #include <structopt/is_specialization.hpp>
@@ -1913,7 +1914,7 @@ struct visitor {
   template <typename T>
   inline typename std::enable_if<structopt::is_specialization<T, std::optional>::value,
                                  void>::type
-  operator()(const char *name, T &value) {
+  operator()(const char *name, T &) {
     field_names.push_back(name);
     if constexpr (std::is_same<typename T::value_type, bool>::value) {
       flag_field_names.push_back(name);
@@ -1927,19 +1928,19 @@ struct visitor {
   inline typename std::enable_if<!structopt::is_specialization<T, std::optional>::value &&
                                      !visit_struct::traits::is_visitable<T>::value,
                                  void>::type
-  operator()(const char *name, T &value) {
+  operator()(const char *name, T &) {
     field_names.push_back(name);
     positional_field_names.push_back(name);
     positional_field_names_for_help.push_back(name);
-    if constexpr (structopt::is_specialization<T, std::deque>::value or
-                  structopt::is_specialization<T, std::list>::value or
-                  structopt::is_specialization<T, std::vector>::value or
-                  structopt::is_specialization<T, std::set>::value or
-                  structopt::is_specialization<T, std::multiset>::value or
-                  structopt::is_specialization<T, std::unordered_set>::value or
-                  structopt::is_specialization<T, std::unordered_multiset>::value or
-                  structopt::is_specialization<T, std::queue>::value or
-                  structopt::is_specialization<T, std::stack>::value or
+    if constexpr (structopt::is_specialization<T, std::deque>::value ||
+                  structopt::is_specialization<T, std::list>::value ||
+                  structopt::is_specialization<T, std::vector>::value ||
+                  structopt::is_specialization<T, std::set>::value ||
+                  structopt::is_specialization<T, std::multiset>::value ||
+                  structopt::is_specialization<T, std::unordered_set>::value ||
+                  structopt::is_specialization<T, std::unordered_multiset>::value ||
+                  structopt::is_specialization<T, std::queue>::value ||
+                  structopt::is_specialization<T, std::stack>::value ||
                   structopt::is_specialization<T, std::priority_queue>::value) {
       // keep track of vector-like fields as these (even though positional)
       // can be happy without any arguments
@@ -1950,13 +1951,14 @@ struct visitor {
   // Visitor function for nested structs
   template <typename T>
   inline typename std::enable_if<visit_struct::traits::is_visitable<T>::value, void>::type
-  operator()(const char *name, T &value) {
+  operator()(const char *name, T &) {
     field_names.push_back(name);
     nested_struct_field_names.push_back(name);
   }
 
-  bool is_field_name(const std::string &name) {
-    return std::find(field_names.begin(), field_names.end(), name) != field_names.end();
+  bool is_field_name(const std::string &field_name) {
+    return std::find(field_names.begin(), field_names.end(), field_name) !=
+           field_names.end();
   }
 
   void print_help(std::ostream &os) const {
@@ -2134,7 +2136,7 @@ struct parser {
   bool is_kebab_case(const std::string &next, const std::string &field_name) {
     bool result = false;
     auto maybe_kebab_case = next;
-    if (maybe_kebab_case.size() > 1 and maybe_kebab_case[0] == '-') {
+    if (maybe_kebab_case.size() > 1 && maybe_kebab_case[0] == '-') {
       // remove first dash
       maybe_kebab_case.erase(0, 1);
       if (maybe_kebab_case[0] == '-') {
@@ -2152,8 +2154,8 @@ struct parser {
 
   bool is_optional_field(const std::string &next, const std::string &field_name) {
     bool result = false;
-    if (next == "-" + field_name or next == "--" + field_name or
-        next == "-" + std::string(1, field_name[0]) or is_kebab_case(next, field_name)) {
+    if (next == "-" + field_name || next == "--" + field_name ||
+        next == "-" + std::string(1, field_name[0]) || is_kebab_case(next, field_name)) {
       // okay `next` matches _a_ field name (which is an optional field)
       result = true;
     }
@@ -2187,7 +2189,7 @@ struct parser {
     auto equal_pos = next.find('=');
     auto colon_pos = next.find(':');
 
-    if (equal_pos == std::string::npos and colon_pos == std::string::npos) {
+    if (equal_pos == std::string::npos && colon_pos == std::string::npos) {
       // not delimited
       return {success, delimiter};
     } else {
@@ -2203,7 +2205,7 @@ struct parser {
       std::string key, value;
       bool delimiter_found = false;
       for (size_t i = 0; i < next.size(); i++) {
-        if (next[i] == c and !delimiter_found) {
+        if (next[i] == c && !delimiter_found) {
           delimiter = c;
           delimiter_found = true;
         } else {
@@ -2228,7 +2230,7 @@ struct parser {
     std::string key, value;
     bool delimiter_found = false;
     for (size_t i = 0; i < next.size(); i++) {
-      if (next[i] == delimiter and !delimiter_found) {
+      if (next[i] == delimiter && !delimiter_found) {
         delimiter_found = true;
       } else {
         if (!delimiter_found) {
@@ -2262,18 +2264,18 @@ struct parser {
     } else if constexpr (structopt::is_array<T>::value) {
       constexpr std::size_t N = structopt::array_size<T>::size;
       result = parse_array_argument<typename T::value_type, N>(name);
-    } else if constexpr (structopt::is_specialization<T, std::deque>::value or
-                         structopt::is_specialization<T, std::list>::value or
+    } else if constexpr (structopt::is_specialization<T, std::deque>::value ||
+                         structopt::is_specialization<T, std::list>::value ||
                          structopt::is_specialization<T, std::vector>::value) {
       result = parse_vector_like_argument<T>(name);
-    } else if constexpr (structopt::is_specialization<T, std::set>::value or
-                         structopt::is_specialization<T, std::multiset>::value or
-                         structopt::is_specialization<T, std::unordered_set>::value or
+    } else if constexpr (structopt::is_specialization<T, std::set>::value ||
+                         structopt::is_specialization<T, std::multiset>::value ||
+                         structopt::is_specialization<T, std::unordered_set>::value ||
                          structopt::is_specialization<T,
                                                       std::unordered_multiset>::value) {
       result = parse_set_argument<T>(name);
-    } else if constexpr (structopt::is_specialization<T, std::queue>::value or
-                         structopt::is_specialization<T, std::stack>::value or
+    } else if constexpr (structopt::is_specialization<T, std::queue>::value ||
+                         structopt::is_specialization<T, std::stack>::value ||
                          structopt::is_specialization<T, std::priority_queue>::value) {
       result = parse_container_adapter_argument<T>(name);
     } else {
@@ -2308,7 +2310,7 @@ struct parser {
   // Not a visitable type, i.e., a nested struct
   template <typename T>
   inline typename std::enable_if<!visit_struct::traits::is_visitable<T>::value, T>::type
-  parse_single_argument(const char *name) {
+  parse_single_argument(const char *) {
     std::string argument = arguments[next_index];
     std::istringstream ss(argument);
     T result;
@@ -2320,7 +2322,7 @@ struct parser {
         ss >> std::oct >> result;
       } else if (is_binary_notation(argument)) {
         argument.erase(0, 2); // remove "0b"
-        result = std::stoi(argument, nullptr, 2);
+        result = static_cast<T>(std::stoi(argument, nullptr, 2));
       } else {
         ss >> std::dec >> result;
       }
@@ -2428,7 +2430,7 @@ struct parser {
       if (success) {
         result.first = value;
       } else {
-        if (next_index == arguments.size()) {	  
+        if (next_index == arguments.size()) {
           // end of arguments list
           // first argument not provided
           throw structopt::exception("Error: failed to correctly parse the pair `" +
@@ -2473,7 +2475,7 @@ struct parser {
     std::array<T, N> result{};
 
     const auto arguments_left = arguments.size() - next_index;
-    if (arguments_left == 0 or arguments_left < N) {
+    if (arguments_left == 0 || arguments_left < N) {
       throw structopt::exception("Error: expected " + std::to_string(N) +
                                      " values for std::array argument `" + name +
                                      "` - instead got only " +
@@ -2548,7 +2550,7 @@ struct parser {
     // Parse from current till end
     while (next_index < arguments.size()) {
       const auto next = arguments[next_index];
-      if (is_optional_field(next) or std::string{next} == "--" or
+      if (is_optional_field(next) || std::string{next} == "--" ||
           is_delimited_optional_argument(next).first) {
         if (std::string{next} == "--") {
           double_dash_encountered = true;
@@ -2559,7 +2561,7 @@ struct parser {
       }
       auto [value, success] = parse_argument<typename T::value_type>(name);
       if (success) {
-	result.push_back(value);
+        result.push_back(value);
       }
     }
     return result;
@@ -2571,7 +2573,7 @@ struct parser {
     // Parse from current till end
     while (next_index < arguments.size()) {
       const auto next = arguments[next_index];
-      if (is_optional_field(next) or std::string{next} == "--" or
+      if (is_optional_field(next) || std::string{next} == "--" ||
           is_delimited_optional_argument(next).first) {
         if (std::string{next} == "--") {
           double_dash_encountered = true;
@@ -2594,7 +2596,7 @@ struct parser {
     // Parse from current till end
     while (next_index < arguments.size()) {
       const auto next = arguments[next_index];
-      if (is_optional_field(next) or std::string{next} == "--" or
+      if (is_optional_field(next) || std::string{next} == "--" ||
           is_delimited_optional_argument(next).first) {
         if (std::string{next} == "--") {
           double_dash_encountered = true;
@@ -2720,7 +2722,7 @@ struct parser {
       const auto next = arguments[current_index];
       const auto field_name = std::string{name};
 
-      if (next == "--" and double_dash_encountered == false) {
+      if (next == "--" && double_dash_encountered == false) {
         double_dash_encountered = true;
         next_index += 1;
         return;
@@ -2731,7 +2733,7 @@ struct parser {
       // see if you can find an optional field in the struct with a matching name
 
       // check if the current argument looks like it could be this optional field
-      if (double_dash_encountered == false and is_optional_field(next, field_name)) {
+      if (double_dash_encountered == false && is_optional_field(next, field_name)) {
 
         // this is an optional argument matching the current struct field
         if constexpr (std::is_same<typename T::value_type, bool>::value) {
@@ -2758,13 +2760,13 @@ struct parser {
 
           // maybe this is an optional argument that is delimited with '=' or ':'
           // e.g., --foo=bar or --foo:BAR
-          if (next.size() > 1 and next[0] == '-') {
+          if (next.size() > 1 && next[0] == '-') {
             const auto [success, delimiter] = is_delimited_optional_argument(next);
             if (success) {
-              const auto [key, value] = split_delimited_argument(delimiter, next);
+              const auto [lhs, rhs] = split_delimited_argument(delimiter, next);
               // update next_index and return
               // the parser will take care of the rest
-              for (auto &arg : {value, key}) {
+              for (auto &arg : {rhs, lhs}) {
                 const auto begin = arguments.begin();
                 arguments.insert(begin + next_index + 1, arg);
               }
@@ -2781,8 +2783,8 @@ struct parser {
 
           std::vector<std::string> potential_combined_argument;
 
-          if (is_optional_field(next) == false and next[0] == '-' and
-              (next.size() > 1 and next[1] != '-')) {
+          if (is_optional_field(next) == false && next[0] == '-' &&
+              (next.size() > 1 && next[1] != '-')) {
             for (std::size_t i = 1; i < next.size(); i++) {
               potential_combined_argument.push_back("-" + std::string(1, next[i]));
             }
@@ -2850,8 +2852,7 @@ struct parser {
 };
 
 // Specialization for std::string
-template <>
-inline std::string parser::parse_single_argument<std::string>(const char *name) {
+template <> inline std::string parser::parse_single_argument<std::string>(const char *) {
   return arguments[next_index];
 }
 
@@ -2871,7 +2872,8 @@ template <> inline bool parser::parse_single_argument<bool>(const char *name) {
 
     // Convert argument to lower case
     std::transform(current_argument.begin(), current_argument.end(),
-                   current_argument.begin(), ::tolower);
+                   current_argument.begin(),
+                   [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
 
     // Detect if argument is true or false
     if (std::find(true_strings.begin(), true_strings.end(), current_argument) !=

@@ -85,7 +85,8 @@ TEST_CASE("structopt can parse fixed array positional argument" * test_suite("ar
     bool exception_thrown = false;
     try {
       structopt::app("test").parse<ArrayIntArgument>(std::vector<std::string>{"./main"});
-    } catch (structopt::exception& e) {
+    }
+    catch (structopt::exception&) {
       exception_thrown = true;
     }
     REQUIRE(exception_thrown == true);

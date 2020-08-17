@@ -28,7 +28,7 @@ struct SingleStringArgument {
 };
 
 struct SinglePairArgument {
-  std::pair<int, float> value = {0, 0.0f};
+  std::pair<int, float> value = { 0, 0.0f };
 };
 
 STRUCTOPT(SingleIntArgument, value);
@@ -159,10 +159,10 @@ TEST_CASE("structopt can parse single positional argument" * test_suite("single_
     auto arguments = structopt::app("test").parse<SingleStringArgument>(std::vector<std::string>{"./main", "Hello, 世界"});
     REQUIRE(arguments.value == "Hello, 世界");
   }
-  
+
   // Pair
   {
     auto arguments = structopt::app("test").parse<SinglePairArgument>(std::vector<std::string>{"./main", "10", "3.14"});
-    REQUIRE(arguments.value == std::pair<int, float>{10, 3.14});
+    REQUIRE(arguments.value == std::pair<int, float>{10, 3.14f});
   }
 }

@@ -3,10 +3,10 @@
 
 using doctest::test_suite;
 
-struct Command {  
+struct Command {
   struct SubCommand1 : structopt::sub_command {
-    int bar{0};
-    double value{0.0};
+    int bar{ 0 };
+    double value{ 0.0 };
     std::optional<bool> verbose;
   };
   SubCommand1 foo;
@@ -27,7 +27,7 @@ TEST_CASE("structopt can parse multiple nested struct arguments" * test_suite("n
     REQUIRE(arguments.foo.bar == 15);
     REQUIRE(arguments.foo.value == 3.14);
     REQUIRE(arguments.foo.verbose.value() == true);
-    REQUIRE(not arguments.config.has_value());
+    REQUIRE(!arguments.config.has_value());
   }
   {
     auto arguments = structopt::app("test").parse<Command>(std::vector<std::string>{"./main", "foo", "-v", "true", "15", "3.14"});
@@ -35,7 +35,7 @@ TEST_CASE("structopt can parse multiple nested struct arguments" * test_suite("n
     REQUIRE(arguments.foo.bar == 15);
     REQUIRE(arguments.foo.value == 3.14);
     REQUIRE(arguments.foo.verbose.value() == true);
-    REQUIRE(not arguments.config.has_value());
+    REQUIRE(!arguments.config.has_value());
   }
   {
     auto arguments = structopt::app("test").parse<Command>(std::vector<std::string>{"./main", "config", "--global", "true"});
@@ -59,7 +59,8 @@ TEST_CASE("structopt can parse multiple nested struct arguments" * test_suite("n
     bool exception_thrown = false;
     try {
       auto arguments = structopt::app("test").parse<Command>(std::vector<std::string>{"./main", "foo", "15", "3.14", "--verbose", "true", "config", "-g", "false"});
-    } catch (structopt::exception& e) {
+    }
+    catch (structopt::exception&) {
       exception_thrown = true;
     }
     REQUIRE(exception_thrown);
@@ -68,7 +69,8 @@ TEST_CASE("structopt can parse multiple nested struct arguments" * test_suite("n
     bool exception_thrown = false;
     try {
       auto arguments = structopt::app("test").parse<Command>(std::vector<std::string>{"./main", "config", "-g", "false", "foo", "15", "3.14", "--verbose", "true"});
-    } catch (structopt::exception &e) {
+    }
+    catch (structopt::exception&) {
       exception_thrown = true;
     }
     REQUIRE(exception_thrown);
@@ -79,7 +81,7 @@ struct Git {
   // Subcommand: git config
   struct Config : structopt::sub_command {
     std::optional<bool> global = false;
-    std::optional<bool> local  = true;
+    std::optional<bool> local = true;
     std::array<std::string, 2> name_value_pair{};
   };
   Config config;

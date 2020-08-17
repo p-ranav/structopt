@@ -2,6 +2,7 @@
 #pragma once
 #include <algorithm>
 #include <iostream>
+#include <optional>
 #include <queue>
 #include <string>
 #include <structopt/is_specialization.hpp>
@@ -36,7 +37,7 @@ struct visitor {
   template <typename T>
   inline typename std::enable_if<structopt::is_specialization<T, std::optional>::value,
                                  void>::type
-  operator()(const char *name, T &value) {
+  operator()(const char *name, T &) {
     field_names.push_back(name);
     if constexpr (std::is_same<typename T::value_type, bool>::value) {
       flag_field_names.push_back(name);
@@ -50,19 +51,19 @@ struct visitor {
   inline typename std::enable_if<!structopt::is_specialization<T, std::optional>::value &&
                                      !visit_struct::traits::is_visitable<T>::value,
                                  void>::type
-  operator()(const char *name, T &value) {
+  operator()(const char *name, T &) {
     field_names.push_back(name);
     positional_field_names.push_back(name);
     positional_field_names_for_help.push_back(name);
-    if constexpr (structopt::is_specialization<T, std::deque>::value or
-                  structopt::is_specialization<T, std::list>::value or
-                  structopt::is_specialization<T, std::vector>::value or
-                  structopt::is_specialization<T, std::set>::value or
-                  structopt::is_specialization<T, std::multiset>::value or
-                  structopt::is_specialization<T, std::unordered_set>::value or
-                  structopt::is_specialization<T, std::unordered_multiset>::value or
-                  structopt::is_specialization<T, std::queue>::value or
-                  structopt::is_specialization<T, std::stack>::value or
+    if constexpr (structopt::is_specialization<T, std::deque>::value ||
+                  structopt::is_specialization<T, std::list>::value ||
+                  structopt::is_specialization<T, std::vector>::value ||
+                  structopt::is_specialization<T, std::set>::value ||
+                  structopt::is_specialization<T, std::multiset>::value ||
+                  structopt::is_specialization<T, std::unordered_set>::value ||
+                  structopt::is_specialization<T, std::unordered_multiset>::value ||
+                  structopt::is_specialization<T, std::queue>::value ||
+                  structopt::is_specialization<T, std::stack>::value ||
                   structopt::is_specialization<T, std::priority_queue>::value) {
       // keep track of vector-like fields as these (even though positional)
       // can be happy without any arguments
@@ -73,13 +74,14 @@ struct visitor {
   // Visitor function for nested structs
   template <typename T>
   inline typename std::enable_if<visit_struct::traits::is_visitable<T>::value, void>::type
-  operator()(const char *name, T &value) {
+  operator()(const char *name, T &) {
     field_names.push_back(name);
     nested_struct_field_names.push_back(name);
   }
 
-  bool is_field_name(const std::string &name) {
-    return std::find(field_names.begin(), field_names.end(), name) != field_names.end();
+  bool is_field_name(const std::string &field_name) {
+    return std::find(field_names.begin(), field_names.end(), field_name) !=
+           field_names.end();
   }
 
   void print_help(std::ostream &os) const {

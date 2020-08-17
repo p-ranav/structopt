@@ -22,7 +22,7 @@ static const bool is_octal_notation(std::string const &input) {
 }
 
 static inline bool is_valid_number(const std::string &input) {
-  if (is_binary_notation(input) or is_hex_notation(input) or is_octal_notation(input)) {
+  if (is_binary_notation(input) || is_hex_notation(input) || is_octal_notation(input)) {
     return true;
   }
 

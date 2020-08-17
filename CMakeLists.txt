@@ -16,8 +16,16 @@ else()
 endif()
 
 if(EXISTS "${CMAKE_BINARY_DIR}/conanbuildinfo.cmake")
-    include("${CMAKE_BINARY_DIR}/conanbuildinfo.cmake")
-    conan_basic_setup()
+  include("${CMAKE_BINARY_DIR}/conanbuildinfo.cmake")
+  conan_basic_setup()
+endif()
+
+if (MSVC_VERSION GREATER_EQUAL "1900")
+  include(CheckCXXCompilerFlag)
+  CHECK_CXX_COMPILER_FLAG("/std:c++latest" _cpp_latest_flag_supported)
+  if (_cpp_latest_flag_supported)
+    add_compile_options("/std:c++latest")
+  endif()
 endif()
 
 option(STRUCTOPT_TESTS "Build structopt tests + enable CTest")

@@ -59,21 +59,22 @@ TEST_CASE("structopt can parse vector of pairs positional argument" * test_suite
   }
   {
     auto arguments = structopt::app("test").parse<VectorOfPairs>(std::vector<std::string>{"./main", "a", "1", "b", "2"});
-    REQUIRE(arguments.values == std::vector<std::pair<std::string, int>>{{"a", 1}, {"b", 2}});
+    REQUIRE(arguments.values == std::vector<std::pair<std::string, int>>{ {"a", 1}, { "b", 2 }});
   }
   {
     auto arguments = structopt::app("test").parse<VectorOfPairs>(std::vector<std::string>{"./main", "a", "1", "b", "2", "c", "3", "d", "4"});
-    REQUIRE(arguments.values == std::vector<std::pair<std::string, int>>{{"a", 1}, {"b", 2}, {"c", 3}, {"d", 4}});
+    REQUIRE(arguments.values == std::vector<std::pair<std::string, int>>{ {"a", 1}, { "b", 2 }, { "c", 3 }, { "d", 4 }});
   }
   {
     bool exception_thrown = false;
     try {
       auto arguments = structopt::app("test").parse<VectorOfPairs>(std::vector<std::string>{"./main", "a", "1", "b"});
-    } catch (structopt::exception& e) {
+    }
+    catch (structopt::exception&) {
       exception_thrown = true;
     }
     REQUIRE(exception_thrown == true);
-  }  
+  }
 }
 
 struct CompilerOptionsForVectorOfFiles {
