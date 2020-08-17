@@ -10,6 +10,9 @@
   <a href="https://travis-ci.com/p-ranav/structopt">
     <img src="https://travis-ci.com/p-ranav/structopt.svg?branch=master" alt="ci status"/>
   </a>
+  <a href="https://ci.appveyor.com/project/p-ranav/structopt/branch/master">
+    <img src="https://ci.appveyor.com/api/projects/status/fyufe5f11mhahwq9/branch/master?svg=true" alt="ci status"/>
+  </a>
   <a href="https://www.codacy.com/manual/p-ranav/structopt?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=p-ranav/structopt&amp;utm_campaign=Badge_Grade">
     <img src="https://app.codacy.com/project/badge/Grade/e6e76a680e61445a90616d27cb69b927" alt="codacy"/>
   </a>
