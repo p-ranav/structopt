@@ -150,9 +150,7 @@ files        = { file1.txt file3.txt file4.txt }
 
 ## Getting Started 
 
-Include `<structopt/app.hpp>` and you're good to go.
-
-`structopt` supports a variety of argument types including positional, optional, flags, and compound arguments. Below you can see how to configure each of these types:
+`structopt` is a header-only library. Just add `include/` to your _include_directories_ and you should be good to go. A single header file version is also available in `single_include/`.
 
 ### Positional Arguments
 
