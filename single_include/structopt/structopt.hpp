@@ -1780,17 +1780,17 @@ namespace structopt {
 
 namespace details {
 
-static const bool is_binary_notation(std::string const &input) {
+static inline bool is_binary_notation(std::string const &input) {
   return input.compare(0, 2, "0b") == 0 && input.size() > 2 &&
          input.find_first_not_of("01", 2) == std::string::npos;
 }
 
-static const bool is_hex_notation(std::string const &input) {
+static inline bool is_hex_notation(std::string const &input) {
   return input.compare(0, 2, "0x") == 0 && input.size() > 2 &&
          input.find_first_not_of("0123456789abcdefABCDEF", 2) == std::string::npos;
 }
 
-static const bool is_octal_notation(std::string const &input) {
+static inline bool is_octal_notation(std::string const &input) {
   return input.compare(0, 1, "0") == 0 && input.size() > 1 &&
          input.find_first_not_of("01234567", 1) == std::string::npos;
 }
@@ -1800,12 +1800,16 @@ static inline bool is_valid_number(const std::string &input) {
     return true;
   }
 
+  if (input.empty()) {
+    return false;
+  }
+
   std::size_t i = 0, j = input.length() - 1;
 
   // Handling whitespaces
   while (i < input.length() && input[i] == ' ')
     i++;
-  while (j >= 0 && input[j] == ' ')
+  while (input[j] == ' ')
     j--;
 
   if (i > j)
@@ -1876,6 +1880,7 @@ static inline bool is_valid_number(const std::string &input) {
 } // namespace details
 
 } // namespace structopt
+
 #pragma once
 #include <algorithm>
 #include <iostream>
