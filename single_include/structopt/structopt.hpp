@@ -2248,6 +2248,60 @@ struct parser {
     return {key, value};
   }
 
+  // Strip the initial dashes on the left of an optional argument
+  // e.g., --verbose => verbose
+  // e.g., -log-level => log-level
+  std::string lstrip_dashes(const std::string& next) {
+    std::string result;
+    bool prefix_dashes_ended = false;
+    for (auto& c : next) {
+      if (prefix_dashes_ended == false && c != '-') {
+        prefix_dashes_ended = true;
+      }
+      if (prefix_dashes_ended) {
+        result += c;
+      }
+    }
+    return result;
+  }
+
+  // Get the optional field name if any from 
+  // e.g., `-v` => `verbose`
+  // e.g., `-log-level` => `log_level`
+  std::optional<std::string> get_full_optional_field_name(const std::string& next) {
+    std::optional<std::string> result;
+
+    if (next.size() == 2 && next[0] == '-') {
+      // short form of optional argument
+      for (auto& oarg : visitor.optional_field_names) {
+        if (oarg[0] == next[1]) {
+          // second character of next matches first character of some optional field_name
+          result = oarg;
+          break;
+        }
+      }
+    } else {
+      // long form of optional argument
+
+      // strip dashes on the left
+      std::string potential_field_name = lstrip_dashes(next);
+
+      // replace `-` in the middle with `_`
+      std::replace(potential_field_name.begin(), potential_field_name.end(), '-', '_');
+
+      // check if `potential_field_name` is in the optional field names list
+      for (auto& oarg : visitor.optional_field_names) {
+        if (oarg == potential_field_name) {
+          result = oarg;
+          break;
+        }
+      }
+
+    }
+
+    return result;
+  }
+
   template <typename T> std::pair<T, bool> parse_argument(const char *name) {
     if (next_index >= arguments.size()) {
       return {T(), false};
@@ -2771,11 +2825,15 @@ struct parser {
               const auto [lhs, rhs] = split_delimited_argument(delimiter, next);
               // update next_index and return
               // the parser will take care of the rest
-              for (auto &arg : {rhs, lhs}) {
-                const auto begin = arguments.begin();
-                arguments.insert(begin + next_index + 1, arg);
-              }
 
+              // if `lhs` is an optional argument (i.e., maps to an optional field in the original struct), then insert into arguments list
+              auto potential_field_name = get_full_optional_field_name(lhs);
+              if (potential_field_name.has_value()) {
+                for (auto &arg : {rhs, lhs}) {
+                  const auto begin = arguments.begin();
+                  arguments.insert(begin + next_index + 1, arg);
+                }
+              }
               // get past the current argument, e.g., `--foo=bar`
               next_index += 1;
               return;
