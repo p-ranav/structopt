@@ -99,8 +99,8 @@ int main(int argc, char *argv[]) {
 
 Now let's pass some arguments to this program:
 
-```bash
-▶ ./main config.csv file5.csv file6.json
+```console
+foo@bar:~$ ./main config.csv file5.csv file6.json
 config_file  = config.csv
 bind_address = not provided
 verbose      = false
@@ -108,7 +108,7 @@ log_level    = 1
 user         = not provided
 files        = { file5.csv file6.json }
 
-▶ ./main config.csv --bind-address localhost:9000 -v -log-level error file1.txt file2.txt
+foo@bar:~$ ./main config.csv --bind-address localhost:9000 -v -log-level error file1.txt file2.txt
 config_file  = config.csv
 bind_address = localhost:9000
 verbose      = true
@@ -116,7 +116,7 @@ log_level    = 3
 user         = not provided
 files        = { file1.txt file2.txt }
 
-▶ ./main config_2.csv --bind-address 192.168.7.3 -log-level debug file1.txt file3.txt file4.txt --user "John Doe" "john.doe@foo.com"
+foo@bar:~$ ./main config_2.csv --bind-address 192.168.7.3 -log-level debug file1.txt file3.txt file4.txt --user "John Doe" "john.doe@foo.com"
 config_file  = config_2.csv
 bind_address = 192.168.7.3
 verbose      = false
@@ -185,13 +185,13 @@ int main(int argc, char *argv[]) {
 }
 ```
 
-```bash
-▶ ./main foo.txt bar.csv
+```console
+foo@bar:~$ ./main foo.txt bar.csv
 
 Input file  : foo.txt
 Output file : bar.csv
 
-▶ ./main foo.csv
+foo@bar:~$ ./main foo.csv
 Error: expected value for positional argument `output_file`.
 
 USAGE: ./my_app input_file output_file
@@ -254,8 +254,8 @@ int main(int argc, char *argv[]) {
 
 ***NOTE*** `structopt` supports two option delimiters, `=` and `:` for optional arguments. This is meaningful and commonly used in single-valued optional arguments, e.g., `--std=c++17`.
 
-```bash
-▶ ./main -C main.cpp
+```console
+foo@bar:~$ ./main -C main.cpp
 std        : c++11
 verbose    : false
 Wall       : false
@@ -263,7 +263,7 @@ Compile    : true
 Output     : a.out
 Input file : main.cpp
 
-▶ ./main -std=c++17 -o main main.cpp
+foo@bar:~$ ./main -std=c++17 -o main main.cpp
 std        : c++17
 verbose    : false
 Wall       : false
@@ -271,7 +271,7 @@ Compile    : false
 Output     : main
 Input file : main.cpp
 
-▶ ./main main.cpp -v -std:c++14 --output:main -Wall
+foo@bar:~$ ./main main.cpp -v -std:c++14 --output:main -Wall
 std        : c++14
 verbose    : true
 Wall       : true
@@ -345,13 +345,13 @@ int main(int argc, char *argv[]) {
 }
 ```
 
-```bash
-▶ ./main -v foo bar.txt
+```console
+foo@bar:~$ ./main -v foo bar.txt
 `-v` provided - Matching is now reversed
 Search   : foo
 Pathspec : bar.txt
 
-▶ ./main -- -v bar.txt
+foo@bar:~$ ./main -- -v bar.txt
 Search   : -v
 Pathspec : bar.txt
 ```
@@ -386,13 +386,13 @@ int main(int argc, char *argv[]) {
 }
 ```
 
-```bash
-▶ ./main
+```console
+foo@bar:~$ ./main
 
-▶ ./main -v
+foo@bar:~$ ./main -v
 Verbosity enabled
 
-▶ ./main --verbose
+foo@bar:~$ ./main --verbose
 Verbosity enabled
 ```
 
@@ -437,17 +437,17 @@ int main(int argc, char *argv[]) {
 }
 ```
 
-```bash
-▶ ./main --color red
+```console
+foo@bar:~$ ./main --color red
 #ff0000
 
-▶ ./main -c blue
+foo@bar:~$ ./main -c blue
 #0000ff
 
-▶ ./main --color green
+foo@bar:~$ ./main --color green
 #00ff00
 
-▶ ./main -c black
+foo@bar:~$ ./main -c black
 Error: unexpected input `black` provided for enum argument `color`. Allowed values are {red, green, blue}
 
 USAGE: ./my_app [OPTIONS]
@@ -508,20 +508,20 @@ int main(int argc, char *argv[]) {
 }
 ```
 
-```bash
-▶ ./main add 1 2
+```console
+foo@bar:~$ ./main add 1 2
 3
 
-▶ ./main subtract 5 9
+foo@bar:~$ ./main subtract 5 9
 -4
 
-▶ ./main multiply 16 5
+foo@bar:~$ ./main multiply 16 5
 80
 
-▶ ./main divide 1331 11
+foo@bar:~$ ./main divide 1331 11
 121
 
-▶ ./main add 5
+foo@bar:~$ ./main add 5
 Error: failed to correctly parse tuple `input`. Expected 3 arguments, 2 provided.
 
 USAGE: my_app input
@@ -576,20 +576,20 @@ int main(int argc, char *argv[]) {
 
 ***NOTE*** Notice below that the act of gathering remaining arguments is arrested as soon as an optional argument is detected. See the output of `./main file1.cpp file2.cpp --std c++17` below. Notice that `--std=c++17` is not part of the vector. This is because `--std` is a valid optional argument.
 
-```bash
-▶ ./main
+```console
+foo@bar:~$ ./main
 Standard : not provided
 Files    : { }
 
-▶ ./main file1.cpp file2.cpp
+foo@bar:~$ ./main file1.cpp file2.cpp
 Standard : not provided
 Files    : { file1.cpp file2.cpp }
 
-▶ ./main file1.cpp file2.cpp --std=c++17
+foo@bar:~$ ./main file1.cpp file2.cpp --std=c++17
 Standard : c++17
 Files    : { file1.cpp file2.cpp }
 
-▶ ./main --std:c++20 file1.cpp file2.cpp
+foo@bar:~$ ./main --std:c++20 file1.cpp file2.cpp
 Standard : c++20
 Files    : { file1.cpp file2.cpp }
 ```
@@ -633,15 +633,15 @@ int main(int argc, char *argv[]) {
 }
 ```
 
-```bash
-▶ ./main -ac 3.14 2.718
+```console
+foo@bar:~$ ./main -ac 3.14 2.718
 a = true, b = false
 c = [3.14, 2.718]
 
-▶ ./main -ba
+foo@bar:~$ ./main -ba
 a = true, b = true
 
-▶ ./main -c 1.5 3.0 -ab
+foo@bar:~$ ./main -c 1.5 3.0 -ab
 a = true, b = true
 c = [1.5, 3]
 ```
@@ -673,8 +673,8 @@ int main(int argc, char *argv[]) {
 }
 ```
 
-```bash
-▶ ./main 1 0x5B 071 0b0101 -35 +98
+```console
+foo@bar:~$ ./main 1 0x5B 071 0b0101 -35 +98
 1
 91
 57
@@ -708,8 +708,8 @@ int main(int argc, char *argv[]) {
 }
 ```
 
-```bash
-▶ ./main -3.15 +2.717 2E-4 0.1e2 .5 -.3 +5.999
+```console
+foo@bar:~$ ./main -3.15 +2.717 2E-4 0.1e2 .5 -.3 +5.999
 -3.15
 2.717
 0.0002
@@ -783,24 +783,24 @@ int main(int argc, char *argv[]) {
 }
 ```
 
-```bash
-▶ ./main config user.email "john.doe@foo.com"
+```console
+foo@bar:~$ ./main config user.email "john.doe@foo.com"
 You invoked `git config`:
 Global : false
 Input  : (user.email, john.doe@foo.com)
 
-▶ ./main config user.name "John Doe" --global
+foo@bar:~$ ./main config user.name "John Doe" --global
 You invoked `git config`:
 Global : true
 Input  : (user.name, John Doe)
 
-▶ ./main init my_repo
+foo@bar:~$ ./main init my_repo
 You invoked `git init`:
 Repository name : my_repo
 
 
 
-▶ ./main -h
+foo@bar:~$ ./main -h
 
 USAGE: my_app [OPTIONS] [SUBCOMMANDS]
 
@@ -815,7 +815,7 @@ SUBCOMMANDS:
 
 
 
-▶ ./main config -h
+foo@bar:~$ ./main config -h
 
 USAGE: config [FLAGS] [OPTIONS] name_value_pair
 
@@ -832,7 +832,7 @@ ARGS:
 
 
 
-▶ ./main init -h
+foo@bar:~$ ./main init -h
 
 USAGE: init [OPTIONS] name
 
@@ -848,8 +848,8 @@ ARGS:
 
 ***NOTE*** `structopt` does not allow to invoke multiple sub-commands. If one has already been invoked, you will see the following error:
 
-```bash
-▶ ./main config user.name "John Doe" init my_repo
+```console
+foo@bar:~$ ./main config user.name "John Doe" init my_repo
 Error: failed to invoke sub-command `init` because a different sub-command, `config`, has already been invoked.
 ```
 
@@ -913,8 +913,8 @@ int main(int argc, char *argv[]) {
 }
 ```
 
-```bash
-▶ ./main
+```console
+foo@bar:~$ ./main
 
 USAGE: my_app [OPTIONS] [SUBCOMMANDS]
 
@@ -927,7 +927,7 @@ SUBCOMMANDS:
 
 
 
-▶ ./main sed --trace X=1 Y=2 Z=3 -- 's/foo/bar/g' foo.txt
+foo@bar:~$ ./main sed --trace X=1 Y=2 Z=3 -- 's/foo/bar/g' foo.txt
 Trace enabled!
 Args    : X=1 Y=2 Z=3
 Pattern : s/foo/bar/g
@@ -964,8 +964,8 @@ int main(int argc, char *argv[]) {
 }
 ```
 
-```bash
-▶ ./main -h
+```console
+foo@bar:~$ ./main -h
 
 USAGE: my_app [OPTIONS] input_file output_file files
 
@@ -979,7 +979,7 @@ ARGS:
     output_file
     files
 
-▶ ./main -v
+foo@bar:~$ ./main -v
 1.0.3
 ```
 
