@@ -7,6 +7,12 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/Neargye/magic_enum/releases">
+    <img src="https://img.shields.io/github/release/p-ranav/structopt.svg" alt="ci status"/>
+  </a>
+  <a href="https://conan.io/center/structopt/0.1.0">
+    <img src="https://img.shields.io/badge/Conan-package-blueviolet" alt="conan package"/>
+  </a>
   <a href="https://travis-ci.com/p-ranav/structopt">
     <img src="https://travis-ci.com/p-ranav/structopt.svg?branch=master" alt="ci status"/>
   </a>
@@ -22,7 +28,6 @@
   <a href="https://github.com/p-ranav/tabulate/blob/master/LICENSE">
     <img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="license"/>
   </a>
-  <img src="https://img.shields.io/badge/version-0.1.0-blue.svg?cacheSeconds=2592000" alt="version"/>
 </p>
 
 ## Quick Start
