@@ -2739,7 +2739,7 @@ struct parser {
       if (visitor.positional_field_names.empty()) {
         // We're not looking to save any more positional fields
         // all of them already have a value
-        throw structopt::exception("Error: unexpected argument " + next, visitor);
+        throw structopt::exception("Error: unexpected argument '" + next + "'", visitor);
         return;
       }
 
@@ -3035,6 +3035,10 @@ public:
                                      parser.visitor);
         }
       }
+    }
+
+    if (parser.current_index < parser.arguments.size()) {
+      throw structopt::exception("Error: unrecognized argument '" + parser.arguments[parser.current_index] + "'", parser.visitor);
     }
 
     return argument_struct;

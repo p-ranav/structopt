@@ -75,6 +75,10 @@ public:
       }
     }
 
+    if (parser.current_index < parser.arguments.size()) {
+      throw structopt::exception("Error: unrecognized argument '" + parser.arguments[parser.current_index] + "'", parser.visitor);
+    }
+
     return argument_struct;
   }
 

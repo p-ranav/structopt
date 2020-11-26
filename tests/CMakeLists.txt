@@ -52,6 +52,7 @@ file(GLOB structopt_TEST_SOURCES
     test_equal_delimiter_optional_argument.cpp
     test_option_delimiter.cpp
     test_excess_positional_arguments.cpp
+    test_unknown_optional_argument.cpp
 )
 set_source_files_properties(main.cpp
     PROPERTIES
