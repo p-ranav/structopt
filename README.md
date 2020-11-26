@@ -10,7 +10,7 @@
   <a href="https://github.com/Neargye/magic_enum/releases">
     <img src="https://img.shields.io/github/release/p-ranav/structopt.svg" alt="ci status"/>
   </a>
-  <a href="https://conan.io/center/structopt/0.1.0">
+  <a href="https://conan.io/center/structopt/0.1.1">
     <img src="https://img.shields.io/badge/Conan-package-blueviolet" alt="conan package"/>
   </a>
   <a href="https://travis-ci.com/p-ranav/structopt">
