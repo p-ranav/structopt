@@ -657,7 +657,7 @@ struct parser {
       if (visitor.positional_field_names.empty()) {
         // We're not looking to save any more positional fields
         // all of them already have a value
-        // TODO: Report error, unexpected argument
+        throw structopt::exception("Error: unexpected argument " + next, visitor);
         return;
       }
 

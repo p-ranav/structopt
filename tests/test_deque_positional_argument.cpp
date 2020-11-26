@@ -36,8 +36,14 @@ TEST_CASE("structopt can parse deque positional argument" * test_suite("vector_p
     REQUIRE(arguments.foo == true);
   }
   {
-    auto arguments = structopt::app("test").parse<DequeIntArgumentWithOtherFlags>(std::vector<std::string>{"./main", "1", "2", "--foo", "3"});
-    REQUIRE(arguments.value == std::deque<int>{1, 2});
-    REQUIRE(arguments.foo == true);
+    bool exception_thrown{false};
+    try {
+      auto arguments = structopt::app("test").parse<DequeIntArgumentWithOtherFlags>(std::vector<std::string>{"./main", "1", "2", "--foo", "3"});
+      REQUIRE(arguments.value == std::deque<int>{1, 2});
+      REQUIRE(arguments.foo == true);
+    } catch (structopt::exception& e) {
+      exception_thrown = true;
+    }
+    REQUIRE(exception_thrown == true);
   }
 }
