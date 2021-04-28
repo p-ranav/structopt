@@ -147,6 +147,7 @@ files        = { file1.txt file3.txt file4.txt }
      *    [Nested Structures (Sub-commands)](#nested-structures)
      *    [Sub-Commands, Vector Arguments, and Delimited Positional Arguments](#sub-commands-vector-arguments-and-delimited-positional-arguments)
      *    [Printing Help](#printing-help)
+     *    [Printing CUSTOM Help](#printing-custom-help)
 *    [Building Samples and Tests](#building-samples-and-tests)
 *    [Compiler Compatibility](#compiler-compatibility)
 *    [Generating Single Header](#generating-single-header)
@@ -988,7 +989,7 @@ foo@bar:~$ ./main -v
 1.0.3
 ```
 
-### Printing CUSTOM Help Message
+### Printing CUSTOM Help
 
 `structopt` allows users to provide a custom help messages. Simply pass in your custom help as a string argument to `structopt::app`
 
