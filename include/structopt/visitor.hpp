@@ -20,6 +20,7 @@ namespace details {
 struct visitor {
   std::string name;
   std::string version;
+  std::optional<std::string> help;
   std::vector<std::string> field_names;
   std::deque<std::string> positional_field_names; // mutated by parser
   std::deque<std::string> positional_field_names_for_help;
@@ -32,6 +33,9 @@ struct visitor {
 
   explicit visitor(const std::string &name, const std::string &version)
       : name(name), version(version) {}
+
+  explicit visitor(const std::string &name, const std::string &version, const std::string& help)
+      : name(name), version(version), help(help) {}
 
   // Visitor function for std::optional - could be an option or a flag
   template <typename T>
@@ -85,63 +89,67 @@ struct visitor {
   }
 
   void print_help(std::ostream &os) const {
-    os << "\nUSAGE: " << name << " ";
-
-    if (flag_field_names.empty() == false) {
-      os << "[FLAGS] ";
-    }
-
-    if (optional_field_names.empty() == false) {
-      os << "[OPTIONS] ";
-    }
-
-    if (nested_struct_field_names.empty() == false) {
-      os << "[SUBCOMMANDS] ";
-    }
-
-    for (auto &field : positional_field_names_for_help) {
-      os << field << " ";
-    }
-
-    if (flag_field_names.empty() == false) {
-      os << "\n\nFLAGS:\n";
-      for (auto &flag : flag_field_names) {
-        os << "    -" << flag[0] << ", --" << flag << "\n";
-      }
+    if (help.has_value() && help.value().size() > 0) {
+      os << help.value();
     } else {
-      os << "\n";
-    }
+      os << "\nUSAGE: " << name << " ";
 
-    if (optional_field_names.empty() == false) {
-      os << "\nOPTIONS:\n";
-      for (auto &option : optional_field_names) {
+      if (flag_field_names.empty() == false) {
+        os << "[FLAGS] ";
+      }
 
-        // Generate kebab case and present as option
-        auto kebab_case = option;
-        details::string_replace(kebab_case, "_", "-");
-        std::string long_form = "";
-        if (kebab_case != option) {
-          long_form = kebab_case;
-        } else {
-          long_form = option;
+      if (optional_field_names.empty() == false) {
+        os << "[OPTIONS] ";
+      }
+
+      if (nested_struct_field_names.empty() == false) {
+        os << "[SUBCOMMANDS] ";
+      }
+
+      for (auto &field : positional_field_names_for_help) {
+        os << field << " ";
+      }
+
+      if (flag_field_names.empty() == false) {
+        os << "\n\nFLAGS:\n";
+        for (auto &flag : flag_field_names) {
+          os << "    -" << flag[0] << ", --" << flag << "\n";
         }
-
-        os << "    -" << option[0] << ", --" << long_form << " <" << option << ">"
-           << "\n";
+      } else {
+        os << "\n";
       }
-    }
 
-    if (nested_struct_field_names.empty() == false) {
-      os << "\nSUBCOMMANDS:\n";
-      for (auto &sc : nested_struct_field_names) {
-        os << "    " << sc << "\n";
+      if (optional_field_names.empty() == false) {
+        os << "\nOPTIONS:\n";
+        for (auto &option : optional_field_names) {
+
+          // Generate kebab case and present as option
+          auto kebab_case = option;
+          details::string_replace(kebab_case, "_", "-");
+          std::string long_form = "";
+          if (kebab_case != option) {
+            long_form = kebab_case;
+          } else {
+            long_form = option;
+          }
+
+          os << "    -" << option[0] << ", --" << long_form << " <" << option << ">"
+            << "\n";
+        }
       }
-    }
 
-    if (positional_field_names_for_help.empty() == false) {
-      os << "\nARGS:\n";
-      for (auto &arg : positional_field_names_for_help) {
-        os << "    " << arg << "\n";
+      if (nested_struct_field_names.empty() == false) {
+        os << "\nSUBCOMMANDS:\n";
+        for (auto &sc : nested_struct_field_names) {
+          os << "    " << sc << "\n";
+        }
+      }
+
+      if (positional_field_names_for_help.empty() == false) {
+        os << "\nARGS:\n";
+        for (auto &arg : positional_field_names_for_help) {
+          os << "    " << arg << "\n";
+        }
       }
     }
   }

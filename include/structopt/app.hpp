@@ -18,8 +18,8 @@ class app {
   details::visitor visitor;
 
 public:
-  explicit app(const std::string &name, const std::string &version = "")
-      : visitor(name, version) {}
+  explicit app(const std::string &name, const std::string &version = "", const std::string& help = "")
+      : visitor(name, version, help) {}
 
   template <typename T> T parse(const std::vector<std::string> &arguments) {
     T argument_struct = T();
