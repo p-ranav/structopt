@@ -5,14 +5,14 @@ if(DEFINED PROJECT_NAME)
 endif()
 
 if(CMAKE_VERSION VERSION_GREATER_EQUAL "3.12")
-  project(structopt VERSION 0.1.1 LANGUAGES CXX
+  project(structopt VERSION 0.1.2 LANGUAGES CXX
     HOMEPAGE_URL "https://github.com/p-ranav/structopt"
     DESCRIPTION "Parse command line arguments by defining a struct")
 elseif(CMAKE_VERSION VERSION_GREATER_EQUAL "3.9")
-  project(structopt VERSION 0.1.1 LANGUAGES CXX
+  project(structopt VERSION 0.1.2 LANGUAGES CXX
     DESCRIPTION "Parse command line arguments by defining a struct")
 else()
-  project(structopt VERSION 0.1.1 LANGUAGES CXX)
+  project(structopt VERSION 0.1.2 LANGUAGES CXX)
 endif()
 
 if(EXISTS "${CMAKE_BINARY_DIR}/conanbuildinfo.cmake")
