@@ -7,7 +7,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/Neargye/magic_enum/releases">
+  <a href="https://github.com/p-ranav/structopt/releases">
     <img src="https://img.shields.io/github/release/p-ranav/structopt.svg" alt="ci status"/>
   </a>
   <a href="https://conan.io/center/structopt/0.1.2">
