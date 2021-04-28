@@ -764,7 +764,7 @@ STRUCTOPT(Git, config, init);
 
 int main(int argc, char *argv[]) {
 
-  
+
   try {
     auto options = structopt::app("my_app").parse<Git>(argc, argv);
 
@@ -941,10 +941,10 @@ File    : foo.txt
 
 ### Printing Help
 
-`structopt` will insert two optional arguments for the user: `help` and `version`. 
+`structopt` will insert two optional arguments for the user: `help` and `version`.
 
 * Using `-h` or `--help` will print the help message and exit.
-* Using `-v` or `--version` will print the program version and exit. 
+* Using `-v` or `--version` will print the program version and exit.
 
 ```cpp
 #include <structopt/app.hpp>
@@ -988,7 +988,42 @@ foo@bar:~$ ./main -v
 1.0.3
 ```
 
-***NOTE*** Admittedly, the above help message doesn't look great; none of the arguments have a description - something that is configurable in other argument parsers. `structopt` does its best to infer details about arguments from the user-defined struct including argument name, data type, and argument type. Unforunately, `structopt` (for now) does not provide any API to the user to configure (e.g., by providing a map) documentation for each of the fields in the struct. 
+### Printing CUSTOM Help Message
+
+`structopt` allows users to provide a custom help messages. Simply pass in your custom help as a string argument to `structopt::app`
+
+```cpp
+#include <structopt/app.hpp>
+
+struct Options {
+  // positional arguments
+  std::string input_file;
+  std::string output_file;
+
+  // optional arguments
+  std::optional<std::string> bind_address;
+
+  // remaining arguments
+  std::vector<std::string> files;
+};
+STRUCTOPT(Options, input_file, output_file, bind_address, files);
+
+int main(int argc, char *argv[]) {
+
+  try {
+    const std::string& custom_help = "Usage: ./my_app input_file output_file [--bind-address BIND_ADDRESS] [files...]\n";
+    auto options = structopt::app("my_app", "1.0.3", custom_help).parse<Options>(argc, argv);
+  } catch (structopt::exception &e) {
+    std::cout << e.what() << "\n";
+    std::cout << e.help();
+  }
+}
+```
+
+```console
+foo@bar:~$ ./main -h
+Usage: ./my_app input_file output_file [--bind-address BIND_ADDRESS] [files...]
+```
 
 ## Building Samples and Tests
 
