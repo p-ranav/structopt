@@ -1036,6 +1036,23 @@ cmake -DSTRUCTOPT_SAMPLES=ON -DSTRUCTOPT_TESTS=ON ..
 make
 ```
 
+### WinLibs + MinGW
+
+For Windows, if you use [WinLibs](http://winlibs.com/) like I do, the cmake command would look like this:
+
+```bash
+cmake -G "MinGW Makefiles" -DCMAKE_CXX_COMPILER="C:/WinLibs/mingw64/bin/g++.exe" -DSTRUCTOPT_SAMPLES=ON -DSTRUCTOPT_TESTS=ON ..
+make
+
+PS C:\Users\foo\bar\structopt\build> .\tests\structopt_tests.exe
+[doctest] doctest version is "2.3.5"
+[doctest] run with "--help" for options
+===============================================================================
+[doctest] test cases:     54 |     54 passed |      0 failed |      0 skipped
+[doctest] assertions:    393 |    393 passed |      0 failed |
+[doctest] Status: SUCCESS!
+```
+
 ## Compiler Compatibility
 
 * Clang/LLVM >= 5
