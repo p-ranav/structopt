@@ -1040,11 +1040,12 @@ make
 
 For Windows, if you use [WinLibs](http://winlibs.com/) like I do, the cmake command would look like this:
 
-```bash
-cmake -G "MinGW Makefiles" -DCMAKE_CXX_COMPILER="C:/WinLibs/mingw64/bin/g++.exe" -DSTRUCTOPT_SAMPLES=ON -DSTRUCTOPT_TESTS=ON ..
-make
+```console
+foo@bar:~$ mkdir build && cd build
+foo@bar:~$ cmake -G "MinGW Makefiles" -DCMAKE_CXX_COMPILER="C:/WinLibs/mingw64/bin/g++.exe" -DSTRUCTOPT_SAMPLES=ON -DSTRUCTOPT_TESTS=ON ..
+foo@bar:~$ make
 
-PS C:\Users\foo\bar\structopt\build> .\tests\structopt_tests.exe
+foo@bar:~$ .\tests\structopt_tests.exe
 [doctest] doctest version is "2.3.5"
 [doctest] run with "--help" for options
 ===============================================================================
