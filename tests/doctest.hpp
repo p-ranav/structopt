@@ -3547,7 +3547,7 @@ namespace detail {
     Subcase::~Subcase() {
         if(m_entered) {
             // only mark the subcase stack as passed if no subcases have been skipped
-            if(g_cs->should_reenter == false)
+            if(not g_cs->should_reenter)
                 g_cs->subcasesPassed.insert(g_cs->subcasesStack);
             g_cs->subcasesStack.pop_back();
 
@@ -3715,7 +3715,7 @@ namespace {
         ((void)code); // for DOCTEST_CONFIG_COLORS_NONE
 #ifdef DOCTEST_CONFIG_COLORS_ANSI
         if(g_no_colors ||
-           (isatty(STDOUT_FILENO) == false && getContextOptions()->force_colors == false))
+           (not isatty(STDOUT_FILENO) && not getContextOptions()->force_colors))
             return;
 
         auto col = "";
@@ -3742,7 +3742,7 @@ namespace {
 
 #ifdef DOCTEST_CONFIG_COLORS_WINDOWS
         if(g_no_colors ||
-           (isatty(fileno(stdout)) == false && getContextOptions()->force_colors == false))
+           (not isatty(fileno(stdout)) && not getContextOptions()->force_colors))
             return;
 
 #define DOCTEST_SET_ATTR(x) SetConsoleTextAttribute(g_stdoutHandle, x | g_origBgAttrs)
@@ -4718,7 +4718,7 @@ namespace {
 #endif // DOCTEST_PLATFORM_WINDOWS
 
             xml.startElement("doctest").writeAttribute("binary", binary_name);
-            if(opt.no_version == false)
+            if(not opt.no_version)
                 xml.writeAttribute("version", DOCTEST_VERSION_STR);
 
             // only the consequential ones (TODO: filters)
@@ -4746,7 +4746,7 @@ namespace {
                     .writeAttribute("successes",
                                     p.numTestCasesPassingFilters - p.numTestCasesFailed)
                     .writeAttribute("failures", p.numTestCasesFailed);
-            if(opt.no_skipped_summary == false)
+            if(not opt.no_skipped_summary)
                 xml.writeAttribute("skipped", p.numTestCases - p.numTestCasesPassingFilters);
             xml.endElement();
 
@@ -4839,7 +4839,7 @@ namespace {
         }
 
         void test_case_skipped(const TestCaseData& in) override {
-            if(opt.no_skipped_summary == false) {
+            if(not opt.no_skipped_summary) {
                 test_case_start_impl(in);
                 xml.writeAttribute("skipped", "true");
                 xml.endElement();
@@ -4949,7 +4949,7 @@ namespace {
         }
 
         void printVersion() {
-            if(opt.no_version == false)
+            if(not opt.no_version)
                 s << Color::Cyan << "[doctest] " << Color::None << "doctest version is \""
                   << DOCTEST_VERSION_STR << "\"\n";
         }
@@ -5159,7 +5159,7 @@ namespace {
               << std::setw(6) << p.numTestCasesPassingFilters - p.numTestCasesFailed << " passed"
               << Color::None << " | " << (p.numTestCasesFailed > 0 ? Color::Red : Color::None)
               << std::setw(6) << p.numTestCasesFailed << " failed" << Color::None << " | ";
-            if(opt.no_skipped_summary == false) {
+            if(not opt.no_skipped_summary) {
                 const int numSkipped = p.numTestCases - p.numTestCasesPassingFilters;
                 s << (numSkipped == 0 ? Color::None : Color::Yellow) << std::setw(6) << numSkipped
                   << " skipped" << Color::None;

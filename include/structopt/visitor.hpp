@@ -94,15 +94,15 @@ struct visitor {
     } else {
       os << "\nUSAGE: " << name << " ";
 
-      if (flag_field_names.empty() == false) {
+      if (not flag_field_names.empty()) {
         os << "[FLAGS] ";
       }
 
-      if (optional_field_names.empty() == false) {
+      if (not optional_field_names.empty()) {
         os << "[OPTIONS] ";
       }
 
-      if (nested_struct_field_names.empty() == false) {
+      if (not nested_struct_field_names.empty()) {
         os << "[SUBCOMMANDS] ";
       }
 
@@ -110,7 +110,7 @@ struct visitor {
         os << field << " ";
       }
 
-      if (flag_field_names.empty() == false) {
+      if (not flag_field_names.empty()) {
         os << "\n\nFLAGS:\n";
         for (auto &flag : flag_field_names) {
           os << "    -" << flag[0] << ", --" << flag << "\n";
@@ -119,7 +119,7 @@ struct visitor {
         os << "\n";
       }
 
-      if (optional_field_names.empty() == false) {
+      if (not optional_field_names.empty()) {
         os << "\nOPTIONS:\n";
         for (auto &option : optional_field_names) {
 
@@ -138,14 +138,14 @@ struct visitor {
         }
       }
 
-      if (nested_struct_field_names.empty() == false) {
+      if (not nested_struct_field_names.empty()) {
         os << "\nSUBCOMMANDS:\n";
         for (auto &sc : nested_struct_field_names) {
           os << "    " << sc << "\n";
         }
       }
 
-      if (positional_field_names_for_help.empty() == false) {
+      if (not positional_field_names_for_help.empty()) {
         os << "\nARGS:\n";
         for (auto &arg : positional_field_names_for_help) {
           os << "    " << arg << "\n";

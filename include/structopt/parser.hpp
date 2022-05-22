@@ -173,7 +173,7 @@ struct parser {
     std::string result;
     bool prefix_dashes_ended = false;
     for (auto& c : next) {
-      if (prefix_dashes_ended == false && c != '-') {
+      if (not prefix_dashes_ended && c != '-') {
         prefix_dashes_ended = true;
       }
       if (prefix_dashes_ended) {
@@ -699,7 +699,7 @@ struct parser {
       const auto next = arguments[current_index];
       const auto field_name = std::string{name};
 
-      if (next == "--" && double_dash_encountered == false) {
+      if (next == "--" && not double_dash_encountered) {
         double_dash_encountered = true;
         next_index += 1;
         return;
@@ -710,7 +710,7 @@ struct parser {
       // see if you can find an optional field in the struct with a matching name
 
       // check if the current argument looks like it could be this optional field
-      if (double_dash_encountered == false && is_optional_field(next, field_name)) {
+      if (not double_dash_encountered && is_optional_field(next, field_name)) {
 
         // this is an optional argument matching the current struct field
         if constexpr (std::is_same<typename T::value_type, bool>::value) {
@@ -733,7 +733,7 @@ struct parser {
           value = parse_optional_argument<typename T::value_type>(name);
         }
       } else {
-        if (double_dash_encountered == false) {
+        if (not double_dash_encountered) {
 
           // maybe this is an optional argument that is delimited with '=' or ':'
           // e.g., --foo=bar or --foo:BAR
@@ -764,7 +764,7 @@ struct parser {
 
           std::vector<std::string> potential_combined_argument;
 
-          if (is_optional_field(next) == false && next[0] == '-' &&
+          if (not is_optional_field(next) && next[0] == '-' &&
               (next.size() > 1 && next[1] != '-')) {
             for (std::size_t i = 1; i < next.size(); i++) {
               potential_combined_argument.push_back("-" + std::string(1, next[i]));
