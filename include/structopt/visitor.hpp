@@ -113,6 +113,16 @@ struct visitor {
       if (flag_field_names.empty() == false) {
         os << "\n\nFLAGS:\n";
         for (auto &flag : flag_field_names) {
+
+          // Generate kebab case and present as flag
+          auto kebab_case = details::string_to_kebab(flag);
+          std::string long_form = "";
+          if (kebab_case != flag) {
+            long_form = kebab_case;
+          } else {
+            long_form = flag;
+          }
+
           os << "    -" << flag[0] << ", --" << flag << "\n";
         }
       } else {
@@ -124,8 +134,7 @@ struct visitor {
         for (auto &option : optional_field_names) {
 
           // Generate kebab case and present as option
-          auto kebab_case = option;
-          details::string_replace(kebab_case, "_", "-");
+          auto kebab_case = details::string_to_kebab(option);
           std::string long_form = "";
           if (kebab_case != option) {
             long_form = kebab_case;
