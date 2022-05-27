@@ -2427,6 +2427,12 @@ static inline bool string_replace(std::string &str, const std::string &from,
   return true;
 }
 
+inline std::string string_to_kebab(std::string str) {
+  // Generate kebab case and present as option
+  details::string_replace(str, "_", "-");
+  return str;
+}
+
 } // namespace details
 
 } // namespace structopt
@@ -2652,6 +2658,16 @@ struct visitor {
       if (flag_field_names.empty() == false) {
         os << "\n\nFLAGS:\n";
         for (auto &flag : flag_field_names) {
+
+          // Generate kebab case and present as flag
+          auto kebab_case = details::string_to_kebab(flag);
+          std::string long_form = "";
+          if (kebab_case != flag) {
+            long_form = kebab_case;
+          } else {
+            long_form = flag;
+          }
+
           os << "    -" << flag[0] << ", --" << flag << "\n";
         }
       } else {
