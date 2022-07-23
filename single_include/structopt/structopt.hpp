@@ -2679,8 +2679,7 @@ struct visitor {
         for (auto &option : optional_field_names) {
 
           // Generate kebab case and present as option
-          auto kebab_case = option;
-          details::string_replace(kebab_case, "_", "-");
+          auto kebab_case = details::string_to_kebab(option);
           std::string long_form = "";
           if (kebab_case != option) {
             long_form = kebab_case;
