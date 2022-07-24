@@ -2655,6 +2655,8 @@ struct visitor {
         os << field << " ";
       }
 
+      bool has_h = false;
+      bool has_v = false;
       if (flag_field_names.empty() == false) {
         os << "\n\nFLAGS:\n";
         for (auto &flag : flag_field_names) {
@@ -2669,6 +2671,15 @@ struct visitor {
           }
 
           os << "    -" << flag[0] << ", --" << flag << "\n";
+
+          switch (flag[0]) {
+          case 'h':
+            has_h = true;
+            break;
+          case 'v':
+            has_v = true;
+            break;
+          }
         }
       } else {
         os << "\n";
@@ -2679,8 +2690,7 @@ struct visitor {
         for (auto &option : optional_field_names) {
 
           // Generate kebab case and present as option
-          auto kebab_case = option;
-          details::string_replace(kebab_case, "_", "-");
+          auto kebab_case = details::string_to_kebab(option);
           std::string long_form = "";
           if (kebab_case != option) {
             long_form = kebab_case;
@@ -2688,8 +2698,21 @@ struct visitor {
             long_form = option;
           }
 
-          os << "    -" << option[0] << ", --" << long_form << " <" << option << ">"
-            << "\n";
+          if ((has_v && option == "version") || (has_h && option == "help")) {
+            os << "    --" << long_form << " <" << option << ">\n";
+          } else {
+            os << "    -" << option[0] << ", --" << long_form << " <" << option << ">"
+               << "\n";
+          }
+
+          switch (option[0]) {
+          case 'h':
+            has_h = true;
+            break;
+          case 'v':
+            has_v = true;
+            break;
+          }
         }
       }
 
