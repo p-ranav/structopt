@@ -27,7 +27,7 @@ endif()
 
 option(STRUCTOPT_TESTS "Build structopt tests + enable CTest")
 option(STRUCTOPT_SAMPLES "Build structopt samples")
-option(STRUCTOPT_EXTERNAL_DEPS "Use external dependencies instead of third party folder" ON)
+option(STRUCTOPT_EXTERNAL_DEPS "Use external dependencies instead of third party folder" OFF)
 
 include(CMakePackageConfigHelpers)
 include(GNUInstallDirs)
@@ -39,7 +39,13 @@ target_compile_features(structopt INTERFACE cxx_std_17)
 target_include_directories(structopt INTERFACE
   $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>)
-if (NOT STRUCTOPT_EXTERNAL_DEPS)
+
+if (STRUCTOPT_EXTERNAL_DEPS)
+  find_package(magic_enum REQUIRED CONFIG)
+  target_link_libraries(structopt INTERFACE magic_enum::magic_enum)
+  find_package(visit_struct REQUIRED CONFIG)
+  target_link_libraries(structopt INTERFACE visit_struct::visit_struct)
+else()
   target_include_directories(structopt INTERFACE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/third_party>)
 endif()
