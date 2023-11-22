@@ -7,7 +7,7 @@
 #include <string>
 #include <structopt/is_specialization.hpp>
 #include <structopt/string.hpp>
-#include <structopt/third_party/visit_struct/visit_struct.hpp>
+#include <visit_struct/visit_struct.hpp>
 #include <type_traits>
 #include <vector>
 
