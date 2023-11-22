@@ -1,5 +1,5 @@
 <p align="center">
-  <img height="70" src="img/logo.png"/>  
+  <img height="70" src="img/logo.png"/>
 </p>
 
 <p align="center">
@@ -10,8 +10,8 @@
   <a href="https://github.com/p-ranav/structopt/releases">
     <img src="https://img.shields.io/github/release/p-ranav/structopt.svg" alt="ci status"/>
   </a>
-  <a href="https://conan.io/center/structopt/0.1.2">
-    <img src="https://img.shields.io/badge/Conan-package-blueviolet" alt="conan package"/>
+  <a href="https://conan.io/center/recipes/structopt">
+    <img src="https://img.shields.io/conan/v/structopt" alt="conan package"/>
   </a>
   <a href="https://travis-ci.com/p-ranav/structopt">
     <img src="https://travis-ci.com/p-ranav/structopt.svg?branch=master" alt="ci status"/>
@@ -52,9 +52,9 @@ struct Options {
    // the long option can also be provided in kebab case:
    //   e.g., --bind-address 192.168.5.3
    std::optional<std::string> bind_address;
- 
+
    // flag argument
-   // Use `std::optional<bool>` and provide a default value. 
+   // Use `std::optional<bool>` and provide a default value.
    //   e.g., -v
    //   e.g., --verbose
    //   e.g., -verbose
@@ -84,7 +84,7 @@ Create a `structopt::app` and parse the command line arguments into the `Options
 int main(int argc, char *argv[]) {
 
   try {
-  
+
     // Line of code that does all the work:
     auto options = structopt::app("my_app").parse<Options>(argc, argv);
 
@@ -154,7 +154,7 @@ files        = { file1.txt file3.txt file4.txt }
 *    [Contributing](#contributing)
 *    [License](#license)
 
-## Getting Started 
+## Getting Started
 
 `structopt` is a header-only library. Just add `include/` to your _include_directories_ and you should be good to go. A single header file version is also available in `single_include/`.
 
@@ -322,7 +322,7 @@ struct GrepOptions {
   // reverse the matching
   // enable with `-v`
   std::optional<bool> v = false;
-  
+
   // positional arguments
   std::string search;
   std::string pathspec;
@@ -364,11 +364,11 @@ Pathspec : bar.txt
 
 ### Flag Arguments
 
-Flag arguments are `std::optional<bool>` with a default value. 
+Flag arguments are `std::optional<bool>` with a default value.
 
-***NOTE*** The default value here is important. It is not a flag if a default value isn't provided. It will simply be an optional argument. 
+***NOTE*** The default value here is important. It is not a flag if a default value isn't provided. It will simply be an optional argument.
 
-***NOTE*** If `--verbose` is a flag argument with a default value of `false`, then providing the argument will set it to `true`. If `--verbose` does not have a default value, then `structopt` will expect the user to provide a value, e.g., `--verbose true`. 
+***NOTE*** If `--verbose` is a flag argument with a default value of `false`, then providing the argument will set it to `true`. If `--verbose` does not have a default value, then `structopt` will expect the user to provide a value, e.g., `--verbose true`.
 
 ```cpp
 #include <structopt/app.hpp>
@@ -656,7 +656,7 @@ c = [1.5, 3]
 
 #### Integer Literals
 
-`structopt` supports parsing integer literals including hexadecimal, octal, and binary notation. 
+`structopt` supports parsing integer literals including hexadecimal, octal, and binary notation.
 
 ```cpp
 #include <structopt/app.hpp>
@@ -727,10 +727,10 @@ foo@bar:~$ ./main -3.15 +2.717 2E-4 0.1e2 .5 -.3 +5.999
 
 ### Nested Structures
 
-With `structopt`, you can define sub-commands, e.g., `git init args` or `git config [flags] args` using nested structures. 
+With `structopt`, you can define sub-commands, e.g., `git init args` or `git config [flags] args` using nested structures.
 
 * Simply create a nested structure that inherits from `structopt::sub_command`
-* You can use `<nested_struct_object>.has_value()` to check if it has been invoked. 
+* You can use `<nested_struct_object>.has_value()` to check if it has been invoked.
 
 The following program support two sub-commands: `config` and `init`:
 
@@ -903,7 +903,7 @@ int main(int argc, char *argv[]) {
       }
 
       std::cout << "Args    : ";
-      for (auto& a : options.sed.args) std::cout << a << " "; 
+      for (auto& a : options.sed.args) std::cout << a << " ";
       std::cout << "\n";
       std::cout << "Pattern : " << options.sed.pattern << "\n";
       std::cout << "File    : " << options.sed.file << "\n";

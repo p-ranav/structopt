@@ -13,8 +13,8 @@
 #include <structopt/is_number.hpp>
 #include <structopt/is_specialization.hpp>
 #include <structopt/sub_command.hpp>
-#include <structopt/third_party/magic_enum/magic_enum.hpp>
-#include <structopt/third_party/visit_struct/visit_struct.hpp>
+#include <magic_enum/magic_enum.hpp>
+#include <visit_struct/visit_struct.hpp>
 #include <tuple>
 #include <type_traits>
 #include <utility>
@@ -183,7 +183,7 @@ struct parser {
     return result;
   }
 
-  // Get the optional field name if any from 
+  // Get the optional field name if any from
   // e.g., `-v` => `verbose`
   // e.g., `-log-level` => `log_level`
   std::optional<std::string> get_full_optional_field_name(const std::string& next) {
