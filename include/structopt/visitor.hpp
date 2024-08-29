@@ -2,14 +2,19 @@
 #pragma once
 #include <algorithm>
 #include <iostream>
+#include <list>
 #include <optional>
 #include <queue>
+#include <set>
+#include <stack>
 #include <string>
+#include <string_view>
 #include <structopt/is_specialization.hpp>
 #include <structopt/string.hpp>
-#include <structopt/third_party/visit_struct/visit_struct.hpp>
 #include <type_traits>
+#include <unordered_set>
 #include <vector>
+#include <visit_struct/visit_struct.hpp>
 
 namespace structopt {
 
@@ -84,7 +89,7 @@ struct visitor {
     nested_struct_field_names.push_back(name);
   }
 
-  bool is_field_name(const std::string &field_name) {
+  bool is_field_name(const std::string_view field_name) {
     return std::find(field_names.begin(), field_names.end(), field_name) !=
            field_names.end();
   }

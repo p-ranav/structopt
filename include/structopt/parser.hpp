@@ -8,10 +8,12 @@
 #include <set>
 #include <sstream>
 #include <string>
+#include <string_view>
 #include <structopt/array_size.hpp>
 #include <structopt/exception.hpp>
 #include <structopt/is_number.hpp>
 #include <structopt/is_specialization.hpp>
+#include <structopt/is_stl_container.hpp>
 #include <structopt/sub_command.hpp>
 #include <structopt/third_party/magic_enum/magic_enum.hpp>
 #include <structopt/third_party/visit_struct/visit_struct.hpp>
@@ -48,7 +50,7 @@ struct parser {
   bool sub_command_invoked{false};
   std::string already_invoked_subcommand_name{""};
 
-  bool is_optional(const std::string &name) {
+  bool is_optional(const std::string_view name) {
     if (double_dash_encountered) {
       return false;
     } else if (name == "--") {
@@ -106,7 +108,7 @@ struct parser {
     return false;
   }
 
-  bool is_optional_field(const std::string &next) {
+  bool is_optional_field(const std::string_view next) {
     if (!is_optional(next)) {
       return false;
     }
@@ -126,14 +128,14 @@ struct parser {
   // and it is delimited by one of the two allowed delimiters: `=` and `:`
   //
   // if true, the return value includes the delimiter that was used
-  std::pair<bool, char> is_delimited_optional_argument(const std::string &next) {
+  std::pair<bool, char> is_delimited_optional_argument(const std::string_view next) {
     bool success = false;
     char delimiter = '\0';
 
     auto equal_pos = next.find('=');
     auto colon_pos = next.find(':');
 
-    if (equal_pos == std::string::npos && colon_pos == std::string::npos) {
+    if (equal_pos == std::string_view::npos && colon_pos == std::string_view::npos) {
       // not delimited
       return {success, delimiter};
     } else {
@@ -169,7 +171,7 @@ struct parser {
   }
 
   std::pair<std::string, std::string> split_delimited_argument(char delimiter,
-                                                               const std::string &next) {
+                                                               const std::string_view next) {
     std::string key, value;
     bool delimiter_found = false;
     for (size_t i = 0; i < next.size(); i++) {
@@ -537,10 +539,10 @@ struct parser {
 
     // Parse from current till end
     while (next_index < arguments.size()) {
-      const auto next = arguments[next_index];
-      if (is_optional_field(next) || std::string{next} == "--" ||
+      const std::string_view next = arguments[next_index];
+      if (is_optional_field(next) || next == "--" ||
           is_delimited_optional_argument(next).first) {
-        if (std::string{next} == "--") {
+        if (next == "--") {
           double_dash_encountered = true;
           next_index += 1;
         }
@@ -560,10 +562,10 @@ struct parser {
     T result;
     // Parse from current till end
     while (next_index < arguments.size()) {
-      const auto next = arguments[next_index];
-      if (is_optional_field(next) || std::string{next} == "--" ||
+      const std::string_view next = arguments[next_index];
+      if (is_optional_field(next) || next == "--" ||
           is_delimited_optional_argument(next).first) {
-        if (std::string{next} == "--") {
+        if (next == "--") {
           double_dash_encountered = true;
           next_index += 1;
         }
@@ -583,10 +585,10 @@ struct parser {
     T result;
     // Parse from current till end
     while (next_index < arguments.size()) {
-      const auto next = arguments[next_index];
-      if (is_optional_field(next) || std::string{next} == "--" ||
+      const std::string_view next = arguments[next_index];
+      if (is_optional_field(next) || next == "--" ||
           is_delimited_optional_argument(next).first) {
-        if (std::string{next} == "--") {
+        if (next == "--") {
           double_dash_encountered = true;
           next_index += 1;
         }
@@ -638,7 +640,7 @@ struct parser {
 
     if (current_index < arguments.size()) {
       const auto next = arguments[current_index];
-      const auto field_name = std::string{name};
+      const auto field_name = std::string_view{name};
 
       // Check if `next` is the start of a subcommand
       if (visitor.is_field_name(next) && next == field_name) {
