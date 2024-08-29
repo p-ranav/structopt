@@ -31,11 +31,10 @@ struct visitor {
 
   visitor() = default;
 
-  explicit visitor(const std::string name, const std::string version)
+  explicit visitor(std::string name, std::string version)
       : name(std::move(name)), version(std::move(version)) {}
 
-  explicit visitor(const std::string name, const std::string version,
-                   const std::string help)
+  explicit visitor(std::string name, std::string version, std::string help)
       : name(std::move(name)), version(std::move(version)),
         help(std::move(help)) {}
 
