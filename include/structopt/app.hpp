@@ -69,7 +69,7 @@ public:
           // this positional argument is not a vector-like argument
           // it expects value(s)
           throw structopt::exception("Error: expected value for positional argument `" +
-                                         field_name + "`.",
+                                         std::string(field_name.begin(), field_name.end()) + "`.",
                                      parser.visitor);
         }
       }

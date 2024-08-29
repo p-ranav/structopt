@@ -231,7 +231,7 @@ struct parser {
     return result;
   }
 
-  template <typename T> std::pair<T, bool> parse_argument(const char *name) {
+  template <typename T> std::pair<T, bool> parse_argument(const std::string_view name) {
     if (next_index >= arguments.size()) {
       return {T(), false};
     }
@@ -272,7 +272,7 @@ struct parser {
     return {result, success};
   }
 
-  template <typename T> std::optional<T> parse_optional_argument(const char *name) {
+  template <typename T> std::optional<T> parse_optional_argument(const std::string_view name) {
     next_index += 1;
     std::optional<T> result;
     if (next_index < arguments.size()) {
@@ -298,7 +298,7 @@ struct parser {
   // Not a visitable type, i.e., a nested struct
   template <typename T>
   inline typename std::enable_if<!visit_struct::traits::is_visitable<T>::value, T>::type
-  parse_single_argument(const char *) {
+  parse_single_argument(const std::string_view) {
     std::string argument = arguments[next_index];
     std::istringstream ss(argument);
     T result;
@@ -324,7 +324,7 @@ struct parser {
   // Nested visitable struct
   template <typename T>
   inline typename std::enable_if<visit_struct::traits::is_visitable<T>::value, T>::type
-  parse_nested_struct(const char *name) {
+  parse_nested_struct(const std::string_view name) {
 
     T argument_struct;
 
@@ -395,7 +395,7 @@ struct parser {
           // this positional argument is not a vector-like argument
           // it expects value(s)
           throw structopt::exception("Error: expected value for positional argument `" +
-                                         field_name + "`.",
+                                         std::string(field_name.begin(), field_name.end()) + "`.",
                                      argument_struct.visitor_);
         }
       }
@@ -410,7 +410,7 @@ struct parser {
 
   // Pair argument
   template <typename T1, typename T2>
-  std::pair<T1, T2> parse_pair_argument(const char *name) {
+  std::pair<T1, T2> parse_pair_argument(const std::string_view name) {
     std::pair<T1, T2> result;
     {
       // Pair first
@@ -459,13 +459,13 @@ struct parser {
 
   // Array argument
   template <typename T, std::size_t N>
-  std::array<T, N> parse_array_argument(const char *name) {
+  std::array<T, N> parse_array_argument(const std::string_view name) {
     std::array<T, N> result{};
 
     const auto arguments_left = arguments.size() - next_index;
     if (arguments_left == 0 || arguments_left < N) {
       throw structopt::exception("Error: expected " + std::to_string(N) +
-                                     " values for std::array argument `" + name +
+                                     " values for std::array argument `" + std::string(name.begin(), name.end()) +
                                      "` - instead got only " +
                                      std::to_string(arguments_left) + " arguments.",
                                  visitor);
@@ -495,7 +495,7 @@ struct parser {
 
   // Parse single tuple element
   template <typename T>
-  void parse_tuple_element(const char *name, std::size_t index, std::size_t size,
+  void parse_tuple_element(const std::string_view name, std::size_t index, std::size_t size,
                            T &&result) {
     auto [value, success] = parse_argument<typename std::remove_reference<T>::type>(name);
     if (success) {
@@ -520,7 +520,7 @@ struct parser {
   }
 
   // Tuple argument
-  template <typename Tuple> Tuple parse_tuple_argument(const char *name) {
+  template <typename Tuple> Tuple parse_tuple_argument(const std::string_view name) {
     Tuple result;
     std::size_t i = 0;
     constexpr auto tuple_size = std::tuple_size<Tuple>::value;
@@ -532,7 +532,7 @@ struct parser {
   }
 
   // Vector, deque, list
-  template <typename T> T parse_vector_like_argument(const char *name) {
+  template <typename T> T parse_vector_like_argument(const std::string_view name) {
     T result;
 
     // Parse from current till end
@@ -556,7 +556,7 @@ struct parser {
   }
 
   // stack, queue, priority_queue
-  template <typename T> T parse_container_adapter_argument(const char *name) {
+  template <typename T> T parse_container_adapter_argument(const std::string_view name) {
     T result;
     // Parse from current till end
     while (next_index < arguments.size()) {
@@ -579,7 +579,7 @@ struct parser {
   }
 
   // Set, multiset, unordered_set, unordered_multiset
-  template <typename T> T parse_set_argument(const char *name) {
+  template <typename T> T parse_set_argument(const std::string_view name) {
     T result;
     // Parse from current till end
     while (next_index < arguments.size()) {
@@ -602,7 +602,7 @@ struct parser {
   }
 
   // Enum class
-  template <typename T> T parse_enum_argument(const char *name) {
+  template <typename T> T parse_enum_argument(const std::string_view name) {
     T result;
     auto maybe_enum_value = magic_enum::enum_cast<T>(arguments[next_index]);
     if (maybe_enum_value.has_value()) {
@@ -631,7 +631,7 @@ struct parser {
   // Visitor function for nested struct
   template <typename T>
   inline typename std::enable_if<visit_struct::traits::is_visitable<T>::value, void>::type
-  operator()(const char *name, T &value) {
+  operator()(const std::string_view name, T &value) {
     if (next_index > current_index) {
       current_index = next_index;
     }
@@ -653,7 +653,7 @@ struct parser {
   inline typename std::enable_if<!structopt::is_specialization<T, std::optional>::value &&
                                      !visit_struct::traits::is_visitable<T>::value,
                                  void>::type
-  operator()(const char *name, T &result) {
+  operator()(const std::string_view name, T &result) {
     if (next_index > current_index) {
       current_index = next_index;
     }
@@ -687,7 +687,7 @@ struct parser {
       // Remove from the positional field list as it is about to be parsed
       visitor.positional_field_names.pop_front();
 
-      auto [value, success] = parse_argument<T>(field_name.c_str());
+      auto [value, success] = parse_argument<T>(field_name);
       if (success) {
         result = value;
       } else {
@@ -701,7 +701,7 @@ struct parser {
   template <typename T>
   inline typename std::enable_if<structopt::is_specialization<T, std::optional>::value,
                                  void>::type
-  operator()(const char *name, T &value) {
+  operator()(const std::string_view name, T &value) {
     if (next_index > current_index) {
       current_index = next_index;
     }
@@ -844,7 +844,7 @@ struct parser {
 };
 
 // Specialization for std::string
-template <> inline std::string parser::parse_single_argument<std::string>(const char *) {
+template <> inline std::string parser::parse_single_argument<std::string>(const std::string_view) {
   return arguments[next_index];
 }
 
@@ -852,7 +852,7 @@ template <> inline std::string parser::parse_single_argument<std::string>(const 
 // yes, YES, on, 1, true, TRUE, etc. = true
 // no, NO, off, 0, false, FALSE, etc. = false
 // Converts argument to lower case before check
-template <> inline bool parser::parse_single_argument<bool>(const char *name) {
+template <> inline bool parser::parse_single_argument<bool>(const std::string_view name) {
   if (next_index > current_index) {
     current_index = next_index;
   }

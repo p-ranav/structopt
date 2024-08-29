@@ -21,13 +21,13 @@ struct visitor {
   std::string name;
   std::string version;
   std::optional<std::string> help;
-  std::vector<std::string> field_names;
-  std::deque<std::string> positional_field_names; // mutated by parser
-  std::deque<std::string> positional_field_names_for_help;
-  std::deque<std::string> vector_like_positional_field_names;
-  std::deque<std::string> flag_field_names;
-  std::deque<std::string> optional_field_names;
-  std::deque<std::string> nested_struct_field_names;
+  std::vector<std::string_view> field_names;
+  std::deque<std::string_view> positional_field_names; // mutated by parser
+  std::deque<std::string_view> positional_field_names_for_help;
+  std::deque<std::string_view> vector_like_positional_field_names;
+  std::deque<std::string_view> flag_field_names;
+  std::deque<std::string_view> optional_field_names;
+  std::deque<std::string_view> nested_struct_field_names;
 
   visitor() = default;
 
@@ -43,7 +43,7 @@ struct visitor {
   template <typename T>
   inline typename std::enable_if<structopt::is_specialization<T, std::optional>::value,
                                  void>::type
-  operator()(const char *name, T &) {
+  operator()(const std::string_view name, T &) {
     field_names.push_back(name);
     if constexpr (std::is_same<typename T::value_type, bool>::value) {
       flag_field_names.push_back(name);
@@ -57,7 +57,7 @@ struct visitor {
   inline typename std::enable_if<!structopt::is_specialization<T, std::optional>::value &&
                                      !visit_struct::traits::is_visitable<T>::value,
                                  void>::type
-  operator()(const char *name, T &) {
+  operator()(const std::string_view name, T &) {
     field_names.push_back(name);
     positional_field_names.push_back(name);
     positional_field_names_for_help.push_back(name);
@@ -80,7 +80,7 @@ struct visitor {
   // Visitor function for nested structs
   template <typename T>
   inline typename std::enable_if<visit_struct::traits::is_visitable<T>::value, void>::type
-  operator()(const char *name, T &) {
+  operator()(const std::string_view name, T &) {
     field_names.push_back(name);
     nested_struct_field_names.push_back(name);
   }
