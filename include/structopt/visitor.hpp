@@ -31,11 +31,13 @@ struct visitor {
 
   visitor() = default;
 
-  explicit visitor(const std::string &name, const std::string &version)
-      : name(name), version(version) {}
+  explicit visitor(const std::string name, const std::string version)
+      : name(std::move(name)), version(std::move(version)) {}
 
-  explicit visitor(const std::string &name, const std::string &version, const std::string& help)
-      : name(name), version(version), help(help) {}
+  explicit visitor(const std::string name, const std::string version,
+                   const std::string help)
+      : name(std::move(name)), version(std::move(version)),
+        help(std::move(help)) {}
 
   // Visitor function for std::optional - could be an option or a flag
   template <typename T>
