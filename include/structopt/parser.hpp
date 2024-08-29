@@ -24,6 +24,21 @@ namespace structopt {
 
 namespace details {
 
+// Trims the first n characters from str.
+inline std::string_view trim_first_n(const std::string_view str, const std::size_t n) {
+  return {str.data() + n, str.size() - n};
+}
+
+// Effectively s1.replace('-', '_') == s2
+inline bool equal_strings_replace_hyphens(const std::string_view s1, const std::string_view s2) {
+  if (s1.size() != s2.size()) {
+    return false;
+  }
+  return std::equal(s1.begin(), s1.end(), s2.begin(), [](char c1, char c2) {
+    return c1 == c2 || (c1 == '-' && c2 == '_');
+  });
+}
+
 struct parser {
   structopt::details::visitor visitor;
   std::vector<std::string> arguments;
@@ -57,33 +72,38 @@ struct parser {
     return result;
   }
 
-  bool is_kebab_case(const std::string &next, const std::string &field_name) {
-    bool result = false;
+  bool is_kebab_case(const std::string_view next, const std::string_view field_name) {
     auto maybe_kebab_case = next;
     if (maybe_kebab_case.size() > 1 && maybe_kebab_case[0] == '-') {
       // remove first dash
-      maybe_kebab_case.erase(0, 1);
+      maybe_kebab_case = trim_first_n(maybe_kebab_case, 1);
       if (maybe_kebab_case[0] == '-') {
         // there is a second leading dash
         // remove it
-        maybe_kebab_case.erase(0, 1);
+        maybe_kebab_case = trim_first_n(maybe_kebab_case, 1);
       }
-      std::replace(maybe_kebab_case.begin(), maybe_kebab_case.end(), '-', '_');
-      if (maybe_kebab_case == field_name) {
-        result = true;
+      if (equal_strings_replace_hyphens(maybe_kebab_case, field_name)) {
+        return true;
       }
     }
-    return result;
+    return false;
   }
 
-  bool is_optional_field(const std::string &next, const std::string &field_name) {
-    bool result = false;
-    if (next == "-" + field_name || next == "--" + field_name ||
-        next == "-" + std::string(1, field_name[0]) || is_kebab_case(next, field_name)) {
-      // okay `next` matches _a_ field name (which is an optional field)
-      result = true;
+  bool is_optional_field(const std::string_view next, const std::string_view field_name) {
+    if (next.size() >= 1 && next[0] == '-' && trim_first_n(next, 1) == field_name) {
+      return true;
     }
-    return result;
+    if (next.size() >= 2 && next[0] == '-' && next[1] == '-' && trim_first_n(next, 2) == field_name) {
+      return true;
+    }
+    if (next.size() == 2 && next[0] == '-' && next[1] == field_name[0]) {
+      return true;
+    }
+    if (is_kebab_case(next, field_name)) {
+      // okay `next` matches _a_ field name (which is an optional field)
+      return true;
+    }
+    return false;
   }
 
   bool is_optional_field(const std::string &next) {
@@ -169,25 +189,19 @@ struct parser {
   // Strip the initial dashes on the left of an optional argument
   // e.g., --verbose => verbose
   // e.g., -log-level => log-level
-  std::string lstrip_dashes(const std::string& next) {
-    std::string result;
-    bool prefix_dashes_ended = false;
-    for (auto& c : next) {
-      if (prefix_dashes_ended == false && c != '-') {
-        prefix_dashes_ended = true;
+  std::string_view lstrip_dashes(const std::string_view next) {
+    std::size_t n_dashes = 0;
+    while (n_dashes < next.size() && next[n_dashes] == '-') {
+      ++n_dashes;
       }
-      if (prefix_dashes_ended) {
-        result += c;
-      }
-    }
-    return result;
+    return trim_first_n(next, n_dashes);
   }
 
   // Get the optional field name if any from 
   // e.g., `-v` => `verbose`
   // e.g., `-log-level` => `log_level`
-  std::optional<std::string> get_full_optional_field_name(const std::string& next) {
-    std::optional<std::string> result;
+  std::optional<std::string_view> get_full_optional_field_name(const std::string_view next) {
+    std::optional<std::string_view> result;
 
     if (next.size() == 2 && next[0] == '-') {
       // short form of optional argument
@@ -202,14 +216,11 @@ struct parser {
       // long form of optional argument
 
       // strip dashes on the left
-      std::string potential_field_name = lstrip_dashes(next);
-
-      // replace `-` in the middle with `_`
-      std::replace(potential_field_name.begin(), potential_field_name.end(), '-', '_');
+      const auto potential_field_name = lstrip_dashes(next);
 
       // check if `potential_field_name` is in the optional field names list
       for (auto& oarg : visitor.optional_field_names) {
-        if (oarg == potential_field_name) {
+        if (equal_strings_replace_hyphens(potential_field_name, oarg)) {
           result = oarg;
           break;
         }
