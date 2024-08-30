@@ -395,7 +395,7 @@ struct parser {
           // this positional argument is not a vector-like argument
           // it expects value(s)
           throw structopt::exception("Error: expected value for positional argument `" +
-                                         std::string(field_name.begin(), field_name.end()) + "`.",
+                                         std::string(field_name) + "`.",
                                      argument_struct.visitor_);
         }
       }
@@ -465,7 +465,7 @@ struct parser {
     const auto arguments_left = arguments.size() - next_index;
     if (arguments_left == 0 || arguments_left < N) {
       throw structopt::exception("Error: expected " + std::to_string(N) +
-                                     " values for std::array argument `" + std::string(name.begin(), name.end()) +
+                                     " values for std::array argument `" + std::string(name) +
                                      "` - instead got only " +
                                      std::to_string(arguments_left) + " arguments.",
                                  visitor);
