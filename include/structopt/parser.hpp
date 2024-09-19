@@ -516,7 +516,7 @@ struct parser {
 
     // Parse from current till end
     while (next_index < arguments.size()) {
-      std::string_view next = arguments[next_index];
+      const std::string_view next = arguments[next_index];
       if (is_optional_field(next) || next == "--" ||
           is_delimited_optional_argument(next).first) {
         if (next == "--") {
