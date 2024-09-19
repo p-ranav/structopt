@@ -47,7 +47,7 @@ struct visitor {
   template <typename T>
   inline typename std::enable_if<structopt::is_specialization<T, std::optional>::value,
                                  void>::type
-  operator()(const std::string_view name, T &) {
+  operator()(std::string_view name, T &) {
     field_names.push_back(name);
     if constexpr (std::is_same<typename T::value_type, bool>::value) {
       flag_field_names.push_back(name);
@@ -61,7 +61,7 @@ struct visitor {
   inline typename std::enable_if<!structopt::is_specialization<T, std::optional>::value &&
                                      !visit_struct::traits::is_visitable<T>::value,
                                  void>::type
-  operator()(const std::string_view name, T &) {
+  operator()(std::string_view name, T &) {
     field_names.push_back(name);
     positional_field_names.push_back(name);
     positional_field_names_for_help.push_back(name);
@@ -84,12 +84,12 @@ struct visitor {
   // Visitor function for nested structs
   template <typename T>
   inline typename std::enable_if<visit_struct::traits::is_visitable<T>::value, void>::type
-  operator()(const std::string_view name, T &) {
+  operator()(std::string_view name, T &) {
     field_names.push_back(name);
     nested_struct_field_names.push_back(name);
   }
 
-  bool is_field_name(const std::string_view field_name) {
+  bool is_field_name(std::string_view field_name) {
     return std::find(field_names.begin(), field_names.end(), field_name) !=
            field_names.end();
   }

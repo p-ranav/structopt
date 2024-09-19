@@ -26,17 +26,9 @@ namespace structopt {
 
 namespace details {
 
-// Trims the first n characters from str.
-inline std::string_view trim_first_n(const std::string_view str, const std::size_t n) {
-  return {str.data() + n, str.size() - n};
-}
-
 // Effectively s1.replace('-', '_') == s2
-inline bool equal_strings_replace_hyphens(const std::string_view s1, const std::string_view s2) {
-  if (s1.size() != s2.size()) {
-    return false;
-  }
-  return std::equal(s1.begin(), s1.end(), s2.begin(), [](char c1, char c2) {
+inline bool equal_strings_replace_hyphens(std::string_view s1, std::string_view s2) {
+  return std::equal(s1.begin(), s1.end(), s2.begin(), s2.end(), [](char c1, char c2) {
     return c1 == c2 || (c1 == '-' && c2 == '_');
   });
 }
@@ -50,7 +42,7 @@ struct parser {
   bool sub_command_invoked{false};
   std::string already_invoked_subcommand_name{""};
 
-  bool is_optional(const std::string_view name) {
+  bool is_optional(std::string_view name) {
     if (double_dash_encountered) {
       return false;
     } else if (name == "--") {
@@ -74,15 +66,15 @@ struct parser {
     return result;
   }
 
-  bool is_kebab_case(const std::string_view next, const std::string_view field_name) {
+  bool is_kebab_case(std::string_view next, std::string_view field_name) {
     auto maybe_kebab_case = next;
     if (maybe_kebab_case.size() > 1 && maybe_kebab_case[0] == '-') {
       // remove first dash
-      maybe_kebab_case = trim_first_n(maybe_kebab_case, 1);
+      maybe_kebab_case.remove_prefix(1);
       if (maybe_kebab_case[0] == '-') {
         // there is a second leading dash
         // remove it
-        maybe_kebab_case = trim_first_n(maybe_kebab_case, 1);
+        maybe_kebab_case.remove_prefix(1);
       }
       if (equal_strings_replace_hyphens(maybe_kebab_case, field_name)) {
         return true;
@@ -91,24 +83,20 @@ struct parser {
     return false;
   }
 
-  bool is_optional_field(const std::string_view next, const std::string_view field_name) {
-    if (next.size() >= 1 && next[0] == '-' && trim_first_n(next, 1) == field_name) {
+  bool is_optional_field(std::string_view next, std::string_view field_name) {
+    if (next.rfind("-", 0) == 0 && next.substr(1) == field_name) {
       return true;
     }
-    if (next.size() >= 2 && next[0] == '-' && next[1] == '-' && trim_first_n(next, 2) == field_name) {
+    if (next.rfind("--", 0) == 0 && next.substr(2) == field_name) {
       return true;
     }
     if (next.size() == 2 && next[0] == '-' && next[1] == field_name[0]) {
       return true;
     }
-    if (is_kebab_case(next, field_name)) {
-      // okay `next` matches _a_ field name (which is an optional field)
-      return true;
-    }
-    return false;
+    return is_kebab_case(next, field_name);
   }
 
-  bool is_optional_field(const std::string_view next) {
+  bool is_optional_field(std::string_view next) {
     if (!is_optional(next)) {
       return false;
     }
@@ -128,7 +116,7 @@ struct parser {
   // and it is delimited by one of the two allowed delimiters: `=` and `:`
   //
   // if true, the return value includes the delimiter that was used
-  std::pair<bool, char> is_delimited_optional_argument(const std::string_view next) {
+  std::pair<bool, char> is_delimited_optional_argument(std::string_view next) {
     bool success = false;
     char delimiter = '\0';
 
@@ -171,7 +159,7 @@ struct parser {
   }
 
   std::pair<std::string, std::string> split_delimited_argument(char delimiter,
-                                                               const std::string_view next) {
+                                                               std::string_view next) {
     std::string key, value;
     bool delimiter_found = false;
     for (size_t i = 0; i < next.size(); i++) {
@@ -188,21 +176,10 @@ struct parser {
     return {key, value};
   }
 
-  // Strip the initial dashes on the left of an optional argument
-  // e.g., --verbose => verbose
-  // e.g., -log-level => log-level
-  std::string_view lstrip_dashes(const std::string_view next) {
-    std::size_t n_dashes = 0;
-    while (n_dashes < next.size() && next[n_dashes] == '-') {
-      ++n_dashes;
-      }
-    return trim_first_n(next, n_dashes);
-  }
-
   // Get the optional field name if any from 
   // e.g., `-v` => `verbose`
   // e.g., `-log-level` => `log_level`
-  std::optional<std::string_view> get_full_optional_field_name(const std::string_view next) {
+  std::optional<std::string_view> get_full_optional_field_name(std::string_view next) {
     std::optional<std::string_view> result;
 
     if (next.size() == 2 && next[0] == '-') {
@@ -218,7 +195,7 @@ struct parser {
       // long form of optional argument
 
       // strip dashes on the left
-      const auto potential_field_name = lstrip_dashes(next);
+      const auto potential_field_name = next.substr(next.find_first_not_of('-'));
 
       // check if `potential_field_name` is in the optional field names list
       for (auto& oarg : visitor.optional_field_names) {
@@ -233,7 +210,7 @@ struct parser {
     return result;
   }
 
-  template <typename T> std::pair<T, bool> parse_argument(const std::string_view name) {
+  template <typename T> std::pair<T, bool> parse_argument(std::string_view name) {
     if (next_index >= arguments.size()) {
       return {T(), false};
     }
@@ -274,7 +251,7 @@ struct parser {
     return {result, success};
   }
 
-  template <typename T> std::optional<T> parse_optional_argument(const std::string_view name) {
+  template <typename T> std::optional<T> parse_optional_argument(std::string_view name) {
     next_index += 1;
     std::optional<T> result;
     if (next_index < arguments.size()) {
@@ -300,7 +277,7 @@ struct parser {
   // Not a visitable type, i.e., a nested struct
   template <typename T>
   inline typename std::enable_if<!visit_struct::traits::is_visitable<T>::value, T>::type
-  parse_single_argument(const std::string_view) {
+  parse_single_argument(std::string_view) {
     std::string argument = arguments[next_index];
     std::istringstream ss(argument);
     T result;
@@ -326,7 +303,7 @@ struct parser {
   // Nested visitable struct
   template <typename T>
   inline typename std::enable_if<visit_struct::traits::is_visitable<T>::value, T>::type
-  parse_nested_struct(const std::string_view name) {
+  parse_nested_struct(std::string_view name) {
 
     T argument_struct;
 
@@ -412,7 +389,7 @@ struct parser {
 
   // Pair argument
   template <typename T1, typename T2>
-  std::pair<T1, T2> parse_pair_argument(const std::string_view name) {
+  std::pair<T1, T2> parse_pair_argument(std::string_view name) {
     std::pair<T1, T2> result;
     {
       // Pair first
@@ -461,7 +438,7 @@ struct parser {
 
   // Array argument
   template <typename T, std::size_t N>
-  std::array<T, N> parse_array_argument(const std::string_view name) {
+  std::array<T, N> parse_array_argument(std::string_view name) {
     std::array<T, N> result{};
 
     const auto arguments_left = arguments.size() - next_index;
@@ -497,7 +474,7 @@ struct parser {
 
   // Parse single tuple element
   template <typename T>
-  void parse_tuple_element(const std::string_view name, std::size_t index, std::size_t size,
+  void parse_tuple_element(std::string_view name, std::size_t index, std::size_t size,
                            T &&result) {
     auto [value, success] = parse_argument<typename std::remove_reference<T>::type>(name);
     if (success) {
@@ -522,7 +499,7 @@ struct parser {
   }
 
   // Tuple argument
-  template <typename Tuple> Tuple parse_tuple_argument(const std::string_view name) {
+  template <typename Tuple> Tuple parse_tuple_argument(std::string_view name) {
     Tuple result;
     std::size_t i = 0;
     constexpr auto tuple_size = std::tuple_size<Tuple>::value;
@@ -534,12 +511,12 @@ struct parser {
   }
 
   // Vector, deque, list
-  template <typename T> T parse_vector_like_argument(const std::string_view name) {
+  template <typename T> T parse_vector_like_argument(std::string_view name) {
     T result;
 
     // Parse from current till end
     while (next_index < arguments.size()) {
-      const std::string_view next = arguments[next_index];
+      std::string_view next = arguments[next_index];
       if (is_optional_field(next) || next == "--" ||
           is_delimited_optional_argument(next).first) {
         if (next == "--") {
@@ -558,7 +535,7 @@ struct parser {
   }
 
   // stack, queue, priority_queue
-  template <typename T> T parse_container_adapter_argument(const std::string_view name) {
+  template <typename T> T parse_container_adapter_argument(std::string_view name) {
     T result;
     // Parse from current till end
     while (next_index < arguments.size()) {
@@ -581,7 +558,7 @@ struct parser {
   }
 
   // Set, multiset, unordered_set, unordered_multiset
-  template <typename T> T parse_set_argument(const std::string_view name) {
+  template <typename T> T parse_set_argument(std::string_view name) {
     T result;
     // Parse from current till end
     while (next_index < arguments.size()) {
@@ -604,7 +581,7 @@ struct parser {
   }
 
   // Enum class
-  template <typename T> T parse_enum_argument(const std::string_view name) {
+  template <typename T> T parse_enum_argument(std::string_view name) {
     T result;
     auto maybe_enum_value = magic_enum::enum_cast<T>(arguments[next_index]);
     if (maybe_enum_value.has_value()) {
@@ -633,7 +610,7 @@ struct parser {
   // Visitor function for nested struct
   template <typename T>
   inline typename std::enable_if<visit_struct::traits::is_visitable<T>::value, void>::type
-  operator()(const std::string_view name, T &value) {
+  operator()(std::string_view name, T &value) {
     if (next_index > current_index) {
       current_index = next_index;
     }
@@ -655,7 +632,7 @@ struct parser {
   inline typename std::enable_if<!structopt::is_specialization<T, std::optional>::value &&
                                      !visit_struct::traits::is_visitable<T>::value,
                                  void>::type
-  operator()(const std::string_view name, T &result) {
+  operator()(std::string_view name, T &result) {
     if (next_index > current_index) {
       current_index = next_index;
     }
@@ -703,7 +680,7 @@ struct parser {
   template <typename T>
   inline typename std::enable_if<structopt::is_specialization<T, std::optional>::value,
                                  void>::type
-  operator()(const std::string_view name, T &value) {
+  operator()(std::string_view name, T &value) {
     if (next_index > current_index) {
       current_index = next_index;
     }
@@ -846,7 +823,7 @@ struct parser {
 };
 
 // Specialization for std::string
-template <> inline std::string parser::parse_single_argument<std::string>(const std::string_view) {
+template <> inline std::string parser::parse_single_argument<std::string>(std::string_view) {
   return arguments[next_index];
 }
 
@@ -854,7 +831,7 @@ template <> inline std::string parser::parse_single_argument<std::string>(const 
 // yes, YES, on, 1, true, TRUE, etc. = true
 // no, NO, off, 0, false, FALSE, etc. = false
 // Converts argument to lower case before check
-template <> inline bool parser::parse_single_argument<bool>(const std::string_view name) {
+template <> inline bool parser::parse_single_argument<bool>(std::string_view name) {
   if (next_index > current_index) {
     current_index = next_index;
   }
