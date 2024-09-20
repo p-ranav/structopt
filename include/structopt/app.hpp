@@ -18,8 +18,8 @@ class app {
   details::visitor visitor;
 
 public:
-  explicit app(const std::string &name, const std::string &version = "", const std::string& help = "")
-      : visitor(name, version, help) {}
+  explicit app(std::string name, std::string version = "", std::string help = "")
+      : visitor(std::move(name), std::move(version), std::move(help)) {}
 
   template <typename T> T parse(const std::vector<std::string> &arguments) {
     T argument_struct = T();
@@ -69,7 +69,7 @@ public:
           // this positional argument is not a vector-like argument
           // it expects value(s)
           throw structopt::exception("Error: expected value for positional argument `" +
-                                         field_name + "`.",
+                                         std::string(field_name) + "`.",
                                      parser.visitor);
         }
       }

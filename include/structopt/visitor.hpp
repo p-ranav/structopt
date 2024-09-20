@@ -5,6 +5,7 @@
 #include <optional>
 #include <queue>
 #include <string>
+#include <string_view>
 #include <structopt/is_specialization.hpp>
 #include <structopt/string.hpp>
 #include <structopt/third_party/visit_struct/visit_struct.hpp>
@@ -21,27 +22,28 @@ struct visitor {
   std::string name;
   std::string version;
   std::optional<std::string> help;
-  std::vector<std::string> field_names;
-  std::deque<std::string> positional_field_names; // mutated by parser
-  std::deque<std::string> positional_field_names_for_help;
-  std::deque<std::string> vector_like_positional_field_names;
-  std::deque<std::string> flag_field_names;
-  std::deque<std::string> optional_field_names;
-  std::deque<std::string> nested_struct_field_names;
+  std::vector<std::string_view> field_names;
+  std::deque<std::string_view> positional_field_names; // mutated by parser
+  std::deque<std::string_view> positional_field_names_for_help;
+  std::deque<std::string_view> vector_like_positional_field_names;
+  std::deque<std::string_view> flag_field_names;
+  std::deque<std::string_view> optional_field_names;
+  std::deque<std::string_view> nested_struct_field_names;
 
   visitor() = default;
 
-  explicit visitor(const std::string &name, const std::string &version)
-      : name(name), version(version) {}
+  explicit visitor(std::string name, std::string version)
+      : name(std::move(name)), version(std::move(version)) {}
 
-  explicit visitor(const std::string &name, const std::string &version, const std::string& help)
-      : name(name), version(version), help(help) {}
+  explicit visitor(std::string name, std::string version, std::string help)
+      : name(std::move(name)), version(std::move(version)),
+        help(std::move(help)) {}
 
   // Visitor function for std::optional - could be an option or a flag
   template <typename T>
   inline typename std::enable_if<structopt::is_specialization<T, std::optional>::value,
                                  void>::type
-  operator()(const char *name, T &) {
+  operator()(std::string_view name, T &) {
     field_names.push_back(name);
     if constexpr (std::is_same<typename T::value_type, bool>::value) {
       flag_field_names.push_back(name);
@@ -55,7 +57,7 @@ struct visitor {
   inline typename std::enable_if<!structopt::is_specialization<T, std::optional>::value &&
                                      !visit_struct::traits::is_visitable<T>::value,
                                  void>::type
-  operator()(const char *name, T &) {
+  operator()(std::string_view name, T &) {
     field_names.push_back(name);
     positional_field_names.push_back(name);
     positional_field_names_for_help.push_back(name);
@@ -78,12 +80,12 @@ struct visitor {
   // Visitor function for nested structs
   template <typename T>
   inline typename std::enable_if<visit_struct::traits::is_visitable<T>::value, void>::type
-  operator()(const char *name, T &) {
+  operator()(std::string_view name, T &) {
     field_names.push_back(name);
     nested_struct_field_names.push_back(name);
   }
 
-  bool is_field_name(const std::string &field_name) {
+  bool is_field_name(std::string_view field_name) {
     return std::find(field_names.begin(), field_names.end(), field_name) !=
            field_names.end();
   }

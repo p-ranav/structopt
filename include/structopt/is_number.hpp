@@ -1,27 +1,27 @@
 
 #pragma once
-#include <string>
+#include <string_view>
 
 namespace structopt {
 
 namespace details {
 
-static inline bool is_binary_notation(std::string const &input) {
+static inline bool is_binary_notation(std::string_view input) {
   return input.compare(0, 2, "0b") == 0 && input.size() > 2 &&
-         input.find_first_not_of("01", 2) == std::string::npos;
+         input.find_first_not_of("01", 2) == std::string_view::npos;
 }
 
-static inline bool is_hex_notation(std::string const &input) {
+static inline bool is_hex_notation(std::string_view input) {
   return input.compare(0, 2, "0x") == 0 && input.size() > 2 &&
-         input.find_first_not_of("0123456789abcdefABCDEF", 2) == std::string::npos;
+         input.find_first_not_of("0123456789abcdefABCDEF", 2) == std::string_view::npos;
 }
 
-static inline bool is_octal_notation(std::string const &input) {
+static inline bool is_octal_notation(std::string_view input) {
   return input.compare(0, 1, "0") == 0 && input.size() > 1 &&
-         input.find_first_not_of("01234567", 1) == std::string::npos;
+         input.find_first_not_of("01234567", 1) == std::string_view::npos;
 }
 
-static inline bool is_valid_number(const std::string &input) {
+static inline bool is_valid_number(std::string_view input) {
   if (is_binary_notation(input) || is_hex_notation(input) || is_octal_notation(input)) {
     return true;
   }
