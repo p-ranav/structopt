@@ -2,19 +2,15 @@
 #pragma once
 #include <algorithm>
 #include <iostream>
-#include <list>
 #include <optional>
 #include <queue>
-#include <set>
-#include <stack>
 #include <string>
 #include <string_view>
 #include <structopt/is_specialization.hpp>
 #include <structopt/string.hpp>
+#include <structopt/third_party/visit_struct/visit_struct.hpp>
 #include <type_traits>
-#include <unordered_set>
 #include <vector>
-#include <visit_struct/visit_struct.hpp>
 
 namespace structopt {
 

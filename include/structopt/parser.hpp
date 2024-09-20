@@ -13,7 +13,6 @@
 #include <structopt/exception.hpp>
 #include <structopt/is_number.hpp>
 #include <structopt/is_specialization.hpp>
-#include <structopt/is_stl_container.hpp>
 #include <structopt/sub_command.hpp>
 #include <structopt/third_party/magic_enum/magic_enum.hpp>
 #include <structopt/third_party/visit_struct/visit_struct.hpp>
