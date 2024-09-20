@@ -90,7 +90,7 @@ struct parser {
     if (next.rfind("--", 0) == 0 && next.substr(2) == field_name) {
       return true;
     }
-    if (next == std::data({'-', field_name[0]})) {
+    if (next == std::data({'-', field_name[0], '\0'})) {
       return true;
     }
     return is_kebab_case(next, field_name);
