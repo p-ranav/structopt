@@ -1,4 +1,3 @@
-
 //  (C) Copyright 2015 - 2018 Christopher Beck
 
 //  Distributed under the Boost Software License, Version 1.0. (See accompanying
@@ -13,81 +12,84 @@
  * run-time overhead.
  */
 
-#include <type_traits>
 #include <utility>
+#include <type_traits>
 
 // Library version
 
 #define VISIT_STRUCT_VERSION_MAJOR 1
-#define VISIT_STRUCT_VERSION_MINOR 0
+#define VISIT_STRUCT_VERSION_MINOR 1
 #define VISIT_STRUCT_VERSION_PATCH 0
 
 #define VISIT_STRUCT_STRING_HELPER(X) #X
 #define VISIT_STRUCT_STRING(X) VISIT_STRUCT_STRING_HELPER(X)
 
-#define VISIT_STRUCT_VERSION_STRING                                                      \
-  VISIT_STRUCT_STRING(VISIT_STRUCT_VERSION_MAJOR)                                        \
-  "." VISIT_STRUCT_STRING(VISIT_STRUCT_VERSION_MINOR) "." VISIT_STRUCT_STRING(           \
-      VISIT_STRUCT_VERSION_PATCH)
+#define VISIT_STRUCT_VERSION_STRING VISIT_STRUCT_STRING(VISIT_STRUCT_VERSION_MAJOR) "." VISIT_STRUCT_STRING(VISIT_STRUCT_VERSION_MINOR) "." VISIT_STRUCT_STRING(VISIT_STRUCT_VERSION_PATCH)
 
 // For MSVC 2013 support, we put constexpr behind a define.
 
-#ifndef VISIT_STRUCT_CONSTEXPR
-#if (defined _MSC_VER) && (_MSC_VER <= 1800)
-#define VISIT_STRUCT_CONSTEXPR
-#else
-#define VISIT_STRUCT_CONSTEXPR constexpr
-#endif
-#endif
+# ifndef VISIT_STRUCT_CONSTEXPR
+#   if (defined _MSC_VER) && (_MSC_VER <= 1800)
+#     define VISIT_STRUCT_CONSTEXPR
+#   else
+#     define VISIT_STRUCT_CONSTEXPR constexpr
+#   endif
+# endif
 
 // After C++14 the apply_visitor function can be constexpr.
 // We target C++11, but such functions are tagged VISIT_STRUCT_CXX14_CONSTEXPR.
 
-#ifndef VISIT_STRUCT_CXX14_CONSTEXPR
-#if ((defined _MSC_VER) && (_MSC_VER <= 1900)) || (!defined __cplusplus) ||              \
-    (__cplusplus == 201103L)
-#define VISIT_STRUCT_CXX14_CONSTEXPR
-#else
-#define VISIT_STRUCT_CXX14_CONSTEXPR constexpr
-#endif
-#endif
+# ifndef VISIT_STRUCT_CXX14_CONSTEXPR
+#   if ((defined _MSC_VER) && (_MSC_VER <= 1900)) || (!defined __cplusplus) || (__cplusplus == 201103L)
+#     define VISIT_STRUCT_CXX14_CONSTEXPR
+#   else
+#     define VISIT_STRUCT_CXX14_CONSTEXPR constexpr
+#   endif
+# endif
 
 namespace visit_struct {
 
 namespace traits {
 
 // Primary template which is specialized to register a type
-template <typename T, typename ENABLE = void> struct visitable;
+template <typename T, typename ENABLE = void>
+struct visitable;
 
 // Helper template which checks if a type is registered
-template <typename T, typename ENABLE = void> struct is_visitable : std::false_type {};
+template <typename T, typename ENABLE = void>
+struct is_visitable : std::false_type {};
 
 template <typename T>
-struct is_visitable<T, typename std::enable_if<traits::visitable<T>::value>::type>
-    : std::true_type {};
+struct is_visitable<T,
+                    typename std::enable_if<traits::visitable<T>::value>::type>
+ : std::true_type {};
 
 // Helper template which removes cv and reference from a type (saves some typing)
-template <typename T> struct clean {
+template <typename T>
+struct clean {
   typedef typename std::remove_cv<typename std::remove_reference<T>::type>::type type;
 };
 
-template <typename T> using clean_t = typename clean<T>::type;
+template <typename T>
+using clean_t = typename clean<T>::type;
 
 // Mini-version of std::common_type (we only require C++11)
-template <typename T, typename U> struct common_type {
+template <typename T, typename U>
+struct common_type {
   typedef decltype(true ? std::declval<T>() : std::declval<U>()) type;
 };
 
 } // end namespace traits
 
 // Tag for tag dispatch
-template <typename T> struct type_c { using type = T; };
+template <typename T>
+struct type_c { using type = T; };
 
 // Accessor type: function object encapsulating a pointer-to-member
-template <typename MemPtr, MemPtr ptr> struct accessor {
+template <typename MemPtr, MemPtr ptr>
+struct accessor {
   template <typename T>
-  VISIT_STRUCT_CONSTEXPR auto operator()(T &&t) const
-      -> decltype(std::forward<T>(t).*ptr) {
+  VISIT_STRUCT_CONSTEXPR auto operator()(T && t) const -> decltype(std::forward<T>(t).*ptr) {
     return std::forward<T>(t).*ptr;
   }
 };
@@ -97,96 +99,129 @@ template <typename MemPtr, MemPtr ptr> struct accessor {
 //
 
 // Return number of fields in a visitable struct
-template <typename S> VISIT_STRUCT_CONSTEXPR std::size_t field_count() {
+template <typename S>
+VISIT_STRUCT_CONSTEXPR std::size_t field_count()
+{
   return traits::visitable<traits::clean_t<S>>::field_count;
 }
 
-template <typename S> VISIT_STRUCT_CONSTEXPR std::size_t field_count(S &&) {
-  return field_count<S>();
-}
+template <typename S>
+VISIT_STRUCT_CONSTEXPR std::size_t field_count(S &&) { return field_count<S>(); }
+
 
 // apply_visitor (one struct instance)
 template <typename S, typename V>
-VISIT_STRUCT_CXX14_CONSTEXPR auto apply_visitor(V &&v, S &&s) ->
-    typename std::enable_if<traits::is_visitable<traits::clean_t<S>>::value>::type {
+VISIT_STRUCT_CXX14_CONSTEXPR auto apply_visitor(V && v, S && s) ->
+  typename std::enable_if<
+             traits::is_visitable<traits::clean_t<S>>::value
+           >::type
+{
   traits::visitable<traits::clean_t<S>>::apply(std::forward<V>(v), std::forward<S>(s));
 }
 
 // apply_visitor (two struct instances)
 template <typename S1, typename S2, typename V>
-VISIT_STRUCT_CXX14_CONSTEXPR auto apply_visitor(V &&v, S1 &&s1, S2 &&s2) ->
-    typename std::enable_if<traits::is_visitable<
-        traits::clean_t<typename traits::common_type<S1, S2>::type>>::value>::type {
+VISIT_STRUCT_CXX14_CONSTEXPR auto apply_visitor(V && v, S1 && s1, S2 && s2) ->
+  typename std::enable_if<
+             traits::is_visitable<
+               traits::clean_t<typename traits::common_type<S1, S2>::type>
+             >::value
+           >::type
+{
   using common_S = typename traits::common_type<S1, S2>::type;
-  traits::visitable<traits::clean_t<common_S>>::apply(
-      std::forward<V>(v), std::forward<S1>(s1), std::forward<S2>(s2));
+  traits::visitable<traits::clean_t<common_S>>::apply(std::forward<V>(v),
+                                                      std::forward<S1>(s1),
+                                                      std::forward<S2>(s2));
 }
 
 // for_each (Alternate syntax for apply_visitor, reverses order of arguments)
 template <typename V, typename S>
-VISIT_STRUCT_CXX14_CONSTEXPR auto for_each(S &&s, V &&v) ->
-    typename std::enable_if<traits::is_visitable<traits::clean_t<S>>::value>::type {
+VISIT_STRUCT_CXX14_CONSTEXPR auto for_each(S && s, V && v) ->
+  typename std::enable_if<
+             traits::is_visitable<traits::clean_t<S>>::value
+           >::type
+{
   traits::visitable<traits::clean_t<S>>::apply(std::forward<V>(v), std::forward<S>(s));
 }
 
 // for_each with two structure instances
 template <typename S1, typename S2, typename V>
-VISIT_STRUCT_CXX14_CONSTEXPR auto for_each(S1 &&s1, S2 &&s2, V &&v) ->
-    typename std::enable_if<traits::is_visitable<
-        traits::clean_t<typename traits::common_type<S1, S2>::type>>::value>::type {
+VISIT_STRUCT_CXX14_CONSTEXPR auto for_each(S1 && s1, S2 && s2, V && v) ->
+  typename std::enable_if<
+             traits::is_visitable<
+               traits::clean_t<typename traits::common_type<S1, S2>::type>
+             >::value
+           >::type
+{
   using common_S = typename traits::common_type<S1, S2>::type;
-  traits::visitable<traits::clean_t<common_S>>::apply(
-      std::forward<V>(v), std::forward<S1>(s1), std::forward<S2>(s2));
+  traits::visitable<traits::clean_t<common_S>>::apply(std::forward<V>(v),
+                                                      std::forward<S1>(s1),
+                                                      std::forward<S2>(s2));
 }
 
 // Visit the types (visit_struct::type_c<...>) of the registered members
 template <typename S, typename V>
-VISIT_STRUCT_CXX14_CONSTEXPR auto visit_types(V &&v) ->
-    typename std::enable_if<traits::is_visitable<traits::clean_t<S>>::value>::type {
+VISIT_STRUCT_CXX14_CONSTEXPR auto visit_types(V && v) ->
+  typename std::enable_if<
+             traits::is_visitable<traits::clean_t<S>>::value
+           >::type
+{
   traits::visitable<traits::clean_t<S>>::visit_types(std::forward<V>(v));
 }
 
 // Visit the member pointers (&S::a) of the registered members
 template <typename S, typename V>
-VISIT_STRUCT_CXX14_CONSTEXPR auto visit_pointers(V &&v) ->
-    typename std::enable_if<traits::is_visitable<traits::clean_t<S>>::value>::type {
+VISIT_STRUCT_CXX14_CONSTEXPR auto visit_pointers(V && v) ->
+  typename std::enable_if<
+             traits::is_visitable<traits::clean_t<S>>::value
+           >::type
+{
   traits::visitable<traits::clean_t<S>>::visit_pointers(std::forward<V>(v));
 }
 
 // Visit the accessors (function objects) of the registered members
 template <typename S, typename V>
-VISIT_STRUCT_CXX14_CONSTEXPR auto visit_accessors(V &&v) ->
-    typename std::enable_if<traits::is_visitable<traits::clean_t<S>>::value>::type {
+VISIT_STRUCT_CXX14_CONSTEXPR auto visit_accessors(V && v) ->
+  typename std::enable_if<
+             traits::is_visitable<traits::clean_t<S>>::value
+           >::type
+{
   traits::visitable<traits::clean_t<S>>::visit_accessors(std::forward<V>(v));
 }
+
 
 // Apply visitor (with no instances)
 // This calls visit_pointers, for backwards compat reasons
 template <typename S, typename V>
-VISIT_STRUCT_CXX14_CONSTEXPR auto apply_visitor(V &&v) ->
-    typename std::enable_if<traits::is_visitable<traits::clean_t<S>>::value>::type {
+VISIT_STRUCT_CXX14_CONSTEXPR auto apply_visitor(V && v) ->
+  typename std::enable_if<
+             traits::is_visitable<traits::clean_t<S>>::value
+           >::type
+{
   visit_struct::visit_pointers<S>(std::forward<V>(v));
 }
 
+
 // Get value by index (like std::get for tuples)
 template <int idx, typename S>
-VISIT_STRUCT_CONSTEXPR auto get(S &&s) ->
-    typename std::enable_if<traits::is_visitable<traits::clean_t<S>>::value,
-                            decltype(traits::visitable<traits::clean_t<S>>::get_value(
-                                std::integral_constant<int, idx>{},
-                                std::forward<S>(s)))>::type {
-  return traits::visitable<traits::clean_t<S>>::get_value(
-      std::integral_constant<int, idx>{}, std::forward<S>(s));
+VISIT_STRUCT_CONSTEXPR auto get(S && s) ->
+  typename std::enable_if<
+             traits::is_visitable<traits::clean_t<S>>::value,
+             decltype(traits::visitable<traits::clean_t<S>>::get_value(std::integral_constant<int, idx>{}, std::forward<S>(s)))
+           >::type
+{
+  return traits::visitable<traits::clean_t<S>>::get_value(std::integral_constant<int, idx>{}, std::forward<S>(s));
 }
 
 // Get name of field, by index
 template <int idx, typename S>
 VISIT_STRUCT_CONSTEXPR auto get_name() ->
-    typename std::enable_if<traits::is_visitable<traits::clean_t<S>>::value,
-                            decltype(traits::visitable<traits::clean_t<S>>::get_name(
-                                std::integral_constant<int, idx>{}))>::type {
-  return traits::visitable<traits::clean_t<S>>::get_name(
-      std::integral_constant<int, idx>{});
+  typename std::enable_if<
+             traits::is_visitable<traits::clean_t<S>>::value,
+             decltype(traits::visitable<traits::clean_t<S>>::get_name(std::integral_constant<int, idx>{}))
+           >::type
+{
+  return traits::visitable<traits::clean_t<S>>::get_name(std::integral_constant<int, idx>{});
 }
 
 template <int idx, typename S>
@@ -197,11 +232,12 @@ VISIT_STRUCT_CONSTEXPR auto get_name(S &&) -> decltype(get_name<idx, S>()) {
 // Get member pointer, by index
 template <int idx, typename S>
 VISIT_STRUCT_CONSTEXPR auto get_pointer() ->
-    typename std::enable_if<traits::is_visitable<traits::clean_t<S>>::value,
-                            decltype(traits::visitable<traits::clean_t<S>>::get_pointer(
-                                std::integral_constant<int, idx>{}))>::type {
-  return traits::visitable<traits::clean_t<S>>::get_pointer(
-      std::integral_constant<int, idx>{});
+  typename std::enable_if<
+             traits::is_visitable<traits::clean_t<S>>::value,
+             decltype(traits::visitable<traits::clean_t<S>>::get_pointer(std::integral_constant<int, idx>{}))
+           >::type
+{
+  return traits::visitable<traits::clean_t<S>>::get_pointer(std::integral_constant<int, idx>{});
 }
 
 template <int idx, typename S>
@@ -212,11 +248,12 @@ VISIT_STRUCT_CONSTEXPR auto get_pointer(S &&) -> decltype(get_pointer<idx, S>())
 // Get member accessor, by index
 template <int idx, typename S>
 VISIT_STRUCT_CONSTEXPR auto get_accessor() ->
-    typename std::enable_if<traits::is_visitable<traits::clean_t<S>>::value,
-                            decltype(traits::visitable<traits::clean_t<S>>::get_accessor(
-                                std::integral_constant<int, idx>{}))>::type {
-  return traits::visitable<traits::clean_t<S>>::get_accessor(
-      std::integral_constant<int, idx>{});
+  typename std::enable_if<
+             traits::is_visitable<traits::clean_t<S>>::value,
+             decltype(traits::visitable<traits::clean_t<S>>::get_accessor(std::integral_constant<int, idx>{}))
+           >::type
+{
+  return traits::visitable<traits::clean_t<S>>::get_accessor(std::integral_constant<int, idx>{});
 }
 
 template <int idx, typename S>
@@ -225,19 +262,23 @@ VISIT_STRUCT_CONSTEXPR auto get_accessor(S &&) -> decltype(get_accessor<idx, S>(
 }
 
 // Get type, by index
-template <int idx, typename S> struct type_at_s {
-  using type_c = decltype(
-      traits::visitable<traits::clean_t<S>>::type_at(std::integral_constant<int, idx>{}));
+template <int idx, typename S>
+struct type_at_s {
+  using type_c = decltype(traits::visitable<traits::clean_t<S>>::type_at(std::integral_constant<int, idx>{}));
   using type = typename type_c::type;
 };
 
-template <int idx, typename S> using type_at = typename type_at_s<idx, S>::type;
+template <int idx, typename S>
+using type_at = typename type_at_s<idx, S>::type;
 
 // Get name of structure
 template <typename S>
-VISIT_STRUCT_CONSTEXPR auto get_name() -> typename std::enable_if<
-    traits::is_visitable<traits::clean_t<S>>::value,
-    decltype(traits::visitable<traits::clean_t<S>>::get_name())>::type {
+VISIT_STRUCT_CONSTEXPR auto get_name() ->
+  typename std::enable_if<
+             traits::is_visitable<traits::clean_t<S>>::value,
+             decltype(traits::visitable<traits::clean_t<S>>::get_name())
+           >::type
+{
   return traits::visitable<traits::clean_t<S>>::get_name();
 }
 
@@ -248,21 +289,19 @@ VISIT_STRUCT_CONSTEXPR auto get_name(S &&) -> decltype(get_name<S>()) {
 
 /***
  * To implement the VISITABLE_STRUCT macro, we need a map-macro, which can take
- * the name of a macro and some other arguments, and apply that macro to each other
- * argument.
+ * the name of a macro and some other arguments, and apply that macro to each other argument.
  *
- * There are some techniques you can use within C preprocessor to accomplish this
- * succinctly, by settng up "recursive" macros.
+ * There are some techniques you can use within C preprocessor to accomplish this succinctly,
+ * by settng up "recursive" macros.
  *
  * But this can also cause it to give worse error messages when something goes wrong.
  *
- * We are now doing it in a more "dumb", bulletproof way which has the advantage that it
- * is more portable and gives better error messages. For discussion see
- * IMPLEMENTATION_NOTES.md
+ * We are now doing it in a more "dumb", bulletproof way which has the advantage that it is
+ * more portable and gives better error messages.
+ * For discussion see IMPLEMENTATION_NOTES.md
  *
- * The code below is based on a patch from Jarod42, and is now generated by a python
- * script. The purpose of the generated code is to define VISIT_STRUCT_PP_MAP as
- * described.
+ * The code below is based on a patch from Jarod42, and is now generated by a python script.
+ * The purpose of the generated code is to define VISIT_STRUCT_PP_MAP as described.
  */
 
 /*** Generated code ***/
@@ -270,493 +309,100 @@ VISIT_STRUCT_CONSTEXPR auto get_name(S &&) -> decltype(get_name<S>()) {
 static VISIT_STRUCT_CONSTEXPR const int max_visitable_members = 69;
 
 #define VISIT_STRUCT_EXPAND(x) x
-#define VISIT_STRUCT_PP_ARG_N(                                                           \
-    _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18,     \
-    _19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35, \
-    _36, _37, _38, _39, _40, _41, _42, _43, _44, _45, _46, _47, _48, _49, _50, _51, _52, \
-    _53, _54, _55, _56, _57, _58, _59, _60, _61, _62, _63, _64, _65, _66, _67, _68, _69, \
-    N, ...)                                                                              \
-  N
-#define VISIT_STRUCT_PP_NARG(...)                                                        \
-  VISIT_STRUCT_EXPAND(VISIT_STRUCT_PP_ARG_N(                                             \
-      __VA_ARGS__, 69, 68, 67, 66, 65, 64, 63, 62, 61, 60, 59, 58, 57, 56, 55, 54, 53,   \
-      52, 51, 50, 49, 48, 47, 46, 45, 44, 43, 42, 41, 40, 39, 38, 37, 36, 35, 34, 33,    \
-      32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13,    \
-      12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0))
+#define VISIT_STRUCT_PP_ARG_N( \
+        _1, _2, _3, _4, _5, _6, _7, _8, _9, _10,\
+        _11, _12, _13, _14, _15, _16, _17, _18, _19, _20,\
+        _21, _22, _23, _24, _25, _26, _27, _28, _29, _30,\
+        _31, _32, _33, _34, _35, _36, _37, _38, _39, _40,\
+        _41, _42, _43, _44, _45, _46, _47, _48, _49, _50,\
+        _51, _52, _53, _54, _55, _56, _57, _58, _59, _60,\
+        _61, _62, _63, _64, _65, _66, _67, _68, _69, N, ...) N
+#define VISIT_STRUCT_PP_NARG(...) VISIT_STRUCT_EXPAND(VISIT_STRUCT_PP_ARG_N(__VA_ARGS__,  \
+        69, 68, 67, 66, 65, 64, 63, 62, 61, 60,  \
+        59, 58, 57, 56, 55, 54, 53, 52, 51, 50,  \
+        49, 48, 47, 46, 45, 44, 43, 42, 41, 40,  \
+        39, 38, 37, 36, 35, 34, 33, 32, 31, 30,  \
+        29, 28, 27, 26, 25, 24, 23, 22, 21, 20,  \
+        19, 18, 17, 16, 15, 14, 13, 12, 11, 10,  \
+        9, 8, 7, 6, 5, 4, 3, 2, 1, 0))
 
 /* need extra level to force extra eval */
-#define VISIT_STRUCT_CONCAT_(a, b) a##b
-#define VISIT_STRUCT_CONCAT(a, b) VISIT_STRUCT_CONCAT_(a, b)
+#define VISIT_STRUCT_CONCAT_(a,b) a ## b
+#define VISIT_STRUCT_CONCAT(a,b) VISIT_STRUCT_CONCAT_(a,b)
 
 #define VISIT_STRUCT_APPLYF0(f)
-#define VISIT_STRUCT_APPLYF1(f, _1) f(_1)
-#define VISIT_STRUCT_APPLYF2(f, _1, _2) f(_1) f(_2)
-#define VISIT_STRUCT_APPLYF3(f, _1, _2, _3) f(_1) f(_2) f(_3)
-#define VISIT_STRUCT_APPLYF4(f, _1, _2, _3, _4) f(_1) f(_2) f(_3) f(_4)
-#define VISIT_STRUCT_APPLYF5(f, _1, _2, _3, _4, _5) f(_1) f(_2) f(_3) f(_4) f(_5)
-#define VISIT_STRUCT_APPLYF6(f, _1, _2, _3, _4, _5, _6)                                  \
-  f(_1) f(_2) f(_3) f(_4) f(_5) f(_6)
-#define VISIT_STRUCT_APPLYF7(f, _1, _2, _3, _4, _5, _6, _7)                              \
-  f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7)
-#define VISIT_STRUCT_APPLYF8(f, _1, _2, _3, _4, _5, _6, _7, _8)                          \
-  f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8)
-#define VISIT_STRUCT_APPLYF9(f, _1, _2, _3, _4, _5, _6, _7, _8, _9)                      \
-  f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9)
-#define VISIT_STRUCT_APPLYF10(f, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10)                \
-  f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10)
-#define VISIT_STRUCT_APPLYF11(f, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11)           \
-  f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11)
-#define VISIT_STRUCT_APPLYF12(f, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12)      \
-  f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12)
-#define VISIT_STRUCT_APPLYF13(f, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13) \
-  f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13)
-#define VISIT_STRUCT_APPLYF14(f, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, \
-                              _14)                                                       \
-  f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13) f(_14)
-#define VISIT_STRUCT_APPLYF15(f, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, \
-                              _14, _15)                                                  \
-  f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13)      \
-      f(_14) f(_15)
-#define VISIT_STRUCT_APPLYF16(f, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, \
-                              _14, _15, _16)                                             \
-  f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13)      \
-      f(_14) f(_15) f(_16)
-#define VISIT_STRUCT_APPLYF17(f, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, \
-                              _14, _15, _16, _17)                                        \
-  f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13)      \
-      f(_14) f(_15) f(_16) f(_17)
-#define VISIT_STRUCT_APPLYF18(f, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, \
-                              _14, _15, _16, _17, _18)                                   \
-  f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13)      \
-      f(_14) f(_15) f(_16) f(_17) f(_18)
-#define VISIT_STRUCT_APPLYF19(f, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, \
-                              _14, _15, _16, _17, _18, _19)                              \
-  f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13)      \
-      f(_14) f(_15) f(_16) f(_17) f(_18) f(_19)
-#define VISIT_STRUCT_APPLYF20(f, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, \
-                              _14, _15, _16, _17, _18, _19, _20)                         \
-  f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13)      \
-      f(_14) f(_15) f(_16) f(_17) f(_18) f(_19) f(_20)
-#define VISIT_STRUCT_APPLYF21(f, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, \
-                              _14, _15, _16, _17, _18, _19, _20, _21)                    \
-  f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13)      \
-      f(_14) f(_15) f(_16) f(_17) f(_18) f(_19) f(_20) f(_21)
-#define VISIT_STRUCT_APPLYF22(f, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, \
-                              _14, _15, _16, _17, _18, _19, _20, _21, _22)               \
-  f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13)      \
-      f(_14) f(_15) f(_16) f(_17) f(_18) f(_19) f(_20) f(_21) f(_22)
-#define VISIT_STRUCT_APPLYF23(f, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, \
-                              _14, _15, _16, _17, _18, _19, _20, _21, _22, _23)          \
-  f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13)      \
-      f(_14) f(_15) f(_16) f(_17) f(_18) f(_19) f(_20) f(_21) f(_22) f(_23)
-#define VISIT_STRUCT_APPLYF24(f, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, \
-                              _14, _15, _16, _17, _18, _19, _20, _21, _22, _23, _24)     \
-  f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13)      \
-      f(_14) f(_15) f(_16) f(_17) f(_18) f(_19) f(_20) f(_21) f(_22) f(_23) f(_24)
-#define VISIT_STRUCT_APPLYF25(f, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, \
-                              _14, _15, _16, _17, _18, _19, _20, _21, _22, _23, _24,     \
-                              _25)                                                       \
-  f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13)      \
-      f(_14) f(_15) f(_16) f(_17) f(_18) f(_19) f(_20) f(_21) f(_22) f(_23) f(_24)       \
-          f(_25)
-#define VISIT_STRUCT_APPLYF26(f, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, \
-                              _14, _15, _16, _17, _18, _19, _20, _21, _22, _23, _24,     \
-                              _25, _26)                                                  \
-  f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13)      \
-      f(_14) f(_15) f(_16) f(_17) f(_18) f(_19) f(_20) f(_21) f(_22) f(_23) f(_24)       \
-          f(_25) f(_26)
-#define VISIT_STRUCT_APPLYF27(f, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, \
-                              _14, _15, _16, _17, _18, _19, _20, _21, _22, _23, _24,     \
-                              _25, _26, _27)                                             \
-  f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13)      \
-      f(_14) f(_15) f(_16) f(_17) f(_18) f(_19) f(_20) f(_21) f(_22) f(_23) f(_24)       \
-          f(_25) f(_26) f(_27)
-#define VISIT_STRUCT_APPLYF28(f, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, \
-                              _14, _15, _16, _17, _18, _19, _20, _21, _22, _23, _24,     \
-                              _25, _26, _27, _28)                                        \
-  f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13)      \
-      f(_14) f(_15) f(_16) f(_17) f(_18) f(_19) f(_20) f(_21) f(_22) f(_23) f(_24)       \
-          f(_25) f(_26) f(_27) f(_28)
-#define VISIT_STRUCT_APPLYF29(f, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, \
-                              _14, _15, _16, _17, _18, _19, _20, _21, _22, _23, _24,     \
-                              _25, _26, _27, _28, _29)                                   \
-  f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13)      \
-      f(_14) f(_15) f(_16) f(_17) f(_18) f(_19) f(_20) f(_21) f(_22) f(_23) f(_24)       \
-          f(_25) f(_26) f(_27) f(_28) f(_29)
-#define VISIT_STRUCT_APPLYF30(f, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, \
-                              _14, _15, _16, _17, _18, _19, _20, _21, _22, _23, _24,     \
-                              _25, _26, _27, _28, _29, _30)                              \
-  f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13)      \
-      f(_14) f(_15) f(_16) f(_17) f(_18) f(_19) f(_20) f(_21) f(_22) f(_23) f(_24)       \
-          f(_25) f(_26) f(_27) f(_28) f(_29) f(_30)
-#define VISIT_STRUCT_APPLYF31(f, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, \
-                              _14, _15, _16, _17, _18, _19, _20, _21, _22, _23, _24,     \
-                              _25, _26, _27, _28, _29, _30, _31)                         \
-  f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13)      \
-      f(_14) f(_15) f(_16) f(_17) f(_18) f(_19) f(_20) f(_21) f(_22) f(_23) f(_24)       \
-          f(_25) f(_26) f(_27) f(_28) f(_29) f(_30) f(_31)
-#define VISIT_STRUCT_APPLYF32(f, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, \
-                              _14, _15, _16, _17, _18, _19, _20, _21, _22, _23, _24,     \
-                              _25, _26, _27, _28, _29, _30, _31, _32)                    \
-  f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13)      \
-      f(_14) f(_15) f(_16) f(_17) f(_18) f(_19) f(_20) f(_21) f(_22) f(_23) f(_24)       \
-          f(_25) f(_26) f(_27) f(_28) f(_29) f(_30) f(_31) f(_32)
-#define VISIT_STRUCT_APPLYF33(f, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, \
-                              _14, _15, _16, _17, _18, _19, _20, _21, _22, _23, _24,     \
-                              _25, _26, _27, _28, _29, _30, _31, _32, _33)               \
-  f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13)      \
-      f(_14) f(_15) f(_16) f(_17) f(_18) f(_19) f(_20) f(_21) f(_22) f(_23) f(_24)       \
-          f(_25) f(_26) f(_27) f(_28) f(_29) f(_30) f(_31) f(_32) f(_33)
-#define VISIT_STRUCT_APPLYF34(f, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, \
-                              _14, _15, _16, _17, _18, _19, _20, _21, _22, _23, _24,     \
-                              _25, _26, _27, _28, _29, _30, _31, _32, _33, _34)          \
-  f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13)      \
-      f(_14) f(_15) f(_16) f(_17) f(_18) f(_19) f(_20) f(_21) f(_22) f(_23) f(_24)       \
-          f(_25) f(_26) f(_27) f(_28) f(_29) f(_30) f(_31) f(_32) f(_33) f(_34)
-#define VISIT_STRUCT_APPLYF35(f, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, \
-                              _14, _15, _16, _17, _18, _19, _20, _21, _22, _23, _24,     \
-                              _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35)     \
-  f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13)      \
-      f(_14) f(_15) f(_16) f(_17) f(_18) f(_19) f(_20) f(_21) f(_22) f(_23) f(_24)       \
-          f(_25) f(_26) f(_27) f(_28) f(_29) f(_30) f(_31) f(_32) f(_33) f(_34) f(_35)
-#define VISIT_STRUCT_APPLYF36(f, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, \
-                              _14, _15, _16, _17, _18, _19, _20, _21, _22, _23, _24,     \
-                              _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35,     \
-                              _36)                                                       \
-  f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13)      \
-      f(_14) f(_15) f(_16) f(_17) f(_18) f(_19) f(_20) f(_21) f(_22) f(_23) f(_24)       \
-          f(_25) f(_26) f(_27) f(_28) f(_29) f(_30) f(_31) f(_32) f(_33) f(_34) f(_35)   \
-              f(_36)
-#define VISIT_STRUCT_APPLYF37(f, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, \
-                              _14, _15, _16, _17, _18, _19, _20, _21, _22, _23, _24,     \
-                              _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35,     \
-                              _36, _37)                                                  \
-  f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13)      \
-      f(_14) f(_15) f(_16) f(_17) f(_18) f(_19) f(_20) f(_21) f(_22) f(_23) f(_24)       \
-          f(_25) f(_26) f(_27) f(_28) f(_29) f(_30) f(_31) f(_32) f(_33) f(_34) f(_35)   \
-              f(_36) f(_37)
-#define VISIT_STRUCT_APPLYF38(f, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, \
-                              _14, _15, _16, _17, _18, _19, _20, _21, _22, _23, _24,     \
-                              _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35,     \
-                              _36, _37, _38)                                             \
-  f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13)      \
-      f(_14) f(_15) f(_16) f(_17) f(_18) f(_19) f(_20) f(_21) f(_22) f(_23) f(_24)       \
-          f(_25) f(_26) f(_27) f(_28) f(_29) f(_30) f(_31) f(_32) f(_33) f(_34) f(_35)   \
-              f(_36) f(_37) f(_38)
-#define VISIT_STRUCT_APPLYF39(f, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, \
-                              _14, _15, _16, _17, _18, _19, _20, _21, _22, _23, _24,     \
-                              _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35,     \
-                              _36, _37, _38, _39)                                        \
-  f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13)      \
-      f(_14) f(_15) f(_16) f(_17) f(_18) f(_19) f(_20) f(_21) f(_22) f(_23) f(_24)       \
-          f(_25) f(_26) f(_27) f(_28) f(_29) f(_30) f(_31) f(_32) f(_33) f(_34) f(_35)   \
-              f(_36) f(_37) f(_38) f(_39)
-#define VISIT_STRUCT_APPLYF40(f, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, \
-                              _14, _15, _16, _17, _18, _19, _20, _21, _22, _23, _24,     \
-                              _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35,     \
-                              _36, _37, _38, _39, _40)                                   \
-  f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13)      \
-      f(_14) f(_15) f(_16) f(_17) f(_18) f(_19) f(_20) f(_21) f(_22) f(_23) f(_24)       \
-          f(_25) f(_26) f(_27) f(_28) f(_29) f(_30) f(_31) f(_32) f(_33) f(_34) f(_35)   \
-              f(_36) f(_37) f(_38) f(_39) f(_40)
-#define VISIT_STRUCT_APPLYF41(f, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, \
-                              _14, _15, _16, _17, _18, _19, _20, _21, _22, _23, _24,     \
-                              _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35,     \
-                              _36, _37, _38, _39, _40, _41)                              \
-  f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13)      \
-      f(_14) f(_15) f(_16) f(_17) f(_18) f(_19) f(_20) f(_21) f(_22) f(_23) f(_24)       \
-          f(_25) f(_26) f(_27) f(_28) f(_29) f(_30) f(_31) f(_32) f(_33) f(_34) f(_35)   \
-              f(_36) f(_37) f(_38) f(_39) f(_40) f(_41)
-#define VISIT_STRUCT_APPLYF42(f, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, \
-                              _14, _15, _16, _17, _18, _19, _20, _21, _22, _23, _24,     \
-                              _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35,     \
-                              _36, _37, _38, _39, _40, _41, _42)                         \
-  f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13)      \
-      f(_14) f(_15) f(_16) f(_17) f(_18) f(_19) f(_20) f(_21) f(_22) f(_23) f(_24)       \
-          f(_25) f(_26) f(_27) f(_28) f(_29) f(_30) f(_31) f(_32) f(_33) f(_34) f(_35)   \
-              f(_36) f(_37) f(_38) f(_39) f(_40) f(_41) f(_42)
-#define VISIT_STRUCT_APPLYF43(f, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, \
-                              _14, _15, _16, _17, _18, _19, _20, _21, _22, _23, _24,     \
-                              _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35,     \
-                              _36, _37, _38, _39, _40, _41, _42, _43)                    \
-  f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13)      \
-      f(_14) f(_15) f(_16) f(_17) f(_18) f(_19) f(_20) f(_21) f(_22) f(_23) f(_24)       \
-          f(_25) f(_26) f(_27) f(_28) f(_29) f(_30) f(_31) f(_32) f(_33) f(_34) f(_35)   \
-              f(_36) f(_37) f(_38) f(_39) f(_40) f(_41) f(_42) f(_43)
-#define VISIT_STRUCT_APPLYF44(f, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, \
-                              _14, _15, _16, _17, _18, _19, _20, _21, _22, _23, _24,     \
-                              _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35,     \
-                              _36, _37, _38, _39, _40, _41, _42, _43, _44)               \
-  f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13)      \
-      f(_14) f(_15) f(_16) f(_17) f(_18) f(_19) f(_20) f(_21) f(_22) f(_23) f(_24)       \
-          f(_25) f(_26) f(_27) f(_28) f(_29) f(_30) f(_31) f(_32) f(_33) f(_34) f(_35)   \
-              f(_36) f(_37) f(_38) f(_39) f(_40) f(_41) f(_42) f(_43) f(_44)
-#define VISIT_STRUCT_APPLYF45(f, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, \
-                              _14, _15, _16, _17, _18, _19, _20, _21, _22, _23, _24,     \
-                              _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35,     \
-                              _36, _37, _38, _39, _40, _41, _42, _43, _44, _45)          \
-  f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13)      \
-      f(_14) f(_15) f(_16) f(_17) f(_18) f(_19) f(_20) f(_21) f(_22) f(_23) f(_24)       \
-          f(_25) f(_26) f(_27) f(_28) f(_29) f(_30) f(_31) f(_32) f(_33) f(_34) f(_35)   \
-              f(_36) f(_37) f(_38) f(_39) f(_40) f(_41) f(_42) f(_43) f(_44) f(_45)
-#define VISIT_STRUCT_APPLYF46(f, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, \
-                              _14, _15, _16, _17, _18, _19, _20, _21, _22, _23, _24,     \
-                              _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35,     \
-                              _36, _37, _38, _39, _40, _41, _42, _43, _44, _45, _46)     \
-  f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13)      \
-      f(_14) f(_15) f(_16) f(_17) f(_18) f(_19) f(_20) f(_21) f(_22) f(_23) f(_24)       \
-          f(_25) f(_26) f(_27) f(_28) f(_29) f(_30) f(_31) f(_32) f(_33) f(_34) f(_35)   \
-              f(_36) f(_37) f(_38) f(_39) f(_40) f(_41) f(_42) f(_43) f(_44) f(_45)      \
-                  f(_46)
-#define VISIT_STRUCT_APPLYF47(                                                           \
-    f, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18,  \
-    _19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35, \
-    _36, _37, _38, _39, _40, _41, _42, _43, _44, _45, _46, _47)                          \
-  f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13)      \
-      f(_14) f(_15) f(_16) f(_17) f(_18) f(_19) f(_20) f(_21) f(_22) f(_23) f(_24)       \
-          f(_25) f(_26) f(_27) f(_28) f(_29) f(_30) f(_31) f(_32) f(_33) f(_34) f(_35)   \
-              f(_36) f(_37) f(_38) f(_39) f(_40) f(_41) f(_42) f(_43) f(_44) f(_45)      \
-                  f(_46) f(_47)
-#define VISIT_STRUCT_APPLYF48(                                                           \
-    f, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18,  \
-    _19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35, \
-    _36, _37, _38, _39, _40, _41, _42, _43, _44, _45, _46, _47, _48)                     \
-  f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13)      \
-      f(_14) f(_15) f(_16) f(_17) f(_18) f(_19) f(_20) f(_21) f(_22) f(_23) f(_24)       \
-          f(_25) f(_26) f(_27) f(_28) f(_29) f(_30) f(_31) f(_32) f(_33) f(_34) f(_35)   \
-              f(_36) f(_37) f(_38) f(_39) f(_40) f(_41) f(_42) f(_43) f(_44) f(_45)      \
-                  f(_46) f(_47) f(_48)
-#define VISIT_STRUCT_APPLYF49(                                                           \
-    f, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18,  \
-    _19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35, \
-    _36, _37, _38, _39, _40, _41, _42, _43, _44, _45, _46, _47, _48, _49)                \
-  f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13)      \
-      f(_14) f(_15) f(_16) f(_17) f(_18) f(_19) f(_20) f(_21) f(_22) f(_23) f(_24)       \
-          f(_25) f(_26) f(_27) f(_28) f(_29) f(_30) f(_31) f(_32) f(_33) f(_34) f(_35)   \
-              f(_36) f(_37) f(_38) f(_39) f(_40) f(_41) f(_42) f(_43) f(_44) f(_45)      \
-                  f(_46) f(_47) f(_48) f(_49)
-#define VISIT_STRUCT_APPLYF50(                                                           \
-    f, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18,  \
-    _19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35, \
-    _36, _37, _38, _39, _40, _41, _42, _43, _44, _45, _46, _47, _48, _49, _50)           \
-  f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13)      \
-      f(_14) f(_15) f(_16) f(_17) f(_18) f(_19) f(_20) f(_21) f(_22) f(_23) f(_24)       \
-          f(_25) f(_26) f(_27) f(_28) f(_29) f(_30) f(_31) f(_32) f(_33) f(_34) f(_35)   \
-              f(_36) f(_37) f(_38) f(_39) f(_40) f(_41) f(_42) f(_43) f(_44) f(_45)      \
-                  f(_46) f(_47) f(_48) f(_49) f(_50)
-#define VISIT_STRUCT_APPLYF51(                                                           \
-    f, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18,  \
-    _19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35, \
-    _36, _37, _38, _39, _40, _41, _42, _43, _44, _45, _46, _47, _48, _49, _50, _51)      \
-  f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13)      \
-      f(_14) f(_15) f(_16) f(_17) f(_18) f(_19) f(_20) f(_21) f(_22) f(_23) f(_24)       \
-          f(_25) f(_26) f(_27) f(_28) f(_29) f(_30) f(_31) f(_32) f(_33) f(_34) f(_35)   \
-              f(_36) f(_37) f(_38) f(_39) f(_40) f(_41) f(_42) f(_43) f(_44) f(_45)      \
-                  f(_46) f(_47) f(_48) f(_49) f(_50) f(_51)
-#define VISIT_STRUCT_APPLYF52(                                                           \
-    f, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18,  \
-    _19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35, \
-    _36, _37, _38, _39, _40, _41, _42, _43, _44, _45, _46, _47, _48, _49, _50, _51, _52) \
-  f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13)      \
-      f(_14) f(_15) f(_16) f(_17) f(_18) f(_19) f(_20) f(_21) f(_22) f(_23) f(_24)       \
-          f(_25) f(_26) f(_27) f(_28) f(_29) f(_30) f(_31) f(_32) f(_33) f(_34) f(_35)   \
-              f(_36) f(_37) f(_38) f(_39) f(_40) f(_41) f(_42) f(_43) f(_44) f(_45)      \
-                  f(_46) f(_47) f(_48) f(_49) f(_50) f(_51) f(_52)
-#define VISIT_STRUCT_APPLYF53(f, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, \
-                              _14, _15, _16, _17, _18, _19, _20, _21, _22, _23, _24,     \
-                              _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35,     \
-                              _36, _37, _38, _39, _40, _41, _42, _43, _44, _45, _46,     \
-                              _47, _48, _49, _50, _51, _52, _53)                         \
-  f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13)      \
-      f(_14) f(_15) f(_16) f(_17) f(_18) f(_19) f(_20) f(_21) f(_22) f(_23) f(_24)       \
-          f(_25) f(_26) f(_27) f(_28) f(_29) f(_30) f(_31) f(_32) f(_33) f(_34) f(_35)   \
-              f(_36) f(_37) f(_38) f(_39) f(_40) f(_41) f(_42) f(_43) f(_44) f(_45)      \
-                  f(_46) f(_47) f(_48) f(_49) f(_50) f(_51) f(_52) f(_53)
-#define VISIT_STRUCT_APPLYF54(f, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, \
-                              _14, _15, _16, _17, _18, _19, _20, _21, _22, _23, _24,     \
-                              _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35,     \
-                              _36, _37, _38, _39, _40, _41, _42, _43, _44, _45, _46,     \
-                              _47, _48, _49, _50, _51, _52, _53, _54)                    \
-  f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13)      \
-      f(_14) f(_15) f(_16) f(_17) f(_18) f(_19) f(_20) f(_21) f(_22) f(_23) f(_24)       \
-          f(_25) f(_26) f(_27) f(_28) f(_29) f(_30) f(_31) f(_32) f(_33) f(_34) f(_35)   \
-              f(_36) f(_37) f(_38) f(_39) f(_40) f(_41) f(_42) f(_43) f(_44) f(_45)      \
-                  f(_46) f(_47) f(_48) f(_49) f(_50) f(_51) f(_52) f(_53) f(_54)
-#define VISIT_STRUCT_APPLYF55(f, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, \
-                              _14, _15, _16, _17, _18, _19, _20, _21, _22, _23, _24,     \
-                              _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35,     \
-                              _36, _37, _38, _39, _40, _41, _42, _43, _44, _45, _46,     \
-                              _47, _48, _49, _50, _51, _52, _53, _54, _55)               \
-  f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13)      \
-      f(_14) f(_15) f(_16) f(_17) f(_18) f(_19) f(_20) f(_21) f(_22) f(_23) f(_24)       \
-          f(_25) f(_26) f(_27) f(_28) f(_29) f(_30) f(_31) f(_32) f(_33) f(_34) f(_35)   \
-              f(_36) f(_37) f(_38) f(_39) f(_40) f(_41) f(_42) f(_43) f(_44) f(_45)      \
-                  f(_46) f(_47) f(_48) f(_49) f(_50) f(_51) f(_52) f(_53) f(_54) f(_55)
-#define VISIT_STRUCT_APPLYF56(f, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, \
-                              _14, _15, _16, _17, _18, _19, _20, _21, _22, _23, _24,     \
-                              _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35,     \
-                              _36, _37, _38, _39, _40, _41, _42, _43, _44, _45, _46,     \
-                              _47, _48, _49, _50, _51, _52, _53, _54, _55, _56)          \
-  f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13)      \
-      f(_14) f(_15) f(_16) f(_17) f(_18) f(_19) f(_20) f(_21) f(_22) f(_23) f(_24)       \
-          f(_25) f(_26) f(_27) f(_28) f(_29) f(_30) f(_31) f(_32) f(_33) f(_34) f(_35)   \
-              f(_36) f(_37) f(_38) f(_39) f(_40) f(_41) f(_42) f(_43) f(_44) f(_45)      \
-                  f(_46) f(_47) f(_48) f(_49) f(_50) f(_51) f(_52) f(_53) f(_54) f(_55)  \
-                      f(_56)
-#define VISIT_STRUCT_APPLYF57(f, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, \
-                              _14, _15, _16, _17, _18, _19, _20, _21, _22, _23, _24,     \
-                              _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35,     \
-                              _36, _37, _38, _39, _40, _41, _42, _43, _44, _45, _46,     \
-                              _47, _48, _49, _50, _51, _52, _53, _54, _55, _56, _57)     \
-  f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13)      \
-      f(_14) f(_15) f(_16) f(_17) f(_18) f(_19) f(_20) f(_21) f(_22) f(_23) f(_24)       \
-          f(_25) f(_26) f(_27) f(_28) f(_29) f(_30) f(_31) f(_32) f(_33) f(_34) f(_35)   \
-              f(_36) f(_37) f(_38) f(_39) f(_40) f(_41) f(_42) f(_43) f(_44) f(_45)      \
-                  f(_46) f(_47) f(_48) f(_49) f(_50) f(_51) f(_52) f(_53) f(_54) f(_55)  \
-                      f(_56) f(_57)
-#define VISIT_STRUCT_APPLYF58(                                                           \
-    f, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18,  \
-    _19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35, \
-    _36, _37, _38, _39, _40, _41, _42, _43, _44, _45, _46, _47, _48, _49, _50, _51, _52, \
-    _53, _54, _55, _56, _57, _58)                                                        \
-  f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13)      \
-      f(_14) f(_15) f(_16) f(_17) f(_18) f(_19) f(_20) f(_21) f(_22) f(_23) f(_24)       \
-          f(_25) f(_26) f(_27) f(_28) f(_29) f(_30) f(_31) f(_32) f(_33) f(_34) f(_35)   \
-              f(_36) f(_37) f(_38) f(_39) f(_40) f(_41) f(_42) f(_43) f(_44) f(_45)      \
-                  f(_46) f(_47) f(_48) f(_49) f(_50) f(_51) f(_52) f(_53) f(_54) f(_55)  \
-                      f(_56) f(_57) f(_58)
-#define VISIT_STRUCT_APPLYF59(                                                           \
-    f, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18,  \
-    _19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35, \
-    _36, _37, _38, _39, _40, _41, _42, _43, _44, _45, _46, _47, _48, _49, _50, _51, _52, \
-    _53, _54, _55, _56, _57, _58, _59)                                                   \
-  f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13)      \
-      f(_14) f(_15) f(_16) f(_17) f(_18) f(_19) f(_20) f(_21) f(_22) f(_23) f(_24)       \
-          f(_25) f(_26) f(_27) f(_28) f(_29) f(_30) f(_31) f(_32) f(_33) f(_34) f(_35)   \
-              f(_36) f(_37) f(_38) f(_39) f(_40) f(_41) f(_42) f(_43) f(_44) f(_45)      \
-                  f(_46) f(_47) f(_48) f(_49) f(_50) f(_51) f(_52) f(_53) f(_54) f(_55)  \
-                      f(_56) f(_57) f(_58) f(_59)
-#define VISIT_STRUCT_APPLYF60(                                                           \
-    f, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18,  \
-    _19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35, \
-    _36, _37, _38, _39, _40, _41, _42, _43, _44, _45, _46, _47, _48, _49, _50, _51, _52, \
-    _53, _54, _55, _56, _57, _58, _59, _60)                                              \
-  f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13)      \
-      f(_14) f(_15) f(_16) f(_17) f(_18) f(_19) f(_20) f(_21) f(_22) f(_23) f(_24)       \
-          f(_25) f(_26) f(_27) f(_28) f(_29) f(_30) f(_31) f(_32) f(_33) f(_34) f(_35)   \
-              f(_36) f(_37) f(_38) f(_39) f(_40) f(_41) f(_42) f(_43) f(_44) f(_45)      \
-                  f(_46) f(_47) f(_48) f(_49) f(_50) f(_51) f(_52) f(_53) f(_54) f(_55)  \
-                      f(_56) f(_57) f(_58) f(_59) f(_60)
-#define VISIT_STRUCT_APPLYF61(                                                           \
-    f, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18,  \
-    _19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35, \
-    _36, _37, _38, _39, _40, _41, _42, _43, _44, _45, _46, _47, _48, _49, _50, _51, _52, \
-    _53, _54, _55, _56, _57, _58, _59, _60, _61)                                         \
-  f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13)      \
-      f(_14) f(_15) f(_16) f(_17) f(_18) f(_19) f(_20) f(_21) f(_22) f(_23) f(_24)       \
-          f(_25) f(_26) f(_27) f(_28) f(_29) f(_30) f(_31) f(_32) f(_33) f(_34) f(_35)   \
-              f(_36) f(_37) f(_38) f(_39) f(_40) f(_41) f(_42) f(_43) f(_44) f(_45)      \
-                  f(_46) f(_47) f(_48) f(_49) f(_50) f(_51) f(_52) f(_53) f(_54) f(_55)  \
-                      f(_56) f(_57) f(_58) f(_59) f(_60) f(_61)
-#define VISIT_STRUCT_APPLYF62(                                                           \
-    f, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18,  \
-    _19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35, \
-    _36, _37, _38, _39, _40, _41, _42, _43, _44, _45, _46, _47, _48, _49, _50, _51, _52, \
-    _53, _54, _55, _56, _57, _58, _59, _60, _61, _62)                                    \
-  f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13)      \
-      f(_14) f(_15) f(_16) f(_17) f(_18) f(_19) f(_20) f(_21) f(_22) f(_23) f(_24)       \
-          f(_25) f(_26) f(_27) f(_28) f(_29) f(_30) f(_31) f(_32) f(_33) f(_34) f(_35)   \
-              f(_36) f(_37) f(_38) f(_39) f(_40) f(_41) f(_42) f(_43) f(_44) f(_45)      \
-                  f(_46) f(_47) f(_48) f(_49) f(_50) f(_51) f(_52) f(_53) f(_54) f(_55)  \
-                      f(_56) f(_57) f(_58) f(_59) f(_60) f(_61) f(_62)
-#define VISIT_STRUCT_APPLYF63(                                                           \
-    f, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18,  \
-    _19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35, \
-    _36, _37, _38, _39, _40, _41, _42, _43, _44, _45, _46, _47, _48, _49, _50, _51, _52, \
-    _53, _54, _55, _56, _57, _58, _59, _60, _61, _62, _63)                               \
-  f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13)      \
-      f(_14) f(_15) f(_16) f(_17) f(_18) f(_19) f(_20) f(_21) f(_22) f(_23) f(_24)       \
-          f(_25) f(_26) f(_27) f(_28) f(_29) f(_30) f(_31) f(_32) f(_33) f(_34) f(_35)   \
-              f(_36) f(_37) f(_38) f(_39) f(_40) f(_41) f(_42) f(_43) f(_44) f(_45)      \
-                  f(_46) f(_47) f(_48) f(_49) f(_50) f(_51) f(_52) f(_53) f(_54) f(_55)  \
-                      f(_56) f(_57) f(_58) f(_59) f(_60) f(_61) f(_62) f(_63)
-#define VISIT_STRUCT_APPLYF64(                                                           \
-    f, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18,  \
-    _19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35, \
-    _36, _37, _38, _39, _40, _41, _42, _43, _44, _45, _46, _47, _48, _49, _50, _51, _52, \
-    _53, _54, _55, _56, _57, _58, _59, _60, _61, _62, _63, _64)                          \
-  f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13)      \
-      f(_14) f(_15) f(_16) f(_17) f(_18) f(_19) f(_20) f(_21) f(_22) f(_23) f(_24)       \
-          f(_25) f(_26) f(_27) f(_28) f(_29) f(_30) f(_31) f(_32) f(_33) f(_34) f(_35)   \
-              f(_36) f(_37) f(_38) f(_39) f(_40) f(_41) f(_42) f(_43) f(_44) f(_45)      \
-                  f(_46) f(_47) f(_48) f(_49) f(_50) f(_51) f(_52) f(_53) f(_54) f(_55)  \
-                      f(_56) f(_57) f(_58) f(_59) f(_60) f(_61) f(_62) f(_63) f(_64)
-#define VISIT_STRUCT_APPLYF65(                                                           \
-    f, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18,  \
-    _19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35, \
-    _36, _37, _38, _39, _40, _41, _42, _43, _44, _45, _46, _47, _48, _49, _50, _51, _52, \
-    _53, _54, _55, _56, _57, _58, _59, _60, _61, _62, _63, _64, _65)                     \
-  f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13)      \
-      f(_14) f(_15) f(_16) f(_17) f(_18) f(_19) f(_20) f(_21) f(_22) f(_23) f(_24)       \
-          f(_25) f(_26) f(_27) f(_28) f(_29) f(_30) f(_31) f(_32) f(_33) f(_34) f(_35)   \
-              f(_36) f(_37) f(_38) f(_39) f(_40) f(_41) f(_42) f(_43) f(_44) f(_45)      \
-                  f(_46) f(_47) f(_48) f(_49) f(_50) f(_51) f(_52) f(_53) f(_54) f(_55)  \
-                      f(_56) f(_57) f(_58) f(_59) f(_60) f(_61) f(_62) f(_63) f(_64)     \
-                          f(_65)
-#define VISIT_STRUCT_APPLYF66(                                                           \
-    f, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18,  \
-    _19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35, \
-    _36, _37, _38, _39, _40, _41, _42, _43, _44, _45, _46, _47, _48, _49, _50, _51, _52, \
-    _53, _54, _55, _56, _57, _58, _59, _60, _61, _62, _63, _64, _65, _66)                \
-  f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13)      \
-      f(_14) f(_15) f(_16) f(_17) f(_18) f(_19) f(_20) f(_21) f(_22) f(_23) f(_24)       \
-          f(_25) f(_26) f(_27) f(_28) f(_29) f(_30) f(_31) f(_32) f(_33) f(_34) f(_35)   \
-              f(_36) f(_37) f(_38) f(_39) f(_40) f(_41) f(_42) f(_43) f(_44) f(_45)      \
-                  f(_46) f(_47) f(_48) f(_49) f(_50) f(_51) f(_52) f(_53) f(_54) f(_55)  \
-                      f(_56) f(_57) f(_58) f(_59) f(_60) f(_61) f(_62) f(_63) f(_64)     \
-                          f(_65) f(_66)
-#define VISIT_STRUCT_APPLYF67(                                                           \
-    f, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18,  \
-    _19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35, \
-    _36, _37, _38, _39, _40, _41, _42, _43, _44, _45, _46, _47, _48, _49, _50, _51, _52, \
-    _53, _54, _55, _56, _57, _58, _59, _60, _61, _62, _63, _64, _65, _66, _67)           \
-  f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13)      \
-      f(_14) f(_15) f(_16) f(_17) f(_18) f(_19) f(_20) f(_21) f(_22) f(_23) f(_24)       \
-          f(_25) f(_26) f(_27) f(_28) f(_29) f(_30) f(_31) f(_32) f(_33) f(_34) f(_35)   \
-              f(_36) f(_37) f(_38) f(_39) f(_40) f(_41) f(_42) f(_43) f(_44) f(_45)      \
-                  f(_46) f(_47) f(_48) f(_49) f(_50) f(_51) f(_52) f(_53) f(_54) f(_55)  \
-                      f(_56) f(_57) f(_58) f(_59) f(_60) f(_61) f(_62) f(_63) f(_64)     \
-                          f(_65) f(_66) f(_67)
-#define VISIT_STRUCT_APPLYF68(                                                           \
-    f, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18,  \
-    _19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35, \
-    _36, _37, _38, _39, _40, _41, _42, _43, _44, _45, _46, _47, _48, _49, _50, _51, _52, \
-    _53, _54, _55, _56, _57, _58, _59, _60, _61, _62, _63, _64, _65, _66, _67, _68)      \
-  f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13)      \
-      f(_14) f(_15) f(_16) f(_17) f(_18) f(_19) f(_20) f(_21) f(_22) f(_23) f(_24)       \
-          f(_25) f(_26) f(_27) f(_28) f(_29) f(_30) f(_31) f(_32) f(_33) f(_34) f(_35)   \
-              f(_36) f(_37) f(_38) f(_39) f(_40) f(_41) f(_42) f(_43) f(_44) f(_45)      \
-                  f(_46) f(_47) f(_48) f(_49) f(_50) f(_51) f(_52) f(_53) f(_54) f(_55)  \
-                      f(_56) f(_57) f(_58) f(_59) f(_60) f(_61) f(_62) f(_63) f(_64)     \
-                          f(_65) f(_66) f(_67) f(_68)
-#define VISIT_STRUCT_APPLYF69(                                                           \
-    f, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18,  \
-    _19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35, \
-    _36, _37, _38, _39, _40, _41, _42, _43, _44, _45, _46, _47, _48, _49, _50, _51, _52, \
-    _53, _54, _55, _56, _57, _58, _59, _60, _61, _62, _63, _64, _65, _66, _67, _68, _69) \
-  f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13)      \
-      f(_14) f(_15) f(_16) f(_17) f(_18) f(_19) f(_20) f(_21) f(_22) f(_23) f(_24)       \
-          f(_25) f(_26) f(_27) f(_28) f(_29) f(_30) f(_31) f(_32) f(_33) f(_34) f(_35)   \
-              f(_36) f(_37) f(_38) f(_39) f(_40) f(_41) f(_42) f(_43) f(_44) f(_45)      \
-                  f(_46) f(_47) f(_48) f(_49) f(_50) f(_51) f(_52) f(_53) f(_54) f(_55)  \
-                      f(_56) f(_57) f(_58) f(_59) f(_60) f(_61) f(_62) f(_63) f(_64)     \
-                          f(_65) f(_66) f(_67) f(_68) f(_69)
+#define VISIT_STRUCT_APPLYF1(f,_1) f(_1)
+#define VISIT_STRUCT_APPLYF2(f,_1,_2) f(_1) f(_2)
+#define VISIT_STRUCT_APPLYF3(f,_1,_2,_3) f(_1) f(_2) f(_3)
+#define VISIT_STRUCT_APPLYF4(f,_1,_2,_3,_4) f(_1) f(_2) f(_3) f(_4)
+#define VISIT_STRUCT_APPLYF5(f,_1,_2,_3,_4,_5) f(_1) f(_2) f(_3) f(_4) f(_5)
+#define VISIT_STRUCT_APPLYF6(f,_1,_2,_3,_4,_5,_6) f(_1) f(_2) f(_3) f(_4) f(_5) f(_6)
+#define VISIT_STRUCT_APPLYF7(f,_1,_2,_3,_4,_5,_6,_7) f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7)
+#define VISIT_STRUCT_APPLYF8(f,_1,_2,_3,_4,_5,_6,_7,_8) f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8)
+#define VISIT_STRUCT_APPLYF9(f,_1,_2,_3,_4,_5,_6,_7,_8,_9) f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9)
+#define VISIT_STRUCT_APPLYF10(f,_1,_2,_3,_4,_5,_6,_7,_8,_9,_10) f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10)
+#define VISIT_STRUCT_APPLYF11(f,_1,_2,_3,_4,_5,_6,_7,_8,_9,_10,_11) f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11)
+#define VISIT_STRUCT_APPLYF12(f,_1,_2,_3,_4,_5,_6,_7,_8,_9,_10,_11,_12) f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12)
+#define VISIT_STRUCT_APPLYF13(f,_1,_2,_3,_4,_5,_6,_7,_8,_9,_10,_11,_12,_13) f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13)
+#define VISIT_STRUCT_APPLYF14(f,_1,_2,_3,_4,_5,_6,_7,_8,_9,_10,_11,_12,_13,_14) f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13) f(_14)
+#define VISIT_STRUCT_APPLYF15(f,_1,_2,_3,_4,_5,_6,_7,_8,_9,_10,_11,_12,_13,_14,_15) f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13) f(_14) f(_15)
+#define VISIT_STRUCT_APPLYF16(f,_1,_2,_3,_4,_5,_6,_7,_8,_9,_10,_11,_12,_13,_14,_15,_16) f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13) f(_14) f(_15) f(_16)
+#define VISIT_STRUCT_APPLYF17(f,_1,_2,_3,_4,_5,_6,_7,_8,_9,_10,_11,_12,_13,_14,_15,_16,_17) f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13) f(_14) f(_15) f(_16) f(_17)
+#define VISIT_STRUCT_APPLYF18(f,_1,_2,_3,_4,_5,_6,_7,_8,_9,_10,_11,_12,_13,_14,_15,_16,_17,_18) f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13) f(_14) f(_15) f(_16) f(_17) f(_18)
+#define VISIT_STRUCT_APPLYF19(f,_1,_2,_3,_4,_5,_6,_7,_8,_9,_10,_11,_12,_13,_14,_15,_16,_17,_18,_19) f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13) f(_14) f(_15) f(_16) f(_17) f(_18) f(_19)
+#define VISIT_STRUCT_APPLYF20(f,_1,_2,_3,_4,_5,_6,_7,_8,_9,_10,_11,_12,_13,_14,_15,_16,_17,_18,_19,_20) f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13) f(_14) f(_15) f(_16) f(_17) f(_18) f(_19) f(_20)
+#define VISIT_STRUCT_APPLYF21(f,_1,_2,_3,_4,_5,_6,_7,_8,_9,_10,_11,_12,_13,_14,_15,_16,_17,_18,_19,_20,_21) f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13) f(_14) f(_15) f(_16) f(_17) f(_18) f(_19) f(_20) f(_21)
+#define VISIT_STRUCT_APPLYF22(f,_1,_2,_3,_4,_5,_6,_7,_8,_9,_10,_11,_12,_13,_14,_15,_16,_17,_18,_19,_20,_21,_22) f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13) f(_14) f(_15) f(_16) f(_17) f(_18) f(_19) f(_20) f(_21) f(_22)
+#define VISIT_STRUCT_APPLYF23(f,_1,_2,_3,_4,_5,_6,_7,_8,_9,_10,_11,_12,_13,_14,_15,_16,_17,_18,_19,_20,_21,_22,_23) f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13) f(_14) f(_15) f(_16) f(_17) f(_18) f(_19) f(_20) f(_21) f(_22) f(_23)
+#define VISIT_STRUCT_APPLYF24(f,_1,_2,_3,_4,_5,_6,_7,_8,_9,_10,_11,_12,_13,_14,_15,_16,_17,_18,_19,_20,_21,_22,_23,_24) f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13) f(_14) f(_15) f(_16) f(_17) f(_18) f(_19) f(_20) f(_21) f(_22) f(_23) f(_24)
+#define VISIT_STRUCT_APPLYF25(f,_1,_2,_3,_4,_5,_6,_7,_8,_9,_10,_11,_12,_13,_14,_15,_16,_17,_18,_19,_20,_21,_22,_23,_24,_25) f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13) f(_14) f(_15) f(_16) f(_17) f(_18) f(_19) f(_20) f(_21) f(_22) f(_23) f(_24) f(_25)
+#define VISIT_STRUCT_APPLYF26(f,_1,_2,_3,_4,_5,_6,_7,_8,_9,_10,_11,_12,_13,_14,_15,_16,_17,_18,_19,_20,_21,_22,_23,_24,_25,_26) f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13) f(_14) f(_15) f(_16) f(_17) f(_18) f(_19) f(_20) f(_21) f(_22) f(_23) f(_24) f(_25) f(_26)
+#define VISIT_STRUCT_APPLYF27(f,_1,_2,_3,_4,_5,_6,_7,_8,_9,_10,_11,_12,_13,_14,_15,_16,_17,_18,_19,_20,_21,_22,_23,_24,_25,_26,_27) f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13) f(_14) f(_15) f(_16) f(_17) f(_18) f(_19) f(_20) f(_21) f(_22) f(_23) f(_24) f(_25) f(_26) f(_27)
+#define VISIT_STRUCT_APPLYF28(f,_1,_2,_3,_4,_5,_6,_7,_8,_9,_10,_11,_12,_13,_14,_15,_16,_17,_18,_19,_20,_21,_22,_23,_24,_25,_26,_27,_28) f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13) f(_14) f(_15) f(_16) f(_17) f(_18) f(_19) f(_20) f(_21) f(_22) f(_23) f(_24) f(_25) f(_26) f(_27) f(_28)
+#define VISIT_STRUCT_APPLYF29(f,_1,_2,_3,_4,_5,_6,_7,_8,_9,_10,_11,_12,_13,_14,_15,_16,_17,_18,_19,_20,_21,_22,_23,_24,_25,_26,_27,_28,_29) f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13) f(_14) f(_15) f(_16) f(_17) f(_18) f(_19) f(_20) f(_21) f(_22) f(_23) f(_24) f(_25) f(_26) f(_27) f(_28) f(_29)
+#define VISIT_STRUCT_APPLYF30(f,_1,_2,_3,_4,_5,_6,_7,_8,_9,_10,_11,_12,_13,_14,_15,_16,_17,_18,_19,_20,_21,_22,_23,_24,_25,_26,_27,_28,_29,_30) f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13) f(_14) f(_15) f(_16) f(_17) f(_18) f(_19) f(_20) f(_21) f(_22) f(_23) f(_24) f(_25) f(_26) f(_27) f(_28) f(_29) f(_30)
+#define VISIT_STRUCT_APPLYF31(f,_1,_2,_3,_4,_5,_6,_7,_8,_9,_10,_11,_12,_13,_14,_15,_16,_17,_18,_19,_20,_21,_22,_23,_24,_25,_26,_27,_28,_29,_30,_31) f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13) f(_14) f(_15) f(_16) f(_17) f(_18) f(_19) f(_20) f(_21) f(_22) f(_23) f(_24) f(_25) f(_26) f(_27) f(_28) f(_29) f(_30) f(_31)
+#define VISIT_STRUCT_APPLYF32(f,_1,_2,_3,_4,_5,_6,_7,_8,_9,_10,_11,_12,_13,_14,_15,_16,_17,_18,_19,_20,_21,_22,_23,_24,_25,_26,_27,_28,_29,_30,_31,_32) f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13) f(_14) f(_15) f(_16) f(_17) f(_18) f(_19) f(_20) f(_21) f(_22) f(_23) f(_24) f(_25) f(_26) f(_27) f(_28) f(_29) f(_30) f(_31) f(_32)
+#define VISIT_STRUCT_APPLYF33(f,_1,_2,_3,_4,_5,_6,_7,_8,_9,_10,_11,_12,_13,_14,_15,_16,_17,_18,_19,_20,_21,_22,_23,_24,_25,_26,_27,_28,_29,_30,_31,_32,_33) f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13) f(_14) f(_15) f(_16) f(_17) f(_18) f(_19) f(_20) f(_21) f(_22) f(_23) f(_24) f(_25) f(_26) f(_27) f(_28) f(_29) f(_30) f(_31) f(_32) f(_33)
+#define VISIT_STRUCT_APPLYF34(f,_1,_2,_3,_4,_5,_6,_7,_8,_9,_10,_11,_12,_13,_14,_15,_16,_17,_18,_19,_20,_21,_22,_23,_24,_25,_26,_27,_28,_29,_30,_31,_32,_33,_34) f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13) f(_14) f(_15) f(_16) f(_17) f(_18) f(_19) f(_20) f(_21) f(_22) f(_23) f(_24) f(_25) f(_26) f(_27) f(_28) f(_29) f(_30) f(_31) f(_32) f(_33) f(_34)
+#define VISIT_STRUCT_APPLYF35(f,_1,_2,_3,_4,_5,_6,_7,_8,_9,_10,_11,_12,_13,_14,_15,_16,_17,_18,_19,_20,_21,_22,_23,_24,_25,_26,_27,_28,_29,_30,_31,_32,_33,_34,_35) f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13) f(_14) f(_15) f(_16) f(_17) f(_18) f(_19) f(_20) f(_21) f(_22) f(_23) f(_24) f(_25) f(_26) f(_27) f(_28) f(_29) f(_30) f(_31) f(_32) f(_33) f(_34) f(_35)
+#define VISIT_STRUCT_APPLYF36(f,_1,_2,_3,_4,_5,_6,_7,_8,_9,_10,_11,_12,_13,_14,_15,_16,_17,_18,_19,_20,_21,_22,_23,_24,_25,_26,_27,_28,_29,_30,_31,_32,_33,_34,_35,_36) f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13) f(_14) f(_15) f(_16) f(_17) f(_18) f(_19) f(_20) f(_21) f(_22) f(_23) f(_24) f(_25) f(_26) f(_27) f(_28) f(_29) f(_30) f(_31) f(_32) f(_33) f(_34) f(_35) f(_36)
+#define VISIT_STRUCT_APPLYF37(f,_1,_2,_3,_4,_5,_6,_7,_8,_9,_10,_11,_12,_13,_14,_15,_16,_17,_18,_19,_20,_21,_22,_23,_24,_25,_26,_27,_28,_29,_30,_31,_32,_33,_34,_35,_36,_37) f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13) f(_14) f(_15) f(_16) f(_17) f(_18) f(_19) f(_20) f(_21) f(_22) f(_23) f(_24) f(_25) f(_26) f(_27) f(_28) f(_29) f(_30) f(_31) f(_32) f(_33) f(_34) f(_35) f(_36) f(_37)
+#define VISIT_STRUCT_APPLYF38(f,_1,_2,_3,_4,_5,_6,_7,_8,_9,_10,_11,_12,_13,_14,_15,_16,_17,_18,_19,_20,_21,_22,_23,_24,_25,_26,_27,_28,_29,_30,_31,_32,_33,_34,_35,_36,_37,_38) f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13) f(_14) f(_15) f(_16) f(_17) f(_18) f(_19) f(_20) f(_21) f(_22) f(_23) f(_24) f(_25) f(_26) f(_27) f(_28) f(_29) f(_30) f(_31) f(_32) f(_33) f(_34) f(_35) f(_36) f(_37) f(_38)
+#define VISIT_STRUCT_APPLYF39(f,_1,_2,_3,_4,_5,_6,_7,_8,_9,_10,_11,_12,_13,_14,_15,_16,_17,_18,_19,_20,_21,_22,_23,_24,_25,_26,_27,_28,_29,_30,_31,_32,_33,_34,_35,_36,_37,_38,_39) f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13) f(_14) f(_15) f(_16) f(_17) f(_18) f(_19) f(_20) f(_21) f(_22) f(_23) f(_24) f(_25) f(_26) f(_27) f(_28) f(_29) f(_30) f(_31) f(_32) f(_33) f(_34) f(_35) f(_36) f(_37) f(_38) f(_39)
+#define VISIT_STRUCT_APPLYF40(f,_1,_2,_3,_4,_5,_6,_7,_8,_9,_10,_11,_12,_13,_14,_15,_16,_17,_18,_19,_20,_21,_22,_23,_24,_25,_26,_27,_28,_29,_30,_31,_32,_33,_34,_35,_36,_37,_38,_39,_40) f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13) f(_14) f(_15) f(_16) f(_17) f(_18) f(_19) f(_20) f(_21) f(_22) f(_23) f(_24) f(_25) f(_26) f(_27) f(_28) f(_29) f(_30) f(_31) f(_32) f(_33) f(_34) f(_35) f(_36) f(_37) f(_38) f(_39) f(_40)
+#define VISIT_STRUCT_APPLYF41(f,_1,_2,_3,_4,_5,_6,_7,_8,_9,_10,_11,_12,_13,_14,_15,_16,_17,_18,_19,_20,_21,_22,_23,_24,_25,_26,_27,_28,_29,_30,_31,_32,_33,_34,_35,_36,_37,_38,_39,_40,_41) f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13) f(_14) f(_15) f(_16) f(_17) f(_18) f(_19) f(_20) f(_21) f(_22) f(_23) f(_24) f(_25) f(_26) f(_27) f(_28) f(_29) f(_30) f(_31) f(_32) f(_33) f(_34) f(_35) f(_36) f(_37) f(_38) f(_39) f(_40) f(_41)
+#define VISIT_STRUCT_APPLYF42(f,_1,_2,_3,_4,_5,_6,_7,_8,_9,_10,_11,_12,_13,_14,_15,_16,_17,_18,_19,_20,_21,_22,_23,_24,_25,_26,_27,_28,_29,_30,_31,_32,_33,_34,_35,_36,_37,_38,_39,_40,_41,_42) f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13) f(_14) f(_15) f(_16) f(_17) f(_18) f(_19) f(_20) f(_21) f(_22) f(_23) f(_24) f(_25) f(_26) f(_27) f(_28) f(_29) f(_30) f(_31) f(_32) f(_33) f(_34) f(_35) f(_36) f(_37) f(_38) f(_39) f(_40) f(_41) f(_42)
+#define VISIT_STRUCT_APPLYF43(f,_1,_2,_3,_4,_5,_6,_7,_8,_9,_10,_11,_12,_13,_14,_15,_16,_17,_18,_19,_20,_21,_22,_23,_24,_25,_26,_27,_28,_29,_30,_31,_32,_33,_34,_35,_36,_37,_38,_39,_40,_41,_42,_43) f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13) f(_14) f(_15) f(_16) f(_17) f(_18) f(_19) f(_20) f(_21) f(_22) f(_23) f(_24) f(_25) f(_26) f(_27) f(_28) f(_29) f(_30) f(_31) f(_32) f(_33) f(_34) f(_35) f(_36) f(_37) f(_38) f(_39) f(_40) f(_41) f(_42) f(_43)
+#define VISIT_STRUCT_APPLYF44(f,_1,_2,_3,_4,_5,_6,_7,_8,_9,_10,_11,_12,_13,_14,_15,_16,_17,_18,_19,_20,_21,_22,_23,_24,_25,_26,_27,_28,_29,_30,_31,_32,_33,_34,_35,_36,_37,_38,_39,_40,_41,_42,_43,_44) f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13) f(_14) f(_15) f(_16) f(_17) f(_18) f(_19) f(_20) f(_21) f(_22) f(_23) f(_24) f(_25) f(_26) f(_27) f(_28) f(_29) f(_30) f(_31) f(_32) f(_33) f(_34) f(_35) f(_36) f(_37) f(_38) f(_39) f(_40) f(_41) f(_42) f(_43) f(_44)
+#define VISIT_STRUCT_APPLYF45(f,_1,_2,_3,_4,_5,_6,_7,_8,_9,_10,_11,_12,_13,_14,_15,_16,_17,_18,_19,_20,_21,_22,_23,_24,_25,_26,_27,_28,_29,_30,_31,_32,_33,_34,_35,_36,_37,_38,_39,_40,_41,_42,_43,_44,_45) f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13) f(_14) f(_15) f(_16) f(_17) f(_18) f(_19) f(_20) f(_21) f(_22) f(_23) f(_24) f(_25) f(_26) f(_27) f(_28) f(_29) f(_30) f(_31) f(_32) f(_33) f(_34) f(_35) f(_36) f(_37) f(_38) f(_39) f(_40) f(_41) f(_42) f(_43) f(_44) f(_45)
+#define VISIT_STRUCT_APPLYF46(f,_1,_2,_3,_4,_5,_6,_7,_8,_9,_10,_11,_12,_13,_14,_15,_16,_17,_18,_19,_20,_21,_22,_23,_24,_25,_26,_27,_28,_29,_30,_31,_32,_33,_34,_35,_36,_37,_38,_39,_40,_41,_42,_43,_44,_45,_46) f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13) f(_14) f(_15) f(_16) f(_17) f(_18) f(_19) f(_20) f(_21) f(_22) f(_23) f(_24) f(_25) f(_26) f(_27) f(_28) f(_29) f(_30) f(_31) f(_32) f(_33) f(_34) f(_35) f(_36) f(_37) f(_38) f(_39) f(_40) f(_41) f(_42) f(_43) f(_44) f(_45) f(_46)
+#define VISIT_STRUCT_APPLYF47(f,_1,_2,_3,_4,_5,_6,_7,_8,_9,_10,_11,_12,_13,_14,_15,_16,_17,_18,_19,_20,_21,_22,_23,_24,_25,_26,_27,_28,_29,_30,_31,_32,_33,_34,_35,_36,_37,_38,_39,_40,_41,_42,_43,_44,_45,_46,_47) f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13) f(_14) f(_15) f(_16) f(_17) f(_18) f(_19) f(_20) f(_21) f(_22) f(_23) f(_24) f(_25) f(_26) f(_27) f(_28) f(_29) f(_30) f(_31) f(_32) f(_33) f(_34) f(_35) f(_36) f(_37) f(_38) f(_39) f(_40) f(_41) f(_42) f(_43) f(_44) f(_45) f(_46) f(_47)
+#define VISIT_STRUCT_APPLYF48(f,_1,_2,_3,_4,_5,_6,_7,_8,_9,_10,_11,_12,_13,_14,_15,_16,_17,_18,_19,_20,_21,_22,_23,_24,_25,_26,_27,_28,_29,_30,_31,_32,_33,_34,_35,_36,_37,_38,_39,_40,_41,_42,_43,_44,_45,_46,_47,_48) f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13) f(_14) f(_15) f(_16) f(_17) f(_18) f(_19) f(_20) f(_21) f(_22) f(_23) f(_24) f(_25) f(_26) f(_27) f(_28) f(_29) f(_30) f(_31) f(_32) f(_33) f(_34) f(_35) f(_36) f(_37) f(_38) f(_39) f(_40) f(_41) f(_42) f(_43) f(_44) f(_45) f(_46) f(_47) f(_48)
+#define VISIT_STRUCT_APPLYF49(f,_1,_2,_3,_4,_5,_6,_7,_8,_9,_10,_11,_12,_13,_14,_15,_16,_17,_18,_19,_20,_21,_22,_23,_24,_25,_26,_27,_28,_29,_30,_31,_32,_33,_34,_35,_36,_37,_38,_39,_40,_41,_42,_43,_44,_45,_46,_47,_48,_49) f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13) f(_14) f(_15) f(_16) f(_17) f(_18) f(_19) f(_20) f(_21) f(_22) f(_23) f(_24) f(_25) f(_26) f(_27) f(_28) f(_29) f(_30) f(_31) f(_32) f(_33) f(_34) f(_35) f(_36) f(_37) f(_38) f(_39) f(_40) f(_41) f(_42) f(_43) f(_44) f(_45) f(_46) f(_47) f(_48) f(_49)
+#define VISIT_STRUCT_APPLYF50(f,_1,_2,_3,_4,_5,_6,_7,_8,_9,_10,_11,_12,_13,_14,_15,_16,_17,_18,_19,_20,_21,_22,_23,_24,_25,_26,_27,_28,_29,_30,_31,_32,_33,_34,_35,_36,_37,_38,_39,_40,_41,_42,_43,_44,_45,_46,_47,_48,_49,_50) f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13) f(_14) f(_15) f(_16) f(_17) f(_18) f(_19) f(_20) f(_21) f(_22) f(_23) f(_24) f(_25) f(_26) f(_27) f(_28) f(_29) f(_30) f(_31) f(_32) f(_33) f(_34) f(_35) f(_36) f(_37) f(_38) f(_39) f(_40) f(_41) f(_42) f(_43) f(_44) f(_45) f(_46) f(_47) f(_48) f(_49) f(_50)
+#define VISIT_STRUCT_APPLYF51(f,_1,_2,_3,_4,_5,_6,_7,_8,_9,_10,_11,_12,_13,_14,_15,_16,_17,_18,_19,_20,_21,_22,_23,_24,_25,_26,_27,_28,_29,_30,_31,_32,_33,_34,_35,_36,_37,_38,_39,_40,_41,_42,_43,_44,_45,_46,_47,_48,_49,_50,_51) f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13) f(_14) f(_15) f(_16) f(_17) f(_18) f(_19) f(_20) f(_21) f(_22) f(_23) f(_24) f(_25) f(_26) f(_27) f(_28) f(_29) f(_30) f(_31) f(_32) f(_33) f(_34) f(_35) f(_36) f(_37) f(_38) f(_39) f(_40) f(_41) f(_42) f(_43) f(_44) f(_45) f(_46) f(_47) f(_48) f(_49) f(_50) f(_51)
+#define VISIT_STRUCT_APPLYF52(f,_1,_2,_3,_4,_5,_6,_7,_8,_9,_10,_11,_12,_13,_14,_15,_16,_17,_18,_19,_20,_21,_22,_23,_24,_25,_26,_27,_28,_29,_30,_31,_32,_33,_34,_35,_36,_37,_38,_39,_40,_41,_42,_43,_44,_45,_46,_47,_48,_49,_50,_51,_52) f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13) f(_14) f(_15) f(_16) f(_17) f(_18) f(_19) f(_20) f(_21) f(_22) f(_23) f(_24) f(_25) f(_26) f(_27) f(_28) f(_29) f(_30) f(_31) f(_32) f(_33) f(_34) f(_35) f(_36) f(_37) f(_38) f(_39) f(_40) f(_41) f(_42) f(_43) f(_44) f(_45) f(_46) f(_47) f(_48) f(_49) f(_50) f(_51) f(_52)
+#define VISIT_STRUCT_APPLYF53(f,_1,_2,_3,_4,_5,_6,_7,_8,_9,_10,_11,_12,_13,_14,_15,_16,_17,_18,_19,_20,_21,_22,_23,_24,_25,_26,_27,_28,_29,_30,_31,_32,_33,_34,_35,_36,_37,_38,_39,_40,_41,_42,_43,_44,_45,_46,_47,_48,_49,_50,_51,_52,_53) f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13) f(_14) f(_15) f(_16) f(_17) f(_18) f(_19) f(_20) f(_21) f(_22) f(_23) f(_24) f(_25) f(_26) f(_27) f(_28) f(_29) f(_30) f(_31) f(_32) f(_33) f(_34) f(_35) f(_36) f(_37) f(_38) f(_39) f(_40) f(_41) f(_42) f(_43) f(_44) f(_45) f(_46) f(_47) f(_48) f(_49) f(_50) f(_51) f(_52) f(_53)
+#define VISIT_STRUCT_APPLYF54(f,_1,_2,_3,_4,_5,_6,_7,_8,_9,_10,_11,_12,_13,_14,_15,_16,_17,_18,_19,_20,_21,_22,_23,_24,_25,_26,_27,_28,_29,_30,_31,_32,_33,_34,_35,_36,_37,_38,_39,_40,_41,_42,_43,_44,_45,_46,_47,_48,_49,_50,_51,_52,_53,_54) f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13) f(_14) f(_15) f(_16) f(_17) f(_18) f(_19) f(_20) f(_21) f(_22) f(_23) f(_24) f(_25) f(_26) f(_27) f(_28) f(_29) f(_30) f(_31) f(_32) f(_33) f(_34) f(_35) f(_36) f(_37) f(_38) f(_39) f(_40) f(_41) f(_42) f(_43) f(_44) f(_45) f(_46) f(_47) f(_48) f(_49) f(_50) f(_51) f(_52) f(_53) f(_54)
+#define VISIT_STRUCT_APPLYF55(f,_1,_2,_3,_4,_5,_6,_7,_8,_9,_10,_11,_12,_13,_14,_15,_16,_17,_18,_19,_20,_21,_22,_23,_24,_25,_26,_27,_28,_29,_30,_31,_32,_33,_34,_35,_36,_37,_38,_39,_40,_41,_42,_43,_44,_45,_46,_47,_48,_49,_50,_51,_52,_53,_54,_55) f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13) f(_14) f(_15) f(_16) f(_17) f(_18) f(_19) f(_20) f(_21) f(_22) f(_23) f(_24) f(_25) f(_26) f(_27) f(_28) f(_29) f(_30) f(_31) f(_32) f(_33) f(_34) f(_35) f(_36) f(_37) f(_38) f(_39) f(_40) f(_41) f(_42) f(_43) f(_44) f(_45) f(_46) f(_47) f(_48) f(_49) f(_50) f(_51) f(_52) f(_53) f(_54) f(_55)
+#define VISIT_STRUCT_APPLYF56(f,_1,_2,_3,_4,_5,_6,_7,_8,_9,_10,_11,_12,_13,_14,_15,_16,_17,_18,_19,_20,_21,_22,_23,_24,_25,_26,_27,_28,_29,_30,_31,_32,_33,_34,_35,_36,_37,_38,_39,_40,_41,_42,_43,_44,_45,_46,_47,_48,_49,_50,_51,_52,_53,_54,_55,_56) f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13) f(_14) f(_15) f(_16) f(_17) f(_18) f(_19) f(_20) f(_21) f(_22) f(_23) f(_24) f(_25) f(_26) f(_27) f(_28) f(_29) f(_30) f(_31) f(_32) f(_33) f(_34) f(_35) f(_36) f(_37) f(_38) f(_39) f(_40) f(_41) f(_42) f(_43) f(_44) f(_45) f(_46) f(_47) f(_48) f(_49) f(_50) f(_51) f(_52) f(_53) f(_54) f(_55) f(_56)
+#define VISIT_STRUCT_APPLYF57(f,_1,_2,_3,_4,_5,_6,_7,_8,_9,_10,_11,_12,_13,_14,_15,_16,_17,_18,_19,_20,_21,_22,_23,_24,_25,_26,_27,_28,_29,_30,_31,_32,_33,_34,_35,_36,_37,_38,_39,_40,_41,_42,_43,_44,_45,_46,_47,_48,_49,_50,_51,_52,_53,_54,_55,_56,_57) f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13) f(_14) f(_15) f(_16) f(_17) f(_18) f(_19) f(_20) f(_21) f(_22) f(_23) f(_24) f(_25) f(_26) f(_27) f(_28) f(_29) f(_30) f(_31) f(_32) f(_33) f(_34) f(_35) f(_36) f(_37) f(_38) f(_39) f(_40) f(_41) f(_42) f(_43) f(_44) f(_45) f(_46) f(_47) f(_48) f(_49) f(_50) f(_51) f(_52) f(_53) f(_54) f(_55) f(_56) f(_57)
+#define VISIT_STRUCT_APPLYF58(f,_1,_2,_3,_4,_5,_6,_7,_8,_9,_10,_11,_12,_13,_14,_15,_16,_17,_18,_19,_20,_21,_22,_23,_24,_25,_26,_27,_28,_29,_30,_31,_32,_33,_34,_35,_36,_37,_38,_39,_40,_41,_42,_43,_44,_45,_46,_47,_48,_49,_50,_51,_52,_53,_54,_55,_56,_57,_58) f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13) f(_14) f(_15) f(_16) f(_17) f(_18) f(_19) f(_20) f(_21) f(_22) f(_23) f(_24) f(_25) f(_26) f(_27) f(_28) f(_29) f(_30) f(_31) f(_32) f(_33) f(_34) f(_35) f(_36) f(_37) f(_38) f(_39) f(_40) f(_41) f(_42) f(_43) f(_44) f(_45) f(_46) f(_47) f(_48) f(_49) f(_50) f(_51) f(_52) f(_53) f(_54) f(_55) f(_56) f(_57) f(_58)
+#define VISIT_STRUCT_APPLYF59(f,_1,_2,_3,_4,_5,_6,_7,_8,_9,_10,_11,_12,_13,_14,_15,_16,_17,_18,_19,_20,_21,_22,_23,_24,_25,_26,_27,_28,_29,_30,_31,_32,_33,_34,_35,_36,_37,_38,_39,_40,_41,_42,_43,_44,_45,_46,_47,_48,_49,_50,_51,_52,_53,_54,_55,_56,_57,_58,_59) f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13) f(_14) f(_15) f(_16) f(_17) f(_18) f(_19) f(_20) f(_21) f(_22) f(_23) f(_24) f(_25) f(_26) f(_27) f(_28) f(_29) f(_30) f(_31) f(_32) f(_33) f(_34) f(_35) f(_36) f(_37) f(_38) f(_39) f(_40) f(_41) f(_42) f(_43) f(_44) f(_45) f(_46) f(_47) f(_48) f(_49) f(_50) f(_51) f(_52) f(_53) f(_54) f(_55) f(_56) f(_57) f(_58) f(_59)
+#define VISIT_STRUCT_APPLYF60(f,_1,_2,_3,_4,_5,_6,_7,_8,_9,_10,_11,_12,_13,_14,_15,_16,_17,_18,_19,_20,_21,_22,_23,_24,_25,_26,_27,_28,_29,_30,_31,_32,_33,_34,_35,_36,_37,_38,_39,_40,_41,_42,_43,_44,_45,_46,_47,_48,_49,_50,_51,_52,_53,_54,_55,_56,_57,_58,_59,_60) f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13) f(_14) f(_15) f(_16) f(_17) f(_18) f(_19) f(_20) f(_21) f(_22) f(_23) f(_24) f(_25) f(_26) f(_27) f(_28) f(_29) f(_30) f(_31) f(_32) f(_33) f(_34) f(_35) f(_36) f(_37) f(_38) f(_39) f(_40) f(_41) f(_42) f(_43) f(_44) f(_45) f(_46) f(_47) f(_48) f(_49) f(_50) f(_51) f(_52) f(_53) f(_54) f(_55) f(_56) f(_57) f(_58) f(_59) f(_60)
+#define VISIT_STRUCT_APPLYF61(f,_1,_2,_3,_4,_5,_6,_7,_8,_9,_10,_11,_12,_13,_14,_15,_16,_17,_18,_19,_20,_21,_22,_23,_24,_25,_26,_27,_28,_29,_30,_31,_32,_33,_34,_35,_36,_37,_38,_39,_40,_41,_42,_43,_44,_45,_46,_47,_48,_49,_50,_51,_52,_53,_54,_55,_56,_57,_58,_59,_60,_61) f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13) f(_14) f(_15) f(_16) f(_17) f(_18) f(_19) f(_20) f(_21) f(_22) f(_23) f(_24) f(_25) f(_26) f(_27) f(_28) f(_29) f(_30) f(_31) f(_32) f(_33) f(_34) f(_35) f(_36) f(_37) f(_38) f(_39) f(_40) f(_41) f(_42) f(_43) f(_44) f(_45) f(_46) f(_47) f(_48) f(_49) f(_50) f(_51) f(_52) f(_53) f(_54) f(_55) f(_56) f(_57) f(_58) f(_59) f(_60) f(_61)
+#define VISIT_STRUCT_APPLYF62(f,_1,_2,_3,_4,_5,_6,_7,_8,_9,_10,_11,_12,_13,_14,_15,_16,_17,_18,_19,_20,_21,_22,_23,_24,_25,_26,_27,_28,_29,_30,_31,_32,_33,_34,_35,_36,_37,_38,_39,_40,_41,_42,_43,_44,_45,_46,_47,_48,_49,_50,_51,_52,_53,_54,_55,_56,_57,_58,_59,_60,_61,_62) f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13) f(_14) f(_15) f(_16) f(_17) f(_18) f(_19) f(_20) f(_21) f(_22) f(_23) f(_24) f(_25) f(_26) f(_27) f(_28) f(_29) f(_30) f(_31) f(_32) f(_33) f(_34) f(_35) f(_36) f(_37) f(_38) f(_39) f(_40) f(_41) f(_42) f(_43) f(_44) f(_45) f(_46) f(_47) f(_48) f(_49) f(_50) f(_51) f(_52) f(_53) f(_54) f(_55) f(_56) f(_57) f(_58) f(_59) f(_60) f(_61) f(_62)
+#define VISIT_STRUCT_APPLYF63(f,_1,_2,_3,_4,_5,_6,_7,_8,_9,_10,_11,_12,_13,_14,_15,_16,_17,_18,_19,_20,_21,_22,_23,_24,_25,_26,_27,_28,_29,_30,_31,_32,_33,_34,_35,_36,_37,_38,_39,_40,_41,_42,_43,_44,_45,_46,_47,_48,_49,_50,_51,_52,_53,_54,_55,_56,_57,_58,_59,_60,_61,_62,_63) f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13) f(_14) f(_15) f(_16) f(_17) f(_18) f(_19) f(_20) f(_21) f(_22) f(_23) f(_24) f(_25) f(_26) f(_27) f(_28) f(_29) f(_30) f(_31) f(_32) f(_33) f(_34) f(_35) f(_36) f(_37) f(_38) f(_39) f(_40) f(_41) f(_42) f(_43) f(_44) f(_45) f(_46) f(_47) f(_48) f(_49) f(_50) f(_51) f(_52) f(_53) f(_54) f(_55) f(_56) f(_57) f(_58) f(_59) f(_60) f(_61) f(_62) f(_63)
+#define VISIT_STRUCT_APPLYF64(f,_1,_2,_3,_4,_5,_6,_7,_8,_9,_10,_11,_12,_13,_14,_15,_16,_17,_18,_19,_20,_21,_22,_23,_24,_25,_26,_27,_28,_29,_30,_31,_32,_33,_34,_35,_36,_37,_38,_39,_40,_41,_42,_43,_44,_45,_46,_47,_48,_49,_50,_51,_52,_53,_54,_55,_56,_57,_58,_59,_60,_61,_62,_63,_64) f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13) f(_14) f(_15) f(_16) f(_17) f(_18) f(_19) f(_20) f(_21) f(_22) f(_23) f(_24) f(_25) f(_26) f(_27) f(_28) f(_29) f(_30) f(_31) f(_32) f(_33) f(_34) f(_35) f(_36) f(_37) f(_38) f(_39) f(_40) f(_41) f(_42) f(_43) f(_44) f(_45) f(_46) f(_47) f(_48) f(_49) f(_50) f(_51) f(_52) f(_53) f(_54) f(_55) f(_56) f(_57) f(_58) f(_59) f(_60) f(_61) f(_62) f(_63) f(_64)
+#define VISIT_STRUCT_APPLYF65(f,_1,_2,_3,_4,_5,_6,_7,_8,_9,_10,_11,_12,_13,_14,_15,_16,_17,_18,_19,_20,_21,_22,_23,_24,_25,_26,_27,_28,_29,_30,_31,_32,_33,_34,_35,_36,_37,_38,_39,_40,_41,_42,_43,_44,_45,_46,_47,_48,_49,_50,_51,_52,_53,_54,_55,_56,_57,_58,_59,_60,_61,_62,_63,_64,_65) f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13) f(_14) f(_15) f(_16) f(_17) f(_18) f(_19) f(_20) f(_21) f(_22) f(_23) f(_24) f(_25) f(_26) f(_27) f(_28) f(_29) f(_30) f(_31) f(_32) f(_33) f(_34) f(_35) f(_36) f(_37) f(_38) f(_39) f(_40) f(_41) f(_42) f(_43) f(_44) f(_45) f(_46) f(_47) f(_48) f(_49) f(_50) f(_51) f(_52) f(_53) f(_54) f(_55) f(_56) f(_57) f(_58) f(_59) f(_60) f(_61) f(_62) f(_63) f(_64) f(_65)
+#define VISIT_STRUCT_APPLYF66(f,_1,_2,_3,_4,_5,_6,_7,_8,_9,_10,_11,_12,_13,_14,_15,_16,_17,_18,_19,_20,_21,_22,_23,_24,_25,_26,_27,_28,_29,_30,_31,_32,_33,_34,_35,_36,_37,_38,_39,_40,_41,_42,_43,_44,_45,_46,_47,_48,_49,_50,_51,_52,_53,_54,_55,_56,_57,_58,_59,_60,_61,_62,_63,_64,_65,_66) f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13) f(_14) f(_15) f(_16) f(_17) f(_18) f(_19) f(_20) f(_21) f(_22) f(_23) f(_24) f(_25) f(_26) f(_27) f(_28) f(_29) f(_30) f(_31) f(_32) f(_33) f(_34) f(_35) f(_36) f(_37) f(_38) f(_39) f(_40) f(_41) f(_42) f(_43) f(_44) f(_45) f(_46) f(_47) f(_48) f(_49) f(_50) f(_51) f(_52) f(_53) f(_54) f(_55) f(_56) f(_57) f(_58) f(_59) f(_60) f(_61) f(_62) f(_63) f(_64) f(_65) f(_66)
+#define VISIT_STRUCT_APPLYF67(f,_1,_2,_3,_4,_5,_6,_7,_8,_9,_10,_11,_12,_13,_14,_15,_16,_17,_18,_19,_20,_21,_22,_23,_24,_25,_26,_27,_28,_29,_30,_31,_32,_33,_34,_35,_36,_37,_38,_39,_40,_41,_42,_43,_44,_45,_46,_47,_48,_49,_50,_51,_52,_53,_54,_55,_56,_57,_58,_59,_60,_61,_62,_63,_64,_65,_66,_67) f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13) f(_14) f(_15) f(_16) f(_17) f(_18) f(_19) f(_20) f(_21) f(_22) f(_23) f(_24) f(_25) f(_26) f(_27) f(_28) f(_29) f(_30) f(_31) f(_32) f(_33) f(_34) f(_35) f(_36) f(_37) f(_38) f(_39) f(_40) f(_41) f(_42) f(_43) f(_44) f(_45) f(_46) f(_47) f(_48) f(_49) f(_50) f(_51) f(_52) f(_53) f(_54) f(_55) f(_56) f(_57) f(_58) f(_59) f(_60) f(_61) f(_62) f(_63) f(_64) f(_65) f(_66) f(_67)
+#define VISIT_STRUCT_APPLYF68(f,_1,_2,_3,_4,_5,_6,_7,_8,_9,_10,_11,_12,_13,_14,_15,_16,_17,_18,_19,_20,_21,_22,_23,_24,_25,_26,_27,_28,_29,_30,_31,_32,_33,_34,_35,_36,_37,_38,_39,_40,_41,_42,_43,_44,_45,_46,_47,_48,_49,_50,_51,_52,_53,_54,_55,_56,_57,_58,_59,_60,_61,_62,_63,_64,_65,_66,_67,_68) f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13) f(_14) f(_15) f(_16) f(_17) f(_18) f(_19) f(_20) f(_21) f(_22) f(_23) f(_24) f(_25) f(_26) f(_27) f(_28) f(_29) f(_30) f(_31) f(_32) f(_33) f(_34) f(_35) f(_36) f(_37) f(_38) f(_39) f(_40) f(_41) f(_42) f(_43) f(_44) f(_45) f(_46) f(_47) f(_48) f(_49) f(_50) f(_51) f(_52) f(_53) f(_54) f(_55) f(_56) f(_57) f(_58) f(_59) f(_60) f(_61) f(_62) f(_63) f(_64) f(_65) f(_66) f(_67) f(_68)
+#define VISIT_STRUCT_APPLYF69(f,_1,_2,_3,_4,_5,_6,_7,_8,_9,_10,_11,_12,_13,_14,_15,_16,_17,_18,_19,_20,_21,_22,_23,_24,_25,_26,_27,_28,_29,_30,_31,_32,_33,_34,_35,_36,_37,_38,_39,_40,_41,_42,_43,_44,_45,_46,_47,_48,_49,_50,_51,_52,_53,_54,_55,_56,_57,_58,_59,_60,_61,_62,_63,_64,_65,_66,_67,_68,_69) f(_1) f(_2) f(_3) f(_4) f(_5) f(_6) f(_7) f(_8) f(_9) f(_10) f(_11) f(_12) f(_13) f(_14) f(_15) f(_16) f(_17) f(_18) f(_19) f(_20) f(_21) f(_22) f(_23) f(_24) f(_25) f(_26) f(_27) f(_28) f(_29) f(_30) f(_31) f(_32) f(_33) f(_34) f(_35) f(_36) f(_37) f(_38) f(_39) f(_40) f(_41) f(_42) f(_43) f(_44) f(_45) f(_46) f(_47) f(_48) f(_49) f(_50) f(_51) f(_52) f(_53) f(_54) f(_55) f(_56) f(_57) f(_58) f(_59) f(_60) f(_61) f(_62) f(_63) f(_64) f(_65) f(_66) f(_67) f(_68) f(_69)
 
 #define VISIT_STRUCT_APPLY_F_(M, ...) VISIT_STRUCT_EXPAND(M(__VA_ARGS__))
-#define VISIT_STRUCT_PP_MAP(f, ...)                                                      \
-  VISIT_STRUCT_EXPAND(VISIT_STRUCT_APPLY_F_(                                             \
-      VISIT_STRUCT_CONCAT(VISIT_STRUCT_APPLYF, VISIT_STRUCT_PP_NARG(__VA_ARGS__)), f,    \
-      __VA_ARGS__))
+#define VISIT_STRUCT_PP_MAP(f, ...) VISIT_STRUCT_EXPAND(VISIT_STRUCT_APPLY_F_(VISIT_STRUCT_CONCAT(VISIT_STRUCT_APPLYF, VISIT_STRUCT_PP_NARG(__VA_ARGS__)), f, __VA_ARGS__))
 
 /*** End generated code ***/
 
@@ -764,125 +410,129 @@ static VISIT_STRUCT_CONSTEXPR const int max_visitable_members = 69;
  * These macros are used with VISIT_STRUCT_PP_MAP
  */
 
-#define VISIT_STRUCT_FIELD_COUNT(MEMBER_NAME) +1
+#define VISIT_STRUCT_FIELD_COUNT(MEMBER_NAME)                                                      \
+  + 1
 
-#define VISIT_STRUCT_MEMBER_HELPER(MEMBER_NAME)                                          \
+#define VISIT_STRUCT_MEMBER_HELPER(MEMBER_NAME)                                                    \
   std::forward<V>(visitor)(#MEMBER_NAME, std::forward<S>(struct_instance).MEMBER_NAME);
 
-#define VISIT_STRUCT_MEMBER_HELPER_PTR(MEMBER_NAME)                                      \
+#define VISIT_STRUCT_MEMBER_HELPER_PTR(MEMBER_NAME)                                                \
   std::forward<V>(visitor)(#MEMBER_NAME, &this_type::MEMBER_NAME);
 
-#define VISIT_STRUCT_MEMBER_HELPER_TYPE(MEMBER_NAME)                                     \
-  std::forward<V>(visitor)(#MEMBER_NAME,                                                 \
-                           visit_struct::type_c<decltype(this_type::MEMBER_NAME)>{});
+#define VISIT_STRUCT_MEMBER_HELPER_TYPE(MEMBER_NAME)                                               \
+  std::forward<V>(visitor)(#MEMBER_NAME, visit_struct::type_c<decltype(this_type::MEMBER_NAME)>{});
 
-#define VISIT_STRUCT_MEMBER_HELPER_ACC(MEMBER_NAME)                                      \
-  std::forward<V>(visitor)(#MEMBER_NAME,                                                 \
-                           visit_struct::accessor<decltype(&this_type::MEMBER_NAME),     \
-                                                  &this_type::MEMBER_NAME>{});
+#define VISIT_STRUCT_MEMBER_HELPER_ACC(MEMBER_NAME)                                                \
+  std::forward<V>(visitor)(#MEMBER_NAME, visit_struct::accessor<decltype(&this_type::MEMBER_NAME), &this_type::MEMBER_NAME>{});
 
-#define VISIT_STRUCT_MEMBER_HELPER_PAIR(MEMBER_NAME)                                     \
-  std::forward<V>(visitor)(#MEMBER_NAME, std::forward<S1>(s1).MEMBER_NAME,               \
-                           std::forward<S2>(s2).MEMBER_NAME);
 
-#define VISIT_STRUCT_MAKE_GETTERS(MEMBER_NAME)                                           \
-  template <typename S>                                                                  \
-  static VISIT_STRUCT_CONSTEXPR auto get_value(                                          \
-      std::integral_constant<int, fields_enum::MEMBER_NAME>, S &&s)                      \
-      ->decltype((std::forward<S>(s).MEMBER_NAME)) {                                     \
-    return std::forward<S>(s).MEMBER_NAME;                                               \
-  }                                                                                      \
-                                                                                         \
-  static VISIT_STRUCT_CONSTEXPR auto get_name(                                           \
-      std::integral_constant<int, fields_enum::MEMBER_NAME>)                             \
-      ->decltype(#MEMBER_NAME) {                                                         \
-    return #MEMBER_NAME;                                                                 \
-  }                                                                                      \
-                                                                                         \
-  static VISIT_STRUCT_CONSTEXPR auto get_pointer(                                        \
-      std::integral_constant<int, fields_enum::MEMBER_NAME>)                             \
-      ->decltype(&this_type::MEMBER_NAME) {                                              \
-    return &this_type::MEMBER_NAME;                                                      \
-  }                                                                                      \
-                                                                                         \
-  static VISIT_STRUCT_CONSTEXPR auto get_accessor(                                       \
-      std::integral_constant<int, fields_enum::MEMBER_NAME>)                             \
-      ->visit_struct::accessor<decltype(&this_type::MEMBER_NAME),                        \
-                               &this_type::MEMBER_NAME> {                                \
-    return {};                                                                           \
-  }                                                                                      \
-                                                                                         \
-  static auto type_at(std::integral_constant<int, fields_enum::MEMBER_NAME>)             \
-      ->visit_struct::type_c<decltype(this_type::MEMBER_NAME)>;
+#define VISIT_STRUCT_MEMBER_HELPER_PAIR(MEMBER_NAME)                                               \
+  std::forward<V>(visitor)(#MEMBER_NAME, std::forward<S1>(s1).MEMBER_NAME, std::forward<S2>(s2).MEMBER_NAME);
+
+#define VISIT_STRUCT_MAKE_GETTERS(MEMBER_NAME)                                                     \
+  template <typename S>                                                                            \
+  static VISIT_STRUCT_CONSTEXPR auto                                                               \
+    get_value(std::integral_constant<int, fields_enum::MEMBER_NAME>, S && s) ->                    \
+    decltype((std::forward<S>(s).MEMBER_NAME)) {                                                   \
+    return std::forward<S>(s).MEMBER_NAME;                                                         \
+  }                                                                                                \
+                                                                                                   \
+  static VISIT_STRUCT_CONSTEXPR auto                                                               \
+    get_name(std::integral_constant<int, fields_enum::MEMBER_NAME>) ->                             \
+      decltype(#MEMBER_NAME) {                                                                     \
+    return #MEMBER_NAME;                                                                           \
+  }                                                                                                \
+                                                                                                   \
+  static VISIT_STRUCT_CONSTEXPR auto                                                               \
+    get_pointer(std::integral_constant<int, fields_enum::MEMBER_NAME>) ->                          \
+      decltype(&this_type::MEMBER_NAME) {                                                          \
+    return &this_type::MEMBER_NAME;                                                                \
+  }                                                                                                \
+                                                                                                   \
+  static VISIT_STRUCT_CONSTEXPR auto                                                               \
+    get_accessor(std::integral_constant<int, fields_enum::MEMBER_NAME>) ->                         \
+      visit_struct::accessor<decltype(&this_type::MEMBER_NAME), &this_type::MEMBER_NAME > {        \
+    return {};                                                                                     \
+  }                                                                                                \
+                                                                                                   \
+  static auto                                                                                      \
+    type_at(std::integral_constant<int, fields_enum::MEMBER_NAME>) ->                              \
+      visit_struct::type_c<decltype(this_type::MEMBER_NAME)>;
+
 
 // This macro specializes the trait, provides "apply" method which does the work.
-// Below, template parameter S should always be the same as STRUCT_NAME modulo const and
-// reference. The interface defined above ensures that STRUCT_NAME is clean_t<S>
-// basically.
+// Below, template parameter S should always be the same as STRUCT_NAME modulo const and reference.
+// The interface defined above ensures that STRUCT_NAME is clean_t<S> basically.
 //
 // Note: The code to make the indexed getters work is more convoluted than I'd like.
-//       PP_MAP doesn't give you the index of each member. And rather than hack it so that
-//       it will do that, what we do instead is: 1: Declare an enum `field_enum` in the
-//       scope of visitable, which maps names to indices.
+//       PP_MAP doesn't give you the index of each member. And rather than hack it so that it will
+//       do that, what we do instead is:
+//       1: Declare an enum `field_enum` in the scope of visitable, which maps names to indices.
 //          This gives an easy way for the macro to get the index from the name token.
-//       2: Intuitively we'd like to use template partial specialization to make indices
-//       map to
-//          values, and have a new specialization for each member. But, specializations
-//          can only be made at namespace scope. So to keep things tidy and contained
-//          within this trait, we use tag dispatch with std::integral_constant<int>
-//          instead.
+//       2: Intuitively we'd like to use template partial specialization to make indices map to
+//          values, and have a new specialization for each member. But, specializations can only
+//          be made at namespace scope. So to keep things tidy and contained within this trait,
+//          we use tag dispatch with std::integral_constant<int> instead.
 
-#define VISITABLE_STRUCT(STRUCT_NAME, ...)                                               \
-  namespace visit_struct {                                                               \
-  namespace traits {                                                                     \
-                                                                                         \
-  template <> struct visitable<STRUCT_NAME, void> {                                      \
-                                                                                         \
-    using this_type = STRUCT_NAME;                                                       \
-                                                                                         \
-    static VISIT_STRUCT_CONSTEXPR auto get_name() -> decltype(#STRUCT_NAME) {            \
-      return #STRUCT_NAME;                                                               \
-    }                                                                                    \
-                                                                                         \
-    static VISIT_STRUCT_CONSTEXPR const std::size_t field_count =                        \
-        0 VISIT_STRUCT_PP_MAP(VISIT_STRUCT_FIELD_COUNT, __VA_ARGS__);                    \
-                                                                                         \
-    template <typename V, typename S>                                                    \
-    VISIT_STRUCT_CXX14_CONSTEXPR static void apply(V &&visitor, S &&struct_instance) {   \
-      VISIT_STRUCT_PP_MAP(VISIT_STRUCT_MEMBER_HELPER, __VA_ARGS__)                       \
-    }                                                                                    \
-                                                                                         \
-    template <typename V, typename S1, typename S2>                                      \
-    VISIT_STRUCT_CXX14_CONSTEXPR static void apply(V &&visitor, S1 &&s1, S2 &&s2) {      \
-      VISIT_STRUCT_PP_MAP(VISIT_STRUCT_MEMBER_HELPER_PAIR, __VA_ARGS__)                  \
-    }                                                                                    \
-                                                                                         \
-    template <typename V>                                                                \
-    VISIT_STRUCT_CXX14_CONSTEXPR static void visit_pointers(V &&visitor) {               \
-      VISIT_STRUCT_PP_MAP(VISIT_STRUCT_MEMBER_HELPER_PTR, __VA_ARGS__)                   \
-    }                                                                                    \
-                                                                                         \
-    template <typename V>                                                                \
-    VISIT_STRUCT_CXX14_CONSTEXPR static void visit_types(V &&visitor) {                  \
-      VISIT_STRUCT_PP_MAP(VISIT_STRUCT_MEMBER_HELPER_TYPE, __VA_ARGS__)                  \
-    }                                                                                    \
-                                                                                         \
-    template <typename V>                                                                \
-    VISIT_STRUCT_CXX14_CONSTEXPR static void visit_accessors(V &&visitor) {              \
-      VISIT_STRUCT_PP_MAP(VISIT_STRUCT_MEMBER_HELPER_ACC, __VA_ARGS__)                   \
-    }                                                                                    \
-                                                                                         \
-    struct fields_enum {                                                                 \
-      enum index { __VA_ARGS__ };                                                        \
-    };                                                                                   \
-                                                                                         \
-    VISIT_STRUCT_PP_MAP(VISIT_STRUCT_MAKE_GETTERS, __VA_ARGS__)                          \
-                                                                                         \
-    static VISIT_STRUCT_CONSTEXPR const bool value = true;                               \
-  };                                                                                     \
-  }                                                                                      \
-  }                                                                                      \
-  static_assert(true, "")
+#define VISITABLE_STRUCT(STRUCT_NAME, ...)                                                         \
+namespace visit_struct {                                                                           \
+namespace traits {                                                                                 \
+                                                                                                   \
+template <>                                                                                        \
+struct visitable<STRUCT_NAME, void> {                                                              \
+                                                                                                   \
+  using this_type = STRUCT_NAME;                                                                   \
+                                                                                                   \
+  static VISIT_STRUCT_CONSTEXPR auto get_name()                                                    \
+    -> decltype(#STRUCT_NAME) {                                                                    \
+    return #STRUCT_NAME;                                                                           \
+  }                                                                                                \
+                                                                                                   \
+  static VISIT_STRUCT_CONSTEXPR const std::size_t field_count = 0                                  \
+    VISIT_STRUCT_PP_MAP(VISIT_STRUCT_FIELD_COUNT, __VA_ARGS__);                                    \
+                                                                                                   \
+  template <typename V, typename S>                                                                \
+  VISIT_STRUCT_CXX14_CONSTEXPR static void apply(V && visitor, S && struct_instance)               \
+  {                                                                                                \
+    VISIT_STRUCT_PP_MAP(VISIT_STRUCT_MEMBER_HELPER, __VA_ARGS__)                                   \
+  }                                                                                                \
+                                                                                                   \
+  template <typename V, typename S1, typename S2>                                                  \
+  VISIT_STRUCT_CXX14_CONSTEXPR static void apply(V && visitor, S1 && s1, S2 && s2)                 \
+  {                                                                                                \
+    VISIT_STRUCT_PP_MAP(VISIT_STRUCT_MEMBER_HELPER_PAIR, __VA_ARGS__)                              \
+  }                                                                                                \
+                                                                                                   \
+  template <typename V>                                                                            \
+  VISIT_STRUCT_CXX14_CONSTEXPR static void visit_pointers(V && visitor)                            \
+  {                                                                                                \
+    VISIT_STRUCT_PP_MAP(VISIT_STRUCT_MEMBER_HELPER_PTR, __VA_ARGS__)                               \
+  }                                                                                                \
+                                                                                                   \
+  template <typename V>                                                                            \
+  VISIT_STRUCT_CXX14_CONSTEXPR static void visit_types(V && visitor)                               \
+  {                                                                                                \
+    VISIT_STRUCT_PP_MAP(VISIT_STRUCT_MEMBER_HELPER_TYPE, __VA_ARGS__)                              \
+  }                                                                                                \
+                                                                                                   \
+  template <typename V>                                                                            \
+  VISIT_STRUCT_CXX14_CONSTEXPR static void visit_accessors(V && visitor)                           \
+  {                                                                                                \
+    VISIT_STRUCT_PP_MAP(VISIT_STRUCT_MEMBER_HELPER_ACC, __VA_ARGS__)                               \
+  }                                                                                                \
+                                                                                                   \
+  struct fields_enum {                                                                             \
+    enum index { __VA_ARGS__ };                                                                    \
+  };                                                                                               \
+                                                                                                   \
+  VISIT_STRUCT_PP_MAP(VISIT_STRUCT_MAKE_GETTERS, __VA_ARGS__)                                      \
+                                                                                                   \
+  static VISIT_STRUCT_CONSTEXPR const bool value = true;                                           \
+};                                                                                                 \
+                                                                                                   \
+}                                                                                                  \
+}                                                                                                  \
+static_assert(true, "")
 
 } // end namespace visit_struct
 
@@ -894,11 +544,11 @@ static VISIT_STRUCT_CONSTEXPR const int max_visitable_members = 69;
 // | |  | | (_| | (_| | | (__  | |____| | | | |_| | | | | | | | |____|_|   |_|
 // |_|  |_|\__,_|\__, |_|\___| |______|_| |_|\__,_|_| |_| |_|  \_____|
 //                __/ | https://github.com/Neargye/magic_enum
-//               |___/  version 0.7.3
+//               |___/  version 0.9.6
 //
 // Licensed under the MIT License <http://opensource.org/licenses/MIT>.
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2019 - 2022 Daniil Goncharov <neargye@gmail.com>.
+// Copyright (c) 2019 - 2024 Daniil Goncharov <neargye@gmail.com>.
 //
 // Permission is hereby  granted, free of charge, to any  person obtaining a copy
 // of this software and associated  documentation files (the "Software"), to deal
@@ -922,47 +572,61 @@ static VISIT_STRUCT_CONSTEXPR const int max_visitable_members = 69;
 #define NEARGYE_MAGIC_ENUM_HPP
 
 #define MAGIC_ENUM_VERSION_MAJOR 0
-#define MAGIC_ENUM_VERSION_MINOR 7
-#define MAGIC_ENUM_VERSION_PATCH 3
+#define MAGIC_ENUM_VERSION_MINOR 9
+#define MAGIC_ENUM_VERSION_PATCH 6
 
+#ifndef MAGIC_ENUM_USE_STD_MODULE
 #include <array>
-#include <cassert>
-#include <cstdint>
 #include <cstddef>
-#include <iosfwd>
+#include <cstdint>
+#include <functional>
 #include <limits>
 #include <type_traits>
 #include <utility>
-#include <variant>
+#endif
 
 #if defined(MAGIC_ENUM_CONFIG_FILE)
-#include MAGIC_ENUM_CONFIG_FILE
+#  include MAGIC_ENUM_CONFIG_FILE
 #endif
 
+#ifndef MAGIC_ENUM_USE_STD_MODULE
 #if !defined(MAGIC_ENUM_USING_ALIAS_OPTIONAL)
-#include <optional>
+#  include <optional>
 #endif
 #if !defined(MAGIC_ENUM_USING_ALIAS_STRING)
-#include <string>
+#  include <string>
 #endif
 #if !defined(MAGIC_ENUM_USING_ALIAS_STRING_VIEW)
-#include <string_view>
+#  include <string_view>
+#endif
+#endif
+
+#if defined(MAGIC_ENUM_NO_ASSERT)
+#  define MAGIC_ENUM_ASSERT(...) static_cast<void>(0)
+#elif !defined(MAGIC_ENUM_ASSERT)
+#  include <cassert>
+#  define MAGIC_ENUM_ASSERT(...) assert((__VA_ARGS__))
 #endif
 
 #if defined(__clang__)
 #  pragma clang diagnostic push
+#  pragma clang diagnostic ignored "-Wunknown-warning-option"
+#  pragma clang diagnostic ignored "-Wenum-constexpr-conversion"
+#  pragma clang diagnostic ignored "-Wuseless-cast" // suppresses 'static_cast<char_type>('\0')' for char_type = char (common on Linux).
 #elif defined(__GNUC__)
 #  pragma GCC diagnostic push
 #  pragma GCC diagnostic ignored "-Wmaybe-uninitialized" // May be used uninitialized 'return {};'.
+#  pragma GCC diagnostic ignored "-Wuseless-cast" // suppresses 'static_cast<char_type>('\0')' for char_type = char (common on Linux).
 #elif defined(_MSC_VER)
 #  pragma warning(push)
-#  pragma warning(disable : 26495) // Variable 'static_string<N>::chars_' is uninitialized.
+#  pragma warning(disable : 26495) // Variable 'static_str<N>::chars_' is uninitialized.
 #  pragma warning(disable : 28020) // Arithmetic overflow: Using operator '-' on a 4 byte value and then casting the result to a 8 byte value.
 #  pragma warning(disable : 26451) // The expression '0<=_Param_(1)&&_Param_(1)<=1-1' is not true at this call.
+#  pragma warning(disable : 4514) // Unreferenced inline function has been removed.
 #endif
 
 // Checks magic_enum compiler compatibility.
-#if defined(__clang__) && __clang_major__ >= 5 || defined(__GNUC__) && __GNUC__ >= 9 || defined(_MSC_VER) && _MSC_VER >= 1910
+#if defined(__clang__) && __clang_major__ >= 5 || defined(__GNUC__) && __GNUC__ >= 9 || defined(_MSC_VER) && _MSC_VER >= 1910 || defined(__RESHARPER__)
 #  undef  MAGIC_ENUM_SUPPORTED
 #  define MAGIC_ENUM_SUPPORTED 1
 #endif
@@ -979,10 +643,23 @@ static VISIT_STRUCT_CONSTEXPR const int max_visitable_members = 69;
 #  define MAGIC_ENUM_RANGE_MIN -128
 #endif
 
-// Enum value must be less or equals than MAGIC_ENUM_RANGE_MAX. By default MAGIC_ENUM_RANGE_MAX = 128.
+// Enum value must be less or equals than MAGIC_ENUM_RANGE_MAX. By default MAGIC_ENUM_RANGE_MAX = 127.
 // If need another max range for all enum types by default, redefine the macro MAGIC_ENUM_RANGE_MAX.
 #if !defined(MAGIC_ENUM_RANGE_MAX)
-#  define MAGIC_ENUM_RANGE_MAX 128
+#  define MAGIC_ENUM_RANGE_MAX 127
+#endif
+
+// Improve ReSharper C++ intellisense performance with builtins, avoiding unnecessary template instantiations.
+#if defined(__RESHARPER__)
+#  undef MAGIC_ENUM_GET_ENUM_NAME_BUILTIN
+#  undef MAGIC_ENUM_GET_TYPE_NAME_BUILTIN
+#  if __RESHARPER__ >= 20230100
+#    define MAGIC_ENUM_GET_ENUM_NAME_BUILTIN(V) __rscpp_enumerator_name(V)
+#    define MAGIC_ENUM_GET_TYPE_NAME_BUILTIN(T) __rscpp_type_name<T>()
+#  else
+#    define MAGIC_ENUM_GET_ENUM_NAME_BUILTIN(V) nullptr
+#    define MAGIC_ENUM_GET_TYPE_NAME_BUILTIN(T) nullptr
+#  endif
 #endif
 
 namespace magic_enum {
@@ -1008,33 +685,59 @@ MAGIC_ENUM_USING_ALIAS_STRING
 using std::string;
 #endif
 
+using char_type = string_view::value_type;
+static_assert(std::is_same_v<string_view::value_type, string::value_type>, "magic_enum::customize requires same string_view::value_type and string::value_type");
+static_assert([] {
+  if constexpr (std::is_same_v<char_type, wchar_t>) {
+    constexpr const char     c[] =  "abcdefghijklmnopqrstuvwxyz_ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789|";
+    constexpr const wchar_t wc[] = L"abcdefghijklmnopqrstuvwxyz_ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789|";
+    static_assert(std::size(c) == std::size(wc), "magic_enum::customize identifier characters are multichars in wchar_t.");
+
+    for (std::size_t i = 0; i < std::size(c); ++i) {
+      if (c[i] != wc[i]) {
+        return false;
+      }
+    }
+  }
+  return true;
+} (), "magic_enum::customize wchar_t is not compatible with ASCII.");
+
 namespace customize {
 
-// Enum value must be in range [MAGIC_ENUM_RANGE_MIN, MAGIC_ENUM_RANGE_MAX]. By default MAGIC_ENUM_RANGE_MIN = -128, MAGIC_ENUM_RANGE_MAX = 128.
+// Enum value must be in range [MAGIC_ENUM_RANGE_MIN, MAGIC_ENUM_RANGE_MAX]. By default MAGIC_ENUM_RANGE_MIN = -128, MAGIC_ENUM_RANGE_MAX = 127.
 // If need another range for all enum types by default, redefine the macro MAGIC_ENUM_RANGE_MIN and MAGIC_ENUM_RANGE_MAX.
 // If need another range for specific enum type, add specialization enum_range for necessary enum type.
 template <typename E>
 struct enum_range {
-  static_assert(std::is_enum_v<E>, "magic_enum::customize::enum_range requires enum type.");
   static constexpr int min = MAGIC_ENUM_RANGE_MIN;
   static constexpr int max = MAGIC_ENUM_RANGE_MAX;
-  static_assert(max > min, "magic_enum::customize::enum_range requires max > min.");
 };
 
 static_assert(MAGIC_ENUM_RANGE_MAX > MAGIC_ENUM_RANGE_MIN, "MAGIC_ENUM_RANGE_MAX must be greater than MAGIC_ENUM_RANGE_MIN.");
-static_assert((MAGIC_ENUM_RANGE_MAX - MAGIC_ENUM_RANGE_MIN) < (std::numeric_limits<std::uint16_t>::max)(), "MAGIC_ENUM_RANGE must be less than UINT16_MAX.");
 
 namespace detail {
-enum class default_customize_tag {};
-enum class invalid_customize_tag {};
+
+enum class customize_tag {
+  default_tag,
+  invalid_tag,
+  custom_tag
+};
+
 } // namespace magic_enum::customize::detail
 
-using customize_t = std::variant<string_view, detail::default_customize_tag, detail::invalid_customize_tag>;
+class customize_t : public std::pair<detail::customize_tag, string_view> {
+ public:
+  constexpr customize_t(string_view srt) : std::pair<detail::customize_tag, string_view>{detail::customize_tag::custom_tag, srt} {}
+  constexpr customize_t(const char_type* srt) : customize_t{string_view{srt}} {}
+  constexpr customize_t(detail::customize_tag tag) : std::pair<detail::customize_tag, string_view>{tag, string_view{}} {
+    MAGIC_ENUM_ASSERT(tag != detail::customize_tag::custom_tag);
+  }
+};
 
 // Default customize.
-inline constexpr auto default_tag = detail::default_customize_tag{};
+inline constexpr auto default_tag = customize_t{detail::customize_tag::default_tag};
 // Invalid customize.
-inline constexpr auto invalid_tag = detail::invalid_customize_tag{};
+inline constexpr auto invalid_tag = customize_t{detail::customize_tag::invalid_tag};
 
 // If need custom names for enum, add specialization enum_name for necessary enum type.
 template <typename E>
@@ -1052,19 +755,19 @@ constexpr customize_t enum_type_name() noexcept {
 
 namespace detail {
 
-template <auto V, typename = std::enable_if_t<std::is_enum_v<std::decay_t<decltype(V)>>>>
-using enum_constant = std::integral_constant<std::decay_t<decltype(V)>, V>;
-
-template <typename... T>
-inline constexpr bool always_false_v = false;
-
 template <typename T>
 struct supported
 #if defined(MAGIC_ENUM_SUPPORTED) && MAGIC_ENUM_SUPPORTED || defined(MAGIC_ENUM_NO_CHECK_SUPPORT)
-    : std::true_type {};
+  : std::true_type {};
 #else
-    : std::false_type {};
+  : std::false_type {};
 #endif
+
+template <auto V, typename E = std::decay_t<decltype(V)>, std::enable_if_t<std::is_enum_v<E>, int> = 0>
+using enum_constant = std::integral_constant<E, V>;
+
+template <typename... T>
+inline constexpr bool always_false_v = false;
 
 template <typename T, typename = void>
 struct has_is_flags : std::false_type {};
@@ -1084,84 +787,68 @@ struct range_max : std::integral_constant<int, MAGIC_ENUM_RANGE_MAX> {};
 template <typename T>
 struct range_max<T, std::void_t<decltype(customize::enum_range<T>::max)>> : std::integral_constant<decltype(customize::enum_range<T>::max), customize::enum_range<T>::max> {};
 
-template <std::size_t N>
-class static_string {
+struct str_view {
+  const char* str_ = nullptr;
+  std::size_t size_ = 0;
+};
+
+template <std::uint16_t N>
+class static_str {
  public:
-  constexpr explicit static_string(string_view str) noexcept : static_string{str, std::make_index_sequence<N>{}} {
-    assert(str.size() == N);
+  constexpr explicit static_str(str_view str) noexcept : static_str{str.str_, std::make_integer_sequence<std::uint16_t, N>{}} {
+    MAGIC_ENUM_ASSERT(str.size_ == N);
   }
 
-  constexpr const char* data() const noexcept { return chars_; }
+  constexpr explicit static_str(string_view str) noexcept : static_str{str.data(), std::make_integer_sequence<std::uint16_t, N>{}} {
+    MAGIC_ENUM_ASSERT(str.size() == N);
+  }
 
-  constexpr std::size_t size() const noexcept { return N; }
+  constexpr const char_type* data() const noexcept { return chars_; }
+
+  constexpr std::uint16_t size() const noexcept { return N; }
 
   constexpr operator string_view() const noexcept { return {data(), size()}; }
 
  private:
-  template <std::size_t... I>
-  constexpr static_string(string_view str, std::index_sequence<I...>) noexcept : chars_{str[I]..., '\0'} {}
+  template <std::uint16_t... I>
+  constexpr static_str(const char* str, std::integer_sequence<std::uint16_t, I...>) noexcept : chars_{static_cast<char_type>(str[I])..., static_cast<char_type>('\0')} {}
 
-  char chars_[N + 1];
+  template <std::uint16_t... I>
+  constexpr static_str(string_view str, std::integer_sequence<std::uint16_t, I...>) noexcept : chars_{str[I]..., static_cast<char_type>('\0')} {}
+
+  char_type chars_[static_cast<std::size_t>(N) + 1];
 };
 
 template <>
-class static_string<0> {
+class static_str<0> {
  public:
-  constexpr explicit static_string() = default;
+  constexpr explicit static_str() = default;
 
-  constexpr explicit static_string(string_view) noexcept {}
+  constexpr explicit static_str(str_view) noexcept {}
 
-  constexpr const char* data() const noexcept { return nullptr; }
+  constexpr explicit static_str(string_view) noexcept {}
 
-  constexpr std::size_t size() const noexcept { return 0; }
+  constexpr const char_type* data() const noexcept { return nullptr; }
+
+  constexpr std::uint16_t size() const noexcept { return 0; }
 
   constexpr operator string_view() const noexcept { return {}; }
 };
 
-constexpr string_view pretty_name(string_view name) noexcept {
-  for (std::size_t i = name.size(); i > 0; --i) {
-    if (!((name[i - 1] >= '0' && name[i - 1] <= '9') ||
-          (name[i - 1] >= 'a' && name[i - 1] <= 'z') ||
-          (name[i - 1] >= 'A' && name[i - 1] <= 'Z') ||
-#if defined(MAGIC_ENUM_ENABLE_NONASCII)
-          (name[i - 1] & 0x80) ||
-#endif
-          (name[i - 1] == '_'))) {
-      name.remove_prefix(i);
-      break;
-    }
-  }
-
-  if (name.size() > 0 && ((name.front() >= 'a' && name.front() <= 'z') ||
-                          (name.front() >= 'A' && name.front() <= 'Z') ||
-#if defined(MAGIC_ENUM_ENABLE_NONASCII)
-                          (name.front() & 0x80) ||
-#endif
-                          (name.front() == '_'))) {
-    return name;
-  }
-
-  return {}; // Invalid name.
-}
-
+template <typename Op = std::equal_to<>>
 class case_insensitive {
-  static constexpr char to_lower(char c) noexcept {
-    return (c >= 'A' && c <= 'Z') ? static_cast<char>(c + ('a' - 'A')) : c;
+  static constexpr char_type to_lower(char_type c) noexcept {
+    return (c >= static_cast<char_type>('A') && c <= static_cast<char_type>('Z')) ? static_cast<char_type>(c + (static_cast<char_type>('a') - static_cast<char_type>('A'))) : c;
   }
 
  public:
   template <typename L, typename R>
-  constexpr auto operator()([[maybe_unused]] L lhs, [[maybe_unused]] R rhs) const noexcept -> std::enable_if_t<std::is_same_v<std::decay_t<L>, char> && std::is_same_v<std::decay_t<R>, char>, bool> {
-#if defined(MAGIC_ENUM_ENABLE_NONASCII)
-    static_assert(always_false_v<L, R>, "magic_enum::case_insensitive not supported Non-ASCII feature.");
-    return false;
-#else
-    return to_lower(lhs) == to_lower(rhs);
-#endif
+  constexpr auto operator()(L lhs, R rhs) const noexcept -> std::enable_if_t<std::is_same_v<std::decay_t<L>, char_type> && std::is_same_v<std::decay_t<R>, char_type>, bool> {
+    return Op{}(to_lower(lhs), to_lower(rhs));
   }
 };
 
-constexpr std::size_t find(string_view str, char c) noexcept {
+constexpr std::size_t find(string_view str, char_type c) noexcept {
 #if defined(__clang__) && __clang_major__ < 9 && defined(__GLIBCXX__) || defined(_MSC_VER) && _MSC_VER < 1920 && !defined(__clang__)
 // https://stackoverflow.com/questions/56484834/constexpr-stdstring-viewfind-last-of-doesnt-work-on-clang-8-with-libstdc
 // https://developercommunity.visualstudio.com/content/problem/360432/vs20178-regression-c-failed-in-test.html
@@ -1179,13 +866,8 @@ constexpr std::size_t find(string_view str, char c) noexcept {
 
     return string_view::npos;
   } else {
-    return str.find_first_of(c);
+    return str.find(c);
   }
-}
-
-template <typename T, std::size_t N, std::size_t... I>
-constexpr std::array<std::remove_cv_t<T>, N> to_array(T (&a)[N], std::index_sequence<I...>) noexcept {
-  return {{a[I]...}};
 }
 
 template <typename BinaryPredicate>
@@ -1197,7 +879,7 @@ constexpr bool is_default_predicate() noexcept {
 template <typename BinaryPredicate>
 constexpr bool is_nothrow_invocable() {
   return is_default_predicate<BinaryPredicate>() ||
-         std::is_nothrow_invocable_r_v<bool, BinaryPredicate, char, char>;
+         std::is_nothrow_invocable_r_v<bool, BinaryPredicate, char_type, char_type>;
 }
 
 template <typename BinaryPredicate>
@@ -1253,7 +935,7 @@ constexpr I log2(I value) noexcept {
   static_assert(std::is_integral_v<I>, "magic_enum::detail::log2 requires integral type.");
 
   if constexpr (std::is_same_v<I, bool>) { // bool special case
-    return assert(false), value;
+    return MAGIC_ENUM_ASSERT(false), value;
   } else {
     auto ret = I{0};
     for (; value > I{1}; value >>= I{1}, ++ret) {}
@@ -1262,6 +944,15 @@ constexpr I log2(I value) noexcept {
   }
 }
 
+#if defined(__cpp_lib_array_constexpr) && __cpp_lib_array_constexpr >= 201603L
+#  define MAGIC_ENUM_ARRAY_CONSTEXPR 1
+#else
+template <typename T, std::size_t N, std::size_t... I>
+constexpr std::array<std::remove_cv_t<T>, N> to_array(T (&a)[N], std::index_sequence<I...>) noexcept {
+  return {{a[I]...}};
+}
+#endif
+
 template <typename T>
 inline constexpr bool is_enum_v = std::is_enum_v<T> && std::is_same_v<T, std::decay_t<T>>;
 
@@ -1269,83 +960,257 @@ template <typename E>
 constexpr auto n() noexcept {
   static_assert(is_enum_v<E>, "magic_enum::detail::n requires enum type.");
 
-  [[maybe_unused]] constexpr auto custom = customize::enum_type_name<E>();
-  static_assert(std::is_same_v<std::decay_t<decltype(custom)>, customize::customize_t>, "magic_enum::customize requires customize_t type.");
-  if constexpr (custom.index() == 0) {
-    constexpr auto name = std::get<string_view>(custom);
-    static_assert(!name.empty(), "magic_enum::customize requires not empty string.");
-    return static_string<name.size()>{name};
-  } else if constexpr (custom.index() == 1 && supported<E>::value) {
-#if defined(__clang__) || defined(__GNUC__)
-    constexpr auto name = pretty_name({__PRETTY_FUNCTION__, sizeof(__PRETTY_FUNCTION__) - 2});
+  if constexpr (supported<E>::value) {
+#if defined(MAGIC_ENUM_GET_TYPE_NAME_BUILTIN)
+    constexpr auto name_ptr = MAGIC_ENUM_GET_TYPE_NAME_BUILTIN(E);
+    constexpr auto name = name_ptr ? str_view{name_ptr, std::char_traits<char>::length(name_ptr)} : str_view{};
+#elif defined(__clang__)
+    str_view name;
+    if constexpr (sizeof(__PRETTY_FUNCTION__) == sizeof(__FUNCTION__)) {
+      static_assert(always_false_v<E>, "magic_enum::detail::n requires __PRETTY_FUNCTION__.");
+      return str_view{};
+    } else {
+      name.size_ = sizeof(__PRETTY_FUNCTION__) - 36;
+      name.str_ = __PRETTY_FUNCTION__ + 34;
+    }
+#elif defined(__GNUC__)
+    auto name = str_view{__PRETTY_FUNCTION__, sizeof(__PRETTY_FUNCTION__) - 1};
+    if constexpr (sizeof(__PRETTY_FUNCTION__) == sizeof(__FUNCTION__)) {
+      static_assert(always_false_v<E>, "magic_enum::detail::n requires __PRETTY_FUNCTION__.");
+      return str_view{};
+    } else if (name.str_[name.size_ - 1] == ']') {
+      name.size_ -= 50;
+      name.str_ += 49;
+    } else {
+      name.size_ -= 40;
+      name.str_ += 37;
+    }
 #elif defined(_MSC_VER)
-    constexpr auto name = pretty_name({__FUNCSIG__, sizeof(__FUNCSIG__) - 17});
+    // CLI/C++ workaround (see https://github.com/Neargye/magic_enum/issues/284).
+    str_view name;
+    name.str_ = __FUNCSIG__;
+    name.str_ += 40;
+    name.size_ += sizeof(__FUNCSIG__) - 57;
 #else
-    constexpr auto name = string_view{};
+    auto name = str_view{};
 #endif
-    return static_string<name.size()>{name};
+    std::size_t p = 0;
+    for (std::size_t i = name.size_; i > 0; --i) {
+      if (name.str_[i] == ':') {
+        p = i + 1;
+        break;
+      }
+    }
+    if (p > 0) {
+      name.size_ -= p;
+      name.str_ += p;
+    }
+    return name;
   } else {
-    return static_string<0>{}; // Unsupported compiler or Invalid customize.
+    return str_view{}; // Unsupported compiler or Invalid customize.
   }
 }
 
 template <typename E>
-inline constexpr auto type_name_v = n<E>();
+constexpr auto type_name() noexcept {
+  [[maybe_unused]] constexpr auto custom = customize::enum_type_name<E>();
+  static_assert(std::is_same_v<std::decay_t<decltype(custom)>, customize::customize_t>, "magic_enum::customize requires customize_t type.");
+  if constexpr (custom.first == customize::detail::customize_tag::custom_tag) {
+    constexpr auto name = custom.second;
+    static_assert(!name.empty(), "magic_enum::customize requires not empty string.");
+    return static_str<name.size()>{name};
+  } else if constexpr (custom.first == customize::detail::customize_tag::invalid_tag) {
+    return static_str<0>{};
+  } else if constexpr (custom.first == customize::detail::customize_tag::default_tag) {
+    constexpr auto name = n<E>();
+    return static_str<name.size_>{name};
+  } else {
+    static_assert(always_false_v<E>, "magic_enum::customize invalid.");
+  }
+}
 
+template <typename E>
+inline constexpr auto type_name_v = type_name<E>();
+
+template <auto V>
+constexpr auto n() noexcept {
+  static_assert(is_enum_v<decltype(V)>, "magic_enum::detail::n requires enum type.");
+
+  if constexpr (supported<decltype(V)>::value) {
+#if defined(MAGIC_ENUM_GET_ENUM_NAME_BUILTIN)
+    constexpr auto name_ptr = MAGIC_ENUM_GET_ENUM_NAME_BUILTIN(V);
+    auto name = name_ptr ? str_view{name_ptr, std::char_traits<char>::length(name_ptr)} : str_view{};
+#elif defined(__clang__)
+    str_view name;
+    if constexpr (sizeof(__PRETTY_FUNCTION__) == sizeof(__FUNCTION__)) {
+      static_assert(always_false_v<decltype(V)>, "magic_enum::detail::n requires __PRETTY_FUNCTION__.");
+      return str_view{};
+    } else {
+      name.size_ = sizeof(__PRETTY_FUNCTION__) - 36;
+      name.str_ = __PRETTY_FUNCTION__ + 34;
+    }
+    if (name.size_ > 22 && name.str_[0] == '(' && name.str_[1] == 'a' && name.str_[10] == ' ' && name.str_[22] == ':') {
+      name.size_ -= 23;
+      name.str_ += 23;
+    }
+    if (name.str_[0] == '(' || name.str_[0] == '-' || (name.str_[0] >= '0' && name.str_[0] <= '9')) {
+      name = str_view{};
+    }
+#elif defined(__GNUC__)
+    auto name = str_view{__PRETTY_FUNCTION__, sizeof(__PRETTY_FUNCTION__) - 1};
+    if constexpr (sizeof(__PRETTY_FUNCTION__) == sizeof(__FUNCTION__)) {
+      static_assert(always_false_v<decltype(V)>, "magic_enum::detail::n requires __PRETTY_FUNCTION__.");
+      return str_view{};
+    } else if (name.str_[name.size_ - 1] == ']') {
+      name.size_ -= 55;
+      name.str_ += 54;
+    } else {
+      name.size_ -= 40;
+      name.str_ += 37;
+    }
+    if (name.str_[0] == '(') {
+      name = str_view{};
+    }
+#elif defined(_MSC_VER)
+    str_view name;
+    if ((__FUNCSIG__[5] == '_' && __FUNCSIG__[35] != '(') || (__FUNCSIG__[5] == 'c' && __FUNCSIG__[41] != '(')) {
+      // CLI/C++ workaround (see https://github.com/Neargye/magic_enum/issues/284).
+      name.str_ = __FUNCSIG__;
+      name.str_ += 35;
+      name.size_ = sizeof(__FUNCSIG__) - 52;
+    }
+#else
+    auto name = str_view{};
+#endif
+    std::size_t p = 0;
+    for (std::size_t i = name.size_; i > 0; --i) {
+      if (name.str_[i] == ':') {
+        p = i + 1;
+        break;
+      }
+    }
+    if (p > 0) {
+      name.size_ -= p;
+      name.str_ += p;
+    }
+    return name;
+  } else {
+    return str_view{}; // Unsupported compiler or Invalid customize.
+  }
+}
+
+#if defined(_MSC_VER) && !defined(__clang__) && _MSC_VER < 1920
+#  define MAGIC_ENUM_VS_2017_WORKAROUND 1
+#endif
+
+#if defined(MAGIC_ENUM_VS_2017_WORKAROUND)
 template <typename E, E V>
 constexpr auto n() noexcept {
   static_assert(is_enum_v<E>, "magic_enum::detail::n requires enum type.");
 
+#  if defined(MAGIC_ENUM_GET_ENUM_NAME_BUILTIN)
+  constexpr auto name_ptr = MAGIC_ENUM_GET_ENUM_NAME_BUILTIN(V);
+  auto name = name_ptr ? str_view{name_ptr, std::char_traits<char>::length(name_ptr)} : str_view{};
+#  else
+  // CLI/C++ workaround (see https://github.com/Neargye/magic_enum/issues/284).
+  str_view name;
+  name.str_ = __FUNCSIG__;
+  name.size_ = sizeof(__FUNCSIG__) - 17;
+  std::size_t p = 0;
+  for (std::size_t i = name.size_; i > 0; --i) {
+    if (name.str_[i] == ',' || name.str_[i] == ':') {
+      p = i + 1;
+      break;
+    }
+  }
+  if (p > 0) {
+    name.size_ -= p;
+    name.str_ += p;
+  }
+  if (name.str_[0] == '(' || name.str_[0] == '-' || (name.str_[0] >= '0' && name.str_[0] <= '9')) {
+    name = str_view{};
+  }
+  return name;
+#  endif
+}
+#endif
+
+template <typename E, E V>
+constexpr auto enum_name() noexcept {
   [[maybe_unused]] constexpr auto custom = customize::enum_name<E>(V);
   static_assert(std::is_same_v<std::decay_t<decltype(custom)>, customize::customize_t>, "magic_enum::customize requires customize_t type.");
-  if constexpr (custom.index() == 0) {
-    constexpr auto name = std::get<string_view>(custom);
+  if constexpr (custom.first == customize::detail::customize_tag::custom_tag) {
+    constexpr auto name = custom.second;
     static_assert(!name.empty(), "magic_enum::customize requires not empty string.");
-    return static_string<name.size()>{name};
-  } else if constexpr (custom.index() == 1 && supported<E>::value) {
-#if defined(__clang__) || defined(__GNUC__)
-    constexpr auto name = pretty_name({__PRETTY_FUNCTION__, sizeof(__PRETTY_FUNCTION__) - 2});
-#elif defined(_MSC_VER)
-    constexpr auto name = pretty_name({__FUNCSIG__, sizeof(__FUNCSIG__) - 17});
+    return static_str<name.size()>{name};
+  } else if constexpr (custom.first == customize::detail::customize_tag::invalid_tag) {
+    return static_str<0>{};
+  } else if constexpr (custom.first == customize::detail::customize_tag::default_tag) {
+#if defined(MAGIC_ENUM_VS_2017_WORKAROUND)
+    constexpr auto name = n<E, V>();
 #else
-    constexpr auto name = string_view{};
+    constexpr auto name = n<V>();
 #endif
-    return static_string<name.size()>{name};
+    return static_str<name.size_>{name};
   } else {
-    return static_string<0>{}; // Unsupported compiler or Invalid customize.
+    static_assert(always_false_v<E>, "magic_enum::customize invalid.");
   }
 }
 
 template <typename E, E V>
-inline constexpr auto enum_name_v = n<E, V>();
+inline constexpr auto enum_name_v = enum_name<E, V>();
 
 template <typename E, auto V>
 constexpr bool is_valid() noexcept {
-  static_assert(is_enum_v<E>, "magic_enum::detail::is_valid requires enum type.");
-
-  return n<E, static_cast<E>(V)>().size() != 0;
-}
-
-template <typename E, int O, bool IsFlags, typename U = std::underlying_type_t<E>>
-constexpr E value(std::size_t i) noexcept {
-  static_assert(is_enum_v<E>, "magic_enum::detail::value requires enum type.");
-
-  if constexpr (std::is_same_v<U, bool>) { // bool special case
-    static_assert(O == 0, "magic_enum::detail::value requires valid offset.");
-
-    return static_cast<E>(i);
-  } else if constexpr (IsFlags) {
-    return static_cast<E>(U{1} << static_cast<U>(static_cast<int>(i) + O));
+#if defined(__clang__) && __clang_major__ >= 16
+  // https://reviews.llvm.org/D130058, https://reviews.llvm.org/D131307
+  constexpr E v = __builtin_bit_cast(E, V);
+#else
+  constexpr E v = static_cast<E>(V);
+#endif
+  [[maybe_unused]] constexpr auto custom = customize::enum_name<E>(v);
+  static_assert(std::is_same_v<std::decay_t<decltype(custom)>, customize::customize_t>, "magic_enum::customize requires customize_t type.");
+  if constexpr (custom.first == customize::detail::customize_tag::custom_tag) {
+    constexpr auto name = custom.second;
+    static_assert(!name.empty(), "magic_enum::customize requires not empty string.");
+    return name.size() != 0;
+  } else if constexpr (custom.first == customize::detail::customize_tag::default_tag) {
+#if defined(MAGIC_ENUM_VS_2017_WORKAROUND)
+    return n<E, v>().size_ != 0;
+#else
+    return n<v>().size_ != 0;
+#endif
   } else {
-    return static_cast<E>(static_cast<int>(i) + O);
+    return false;
   }
 }
 
-template <typename E, bool IsFlags, typename U = std::underlying_type_t<E>>
-constexpr int reflected_min() noexcept {
-  static_assert(is_enum_v<E>, "magic_enum::detail::reflected_min requires enum type.");
+enum class enum_subtype {
+  common,
+  flags
+};
 
-  if constexpr (IsFlags) {
+template <typename E, int O, enum_subtype S, typename U = std::underlying_type_t<E>>
+constexpr U ualue(std::size_t i) noexcept {
+  if constexpr (std::is_same_v<U, bool>) { // bool special case
+    static_assert(O == 0, "magic_enum::detail::ualue requires valid offset.");
+
+    return static_cast<U>(i);
+  } else if constexpr (S == enum_subtype::flags) {
+    return static_cast<U>(U{1} << static_cast<U>(static_cast<int>(i) + O));
+  } else {
+    return static_cast<U>(static_cast<int>(i) + O);
+  }
+}
+
+template <typename E, int O, enum_subtype S, typename U = std::underlying_type_t<E>>
+constexpr E value(std::size_t i) noexcept {
+  return static_cast<E>(ualue<E, O, S>(i));
+}
+
+template <typename E, enum_subtype S, typename U = std::underlying_type_t<E>>
+constexpr int reflected_min() noexcept {
+  if constexpr (S == enum_subtype::flags) {
     return 0;
   } else {
     constexpr auto lhs = range_min<E>::value;
@@ -1359,11 +1224,9 @@ constexpr int reflected_min() noexcept {
   }
 }
 
-template <typename E, bool IsFlags, typename U = std::underlying_type_t<E>>
+template <typename E, enum_subtype S, typename U = std::underlying_type_t<E>>
 constexpr int reflected_max() noexcept {
-  static_assert(is_enum_v<E>, "magic_enum::detail::reflected_max requires enum type.");
-
-  if constexpr (IsFlags) {
+  if constexpr (S == enum_subtype::flags) {
     return std::numeric_limits<U>::digits - 1;
   } else {
     constexpr auto lhs = range_max<E>::value;
@@ -1377,159 +1240,184 @@ constexpr int reflected_max() noexcept {
   }
 }
 
-template <typename E, bool IsFlags>
-inline constexpr auto reflected_min_v = reflected_min<E, IsFlags>();
+#define MAGIC_ENUM_FOR_EACH_256(T)                                                                                                                                                                 \
+  T(  0)T(  1)T(  2)T(  3)T(  4)T(  5)T(  6)T(  7)T(  8)T(  9)T( 10)T( 11)T( 12)T( 13)T( 14)T( 15)T( 16)T( 17)T( 18)T( 19)T( 20)T( 21)T( 22)T( 23)T( 24)T( 25)T( 26)T( 27)T( 28)T( 29)T( 30)T( 31) \
+  T( 32)T( 33)T( 34)T( 35)T( 36)T( 37)T( 38)T( 39)T( 40)T( 41)T( 42)T( 43)T( 44)T( 45)T( 46)T( 47)T( 48)T( 49)T( 50)T( 51)T( 52)T( 53)T( 54)T( 55)T( 56)T( 57)T( 58)T( 59)T( 60)T( 61)T( 62)T( 63) \
+  T( 64)T( 65)T( 66)T( 67)T( 68)T( 69)T( 70)T( 71)T( 72)T( 73)T( 74)T( 75)T( 76)T( 77)T( 78)T( 79)T( 80)T( 81)T( 82)T( 83)T( 84)T( 85)T( 86)T( 87)T( 88)T( 89)T( 90)T( 91)T( 92)T( 93)T( 94)T( 95) \
+  T( 96)T( 97)T( 98)T( 99)T(100)T(101)T(102)T(103)T(104)T(105)T(106)T(107)T(108)T(109)T(110)T(111)T(112)T(113)T(114)T(115)T(116)T(117)T(118)T(119)T(120)T(121)T(122)T(123)T(124)T(125)T(126)T(127) \
+  T(128)T(129)T(130)T(131)T(132)T(133)T(134)T(135)T(136)T(137)T(138)T(139)T(140)T(141)T(142)T(143)T(144)T(145)T(146)T(147)T(148)T(149)T(150)T(151)T(152)T(153)T(154)T(155)T(156)T(157)T(158)T(159) \
+  T(160)T(161)T(162)T(163)T(164)T(165)T(166)T(167)T(168)T(169)T(170)T(171)T(172)T(173)T(174)T(175)T(176)T(177)T(178)T(179)T(180)T(181)T(182)T(183)T(184)T(185)T(186)T(187)T(188)T(189)T(190)T(191) \
+  T(192)T(193)T(194)T(195)T(196)T(197)T(198)T(199)T(200)T(201)T(202)T(203)T(204)T(205)T(206)T(207)T(208)T(209)T(210)T(211)T(212)T(213)T(214)T(215)T(216)T(217)T(218)T(219)T(220)T(221)T(222)T(223) \
+  T(224)T(225)T(226)T(227)T(228)T(229)T(230)T(231)T(232)T(233)T(234)T(235)T(236)T(237)T(238)T(239)T(240)T(241)T(242)T(243)T(244)T(245)T(246)T(247)T(248)T(249)T(250)T(251)T(252)T(253)T(254)T(255)
 
-template <typename E, bool IsFlags>
-inline constexpr auto reflected_max_v = reflected_max<E, IsFlags>();
-
-template <std::size_t N>
-constexpr std::size_t values_count(const bool (&valid)[N]) noexcept {
-  auto count = std::size_t{0};
-  for (std::size_t i = 0; i < N; ++i) {
-    if (valid[i]) {
-      ++count;
-    }
+template <typename E, enum_subtype S, std::size_t Size, int Min, std::size_t I>
+constexpr void valid_count(bool* valid, std::size_t& count) noexcept {
+#define MAGIC_ENUM_V(O)                                     \
+  if constexpr ((I + O) < Size) {                           \
+    if constexpr (is_valid<E, ualue<E, Min, S>(I + O)>()) { \
+      valid[I + O] = true;                                  \
+      ++count;                                              \
+    }                                                       \
   }
 
-  return count;
+  MAGIC_ENUM_FOR_EACH_256(MAGIC_ENUM_V)
+
+  if constexpr ((I + 256) < Size) {
+    valid_count<E, S, Size, Min, I + 256>(valid, count);
+  }
+#undef MAGIC_ENUM_V
 }
 
-template <typename E, bool IsFlags, int Min, std::size_t... I>
-constexpr auto values(std::index_sequence<I...>) noexcept {
-  static_assert(is_enum_v<E>, "magic_enum::detail::values requires enum type.");
-  constexpr bool valid[sizeof...(I)] = {is_valid<E, value<E, Min, IsFlags>(I)>()...};
-  constexpr std::size_t count = values_count(valid);
+template <std::size_t N>
+struct valid_count_t {
+  std::size_t count = 0;
+  bool valid[N] = {};
+};
 
-  if constexpr (count > 0) {
-    E values[count] = {};
-    for (std::size_t i = 0, v = 0; v < count; ++i) {
-      if (valid[i]) {
-        values[v++] = value<E, Min, IsFlags>(i);
+template <typename E, enum_subtype S, std::size_t Size, int Min>
+constexpr auto valid_count() noexcept {
+  valid_count_t<Size> vc;
+  valid_count<E, S, Size, Min, 0>(vc.valid, vc.count);
+  return vc;
+}
+
+template <typename E, enum_subtype S, std::size_t Size, int Min>
+constexpr auto values() noexcept {
+  constexpr auto vc = valid_count<E, S, Size, Min>();
+
+  if constexpr (vc.count > 0) {
+#if defined(MAGIC_ENUM_ARRAY_CONSTEXPR)
+    std::array<E, vc.count> values = {};
+#else
+    E values[vc.count] = {};
+#endif
+    for (std::size_t i = 0, v = 0; v < vc.count; ++i) {
+      if (vc.valid[i]) {
+        values[v++] = value<E, Min, S>(i);
       }
     }
-
-    return to_array(values, std::make_index_sequence<count>{});
+#if defined(MAGIC_ENUM_ARRAY_CONSTEXPR)
+    return values;
+#else
+    return to_array(values, std::make_index_sequence<vc.count>{});
+#endif
   } else {
     return std::array<E, 0>{};
   }
 }
 
-template <typename E, bool IsFlags, typename U = std::underlying_type_t<E>>
+template <typename E, enum_subtype S, typename U = std::underlying_type_t<E>>
 constexpr auto values() noexcept {
-  static_assert(is_enum_v<E>, "magic_enum::detail::values requires enum type.");
-  constexpr auto min = reflected_min_v<E, IsFlags>;
-  constexpr auto max = reflected_max_v<E, IsFlags>;
+  constexpr auto min = reflected_min<E, S>();
+  constexpr auto max = reflected_max<E, S>();
   constexpr auto range_size = max - min + 1;
   static_assert(range_size > 0, "magic_enum::enum_range requires valid size.");
-  static_assert(range_size < (std::numeric_limits<std::uint16_t>::max)(), "magic_enum::enum_range requires valid size.");
 
-  return values<E, IsFlags, reflected_min_v<E, IsFlags>>(std::make_index_sequence<range_size>{});
+  return values<E, S, range_size, min>();
 }
 
 template <typename E, typename U = std::underlying_type_t<E>>
-constexpr bool is_flags_enum() noexcept {
-  static_assert(is_enum_v<E>, "magic_enum::detail::is_flags_enum requires enum type.");
-
-  if constexpr (has_is_flags<E>::value) {
-    return customize::enum_range<E>::is_flags;
-  } else if constexpr (std::is_same_v<U, bool>) { // bool special case
-    return false;
+constexpr enum_subtype subtype(std::true_type) noexcept {
+  if constexpr (std::is_same_v<U, bool>) { // bool special case
+    return enum_subtype::common;
+  } else if constexpr (has_is_flags<E>::value) {
+    return customize::enum_range<E>::is_flags ? enum_subtype::flags : enum_subtype::common;
   } else {
-#if defined(MAGIC_ENUM_NO_CHECK_FLAGS)
-    return false;
-#else
-    constexpr auto flags_values = values<E, true>();
-    constexpr auto default_values = values<E, false>();
+#if defined(MAGIC_ENUM_AUTO_IS_FLAGS)
+    constexpr auto flags_values = values<E, enum_subtype::flags>();
+    constexpr auto default_values = values<E, enum_subtype::common>();
     if (flags_values.size() == 0 || default_values.size() > flags_values.size()) {
-      return false;
+      return enum_subtype::common;
     }
     for (std::size_t i = 0; i < default_values.size(); ++i) {
       const auto v = static_cast<U>(default_values[i]);
       if (v != 0 && (v & (v - 1)) != 0) {
-        return false;
+        return enum_subtype::common;
       }
     }
-    return flags_values.size() > 0;
+    return enum_subtype::flags;
+#else
+    return enum_subtype::common;
 #endif
   }
 }
 
-template <typename E>
-inline constexpr bool is_flags_v = is_flags_enum<E>();
-
-template <typename E>
-inline constexpr std::array values_v = values<E, is_flags_v<E>>();
+template <typename T>
+constexpr enum_subtype subtype(std::false_type) noexcept {
+  // For non-enum type return default common subtype.
+  return enum_subtype::common;
+}
 
 template <typename E, typename D = std::decay_t<E>>
-using values_t = decltype((values_v<D>));
+inline constexpr auto subtype_v = subtype<D>(std::is_enum<D>{});
 
-template <typename E>
-inline constexpr auto count_v = values_v<E>.size();
+template <typename E, enum_subtype S>
+inline constexpr auto values_v = values<E, S>();
 
-template <typename E, typename U = std::underlying_type_t<E>>
-inline constexpr auto min_v = (count_v<E> > 0) ? static_cast<U>(values_v<E>.front()) : U{0};
+template <typename E, enum_subtype S, typename D = std::decay_t<E>>
+using values_t = decltype((values_v<D, S>));
 
-template <typename E, typename U = std::underlying_type_t<E>>
-inline constexpr auto max_v = (count_v<E> > 0) ? static_cast<U>(values_v<E>.back()) : U{0};
+template <typename E, enum_subtype S>
+inline constexpr auto count_v = values_v<E, S>.size();
 
-template <typename E, std::size_t... I>
+template <typename E, enum_subtype S, typename U = std::underlying_type_t<E>>
+inline constexpr auto min_v = (count_v<E, S> > 0) ? static_cast<U>(values_v<E, S>.front()) : U{0};
+
+template <typename E, enum_subtype S, typename U = std::underlying_type_t<E>>
+inline constexpr auto max_v = (count_v<E, S> > 0) ? static_cast<U>(values_v<E, S>.back()) : U{0};
+
+template <typename E, enum_subtype S, std::size_t... I>
 constexpr auto names(std::index_sequence<I...>) noexcept {
-  static_assert(is_enum_v<E>, "magic_enum::detail::names requires enum type.");
-
-  return std::array<string_view, sizeof...(I)>{{enum_name_v<E, values_v<E>[I]>...}};
+  constexpr auto names = std::array<string_view, sizeof...(I)>{{enum_name_v<E, values_v<E, S>[I]>...}};
+  return names;
 }
 
-template <typename E>
-inline constexpr std::array names_v = names<E>(std::make_index_sequence<count_v<E>>{});
+template <typename E, enum_subtype S>
+inline constexpr auto names_v = names<E, S>(std::make_index_sequence<count_v<E, S>>{});
 
-template <typename E, typename D = std::decay_t<E>>
-using names_t = decltype((names_v<D>));
+template <typename E, enum_subtype S, typename D = std::decay_t<E>>
+using names_t = decltype((names_v<D, S>));
 
-template <typename E, std::size_t... I>
+template <typename E, enum_subtype S, std::size_t... I>
 constexpr auto entries(std::index_sequence<I...>) noexcept {
-  static_assert(is_enum_v<E>, "magic_enum::detail::entries requires enum type.");
-
-  return std::array<std::pair<E, string_view>, sizeof...(I)>{{{values_v<E>[I], enum_name_v<E, values_v<E>[I]>}...}};
+  constexpr auto entries = std::array<std::pair<E, string_view>, sizeof...(I)>{{{values_v<E, S>[I], enum_name_v<E, values_v<E, S>[I]>}...}};
+  return entries;
 }
 
-template <typename E>
-inline constexpr std::array entries_v = entries<E>(std::make_index_sequence<count_v<E>>{});
+template <typename E, enum_subtype S>
+inline constexpr auto entries_v = entries<E, S>(std::make_index_sequence<count_v<E, S>>{});
 
-template <typename E, typename D = std::decay_t<E>>
-using entries_t = decltype((entries_v<D>));
+template <typename E, enum_subtype S, typename D = std::decay_t<E>>
+using entries_t = decltype((entries_v<D, S>));
 
-template <typename E, typename U = std::underlying_type_t<E>>
+template <typename E, enum_subtype S, typename U = std::underlying_type_t<E>>
 constexpr bool is_sparse() noexcept {
-  static_assert(is_enum_v<E>, "magic_enum::detail::is_sparse requires enum type.");
-
-  if constexpr (count_v<E> == 0) {
+  if constexpr (count_v<E, S> == 0) {
     return false;
   } else if constexpr (std::is_same_v<U, bool>) { // bool special case
     return false;
   } else {
-    constexpr auto max = is_flags_v<E> ? log2(max_v<E>) : max_v<E>;
-    constexpr auto min = is_flags_v<E> ? log2(min_v<E>) : min_v<E>;
+    constexpr auto max = (S == enum_subtype::flags) ? log2(max_v<E, S>) : max_v<E, S>;
+    constexpr auto min = (S == enum_subtype::flags) ? log2(min_v<E, S>) : min_v<E, S>;
     constexpr auto range_size = max - min + 1;
 
-    return range_size != count_v<E>;
+    return range_size != count_v<E, S>;
   }
 }
 
-template <typename E>
-inline constexpr bool is_sparse_v = is_sparse<E>();
+template <typename E, enum_subtype S = subtype_v<E>>
+inline constexpr bool is_sparse_v = is_sparse<E, S>();
 
-template <typename E, typename U = std::underlying_type_t<E>>
-constexpr U values_ors() noexcept {
-  static_assert(is_enum_v<E>, "magic_enum::detail::values_ors requires enum type.");
+template <typename E, enum_subtype S>
+struct is_reflected
+#if defined(MAGIC_ENUM_NO_CHECK_REFLECTED_ENUM)
+  : std::true_type {};
+#else
+  : std::bool_constant<std::is_enum_v<E> && (count_v<E, S> != 0)> {};
+#endif
 
-  auto ors = U{0};
-  for (std::size_t i = 0; i < count_v<E>; ++i) {
-    ors |= static_cast<U>(values_v<E>[i]);
-  }
-
-  return ors;
-}
+template <typename E, enum_subtype S>
+inline constexpr bool is_reflected_v = is_reflected<std::decay_t<E>, S>{};
 
 template <bool, typename R>
 struct enable_if_enum {};
@@ -1540,10 +1428,10 @@ struct enable_if_enum<true, R> {
   static_assert(supported<R>::value, "magic_enum unsupported compiler (https://github.com/Neargye/magic_enum#compiler-compatibility).");
 };
 
-template <typename T, typename R, typename BinaryPredicate = std::equal_to<>>
-using enable_if_t = typename enable_if_enum<std::is_enum_v<std::decay_t<T>> && std::is_invocable_r_v<bool, BinaryPredicate, char, char>, R>::type;
+template <typename T, typename R, typename BinaryPredicate = std::equal_to<>, typename D = std::decay_t<T>>
+using enable_if_t = typename enable_if_enum<std::is_enum_v<D> && std::is_invocable_r_v<bool, BinaryPredicate, char_type, char_type>, R>::type;
 
-template <typename T, typename Enable = std::enable_if_t<std::is_enum_v<std::decay_t<T>>>>
+template <typename T, std::enable_if_t<std::is_enum_v<std::decay_t<T>>, int> = 0>
 using enum_concept = T;
 
 template <typename T, bool = std::is_enum_v<T>>
@@ -1563,6 +1451,8 @@ struct underlying_type {};
 
 template <typename T>
 struct underlying_type<T, true> : std::underlying_type<std::decay_t<T>> {};
+
+#if defined(MAGIC_ENUM_ENABLE_HASH) || defined(MAGIC_ENUM_ENABLE_HASH_SWITCH)
 
 template <typename Value, typename = void>
 struct constexpr_hash_t;
@@ -1628,7 +1518,7 @@ struct constexpr_hash_t<Value, std::enable_if_t<std::is_same_v<Value, string_vie
     constexpr std::uint32_t operator()(string_view value) const noexcept {
       auto acc = static_cast<std::uint64_t>(2166136261ULL);
       for (const auto c : value) {
-        acc = ((acc ^ static_cast<std::uint64_t>(c)) * static_cast<std::uint64_t>(16777619ULL)) & std::numeric_limits<std::uint32_t>::max();
+        acc = ((acc ^ static_cast<std::uint64_t>(c)) * static_cast<std::uint64_t>(16777619ULL)) & (std::numeric_limits<std::uint32_t>::max)();
       }
       return static_cast<std::uint32_t>(acc);
     }
@@ -1636,7 +1526,7 @@ struct constexpr_hash_t<Value, std::enable_if_t<std::is_same_v<Value, string_vie
 };
 
 template <typename Hash>
-constexpr static Hash hash_v{};
+inline constexpr Hash hash_v{};
 
 template <auto* GlobValues, typename Hash>
 constexpr auto calculate_cases(std::size_t Page) noexcept {
@@ -1649,18 +1539,25 @@ constexpr auto calculate_cases(std::size_t Page) noexcept {
 
   std::array<switch_t, 256> result{};
   auto fill = result.begin();
-  for (auto first = values.begin() + Page, last = values.begin() + Page + values_to; first != last; ) {
-    *fill++ = hash_v<Hash>(*first++);
+  {
+    auto first = values.begin() + static_cast<std::ptrdiff_t>(Page);
+    auto last = values.begin() + static_cast<std::ptrdiff_t>(Page + values_to);
+    while (first != last) {
+      *fill++ = hash_v<Hash>(*first++);
+    }
   }
 
   // dead cases, try to avoid case collisions
   for (switch_t last_value = result[values_to - 1]; fill != result.end() && last_value != (std::numeric_limits<switch_t>::max)(); *fill++ = ++last_value) {
   }
 
-  auto it = result.begin();
-  for (auto last_value = (std::numeric_limits<switch_t>::min)(); fill != result.end(); *fill++ = last_value) {
-    while (last_value == *it) {
-      ++last_value, ++it;
+  {
+    auto it = result.begin();
+    auto last_value = (std::numeric_limits<switch_t>::min)();
+    for (; fill != result.end(); *fill++ = last_value++) {
+      while (last_value == *it) {
+        ++last_value, ++it;
+      }
     }
   }
 
@@ -1677,17 +1574,18 @@ constexpr R invoke_r(F&& f, Args&&... args) noexcept(std::is_nothrow_invocable_r
 }
 
 enum class case_call_t {
-  index, value
+  index,
+  value
 };
 
 template <typename T = void>
-constexpr auto default_result_type_lambda = []() noexcept(std::is_nothrow_default_constructible_v<T>) { return T{}; };
+inline constexpr auto default_result_type_lambda = []() noexcept(std::is_nothrow_default_constructible_v<T>) { return T{}; };
 
 template <>
-constexpr auto default_result_type_lambda<void> = []() noexcept {};
+inline constexpr auto default_result_type_lambda<void> = []() noexcept {};
 
 template <auto* Arr, typename Hash>
-constexpr bool no_duplicate() noexcept {
+constexpr bool has_duplicate() noexcept {
   using value_t = std::decay_t<decltype((*Arr)[0])>;
   using hash_value_t = std::invoke_result_t<Hash, value_t>;
   std::array<hash_value_t, Arr->size()> hashes{};
@@ -1709,50 +1607,43 @@ constexpr bool no_duplicate() noexcept {
   return true;
 }
 
-#define MAGIC_ENUM_FOR_EACH_256(T) T(0)T(1)T(2)T(3)T(4)T(5)T(6)T(7)T(8)T(9)T(10)T(11)T(12)T(13)T(14)T(15)T(16)T(17)T(18)T(19)T(20)T(21)T(22)T(23)T(24)T(25)T(26)T(27)T(28)T(29)T(30)T(31)          \
-  T(32)T(33)T(34)T(35)T(36)T(37)T(38)T(39)T(40)T(41)T(42)T(43)T(44)T(45)T(46)T(47)T(48)T(49)T(50)T(51)T(52)T(53)T(54)T(55)T(56)T(57)T(58)T(59)T(60)T(61)T(62)T(63)                                 \
-  T(64)T(65)T(66)T(67)T(68)T(69)T(70)T(71)T(72)T(73)T(74)T(75)T(76)T(77)T(78)T(79)T(80)T(81)T(82)T(83)T(84)T(85)T(86)T(87)T(88)T(89)T(90)T(91)T(92)T(93)T(94)T(95)                                 \
-  T(96)T(97)T(98)T(99)T(100)T(101)T(102)T(103)T(104)T(105)T(106)T(107)T(108)T(109)T(110)T(111)T(112)T(113)T(114)T(115)T(116)T(117)T(118)T(119)T(120)T(121)T(122)T(123)T(124)T(125)T(126)T(127)     \
-  T(128)T(129)T(130)T(131)T(132)T(133)T(134)T(135)T(136)T(137)T(138)T(139)T(140)T(141)T(142)T(143)T(144)T(145)T(146)T(147)T(148)T(149)T(150)T(151)T(152)T(153)T(154)T(155)T(156)T(157)T(158)T(159) \
-  T(160)T(161)T(162)T(163)T(164)T(165)T(166)T(167)T(168)T(169)T(170)T(171)T(172)T(173)T(174)T(175)T(176)T(177)T(178)T(179)T(180)T(181)T(182)T(183)T(184)T(185)T(186)T(187)T(188)T(189)T(190)T(191) \
-  T(192)T(193)T(194)T(195)T(196)T(197)T(198)T(199)T(200)T(201)T(202)T(203)T(204)T(205)T(206)T(207)T(208)T(209)T(210)T(211)T(212)T(213)T(214)T(215)T(216)T(217)T(218)T(219)T(220)T(221)T(222)T(223) \
-  T(224)T(225)T(226)T(227)T(228)T(229)T(230)T(231)T(232)T(233)T(234)T(235)T(236)T(237)T(238)T(239)T(240)T(241)T(242)T(243)T(244)T(245)T(246)T(247)T(248)T(249)T(250)T(251)T(252)T(253)T(254)T(255)
-
-#define MAGIC_ENUM_CASE(val)                                                                                                      \
-  case cases[val]:                                                                                                                \
-    if constexpr ((val) + Page < size) {                                                                                          \
-      if (!pred(values[val + Page], searched)) {                                                                                  \
-        break;                                                                                                                    \
-      }                                                                                                                           \
-      if constexpr (CallValue == case_call_t::index) {                                                                            \
-        if constexpr (std::is_invocable_r_v<result_t, Lambda, std::integral_constant<std::size_t, val + Page>>) {                 \
-          return detail::invoke_r<result_t>(std::forward<Lambda>(lambda), std::integral_constant<std::size_t, val + Page>{});     \
-        } else if constexpr (std::is_invocable_v<Lambda, std::integral_constant<std::size_t, val + Page>>) {                      \
-          assert(false && "magic_enum::detail::constexpr_switch wrong result type.");                                             \
-        }                                                                                                                         \
-      } else if constexpr (CallValue == case_call_t::value) {                                                                     \
-        if constexpr (std::is_invocable_r_v<result_t, Lambda, enum_constant<values[val + Page]>>) {                               \
-          return detail::invoke_r<result_t>(std::forward<Lambda>(lambda), enum_constant<values[val + Page]>{});                   \
-        } else if constexpr (std::is_invocable_r_v<result_t, Lambda, enum_constant<values[val + Page]>>) {                        \
-          assert(false && "magic_enum::detail::constexpr_switch wrong result type.");                                             \
-        }                                                                                                                         \
-      }                                                                                                                           \
-      break;                                                                                                                      \
+#define MAGIC_ENUM_CASE(val)                                                                                                  \
+  case cases[val]:                                                                                                            \
+    if constexpr ((val) + Page < size) {                                                                                      \
+      if (!pred(values[val + Page], searched)) {                                                                              \
+        break;                                                                                                                \
+      }                                                                                                                       \
+      if constexpr (CallValue == case_call_t::index) {                                                                        \
+        if constexpr (std::is_invocable_r_v<result_t, Lambda, std::integral_constant<std::size_t, val + Page>>) {             \
+          return detail::invoke_r<result_t>(std::forward<Lambda>(lambda), std::integral_constant<std::size_t, val + Page>{}); \
+        } else if constexpr (std::is_invocable_v<Lambda, std::integral_constant<std::size_t, val + Page>>) {                  \
+          MAGIC_ENUM_ASSERT(false && "magic_enum::detail::constexpr_switch wrong result type.");                                         \
+        }                                                                                                                     \
+      } else if constexpr (CallValue == case_call_t::value) {                                                                 \
+        if constexpr (std::is_invocable_r_v<result_t, Lambda, enum_constant<values[val + Page]>>) {                           \
+          return detail::invoke_r<result_t>(std::forward<Lambda>(lambda), enum_constant<values[val + Page]>{});               \
+        } else if constexpr (std::is_invocable_r_v<result_t, Lambda, enum_constant<values[val + Page]>>) {                    \
+          MAGIC_ENUM_ASSERT(false && "magic_enum::detail::constexpr_switch wrong result type.");                                         \
+        }                                                                                                                     \
+      }                                                                                                                       \
+      break;                                                                                                                  \
     } else [[fallthrough]];
 
 template <auto* GlobValues,
           case_call_t CallValue,
           std::size_t Page = 0,
           typename Hash = constexpr_hash_t<typename std::decay_t<decltype(*GlobValues)>::value_type>,
-          typename Lambda, typename ResultGetterType = decltype(default_result_type_lambda<>),
-          typename BinaryPredicate = std::equal_to<>>
-constexpr std::invoke_result_t<ResultGetterType> constexpr_switch(
+          typename BinaryPredicate = std::equal_to<>,
+          typename Lambda,
+          typename ResultGetterType>
+constexpr decltype(auto) constexpr_switch(
     Lambda&& lambda,
     typename std::decay_t<decltype(*GlobValues)>::value_type searched,
-    ResultGetterType&& def = default_result_type_lambda<>,
+    ResultGetterType&& def,
     BinaryPredicate&& pred = {}) {
   using result_t = std::invoke_result_t<ResultGetterType>;
-  using hash_t = std::conditional_t<no_duplicate<GlobValues, Hash>(), Hash, typename Hash::secondary_hash>;
+  using hash_t = std::conditional_t<has_duplicate<GlobValues, Hash>(), Hash, typename Hash::secondary_hash>;
+  static_assert(has_duplicate<GlobValues, hash_t>(), "magic_enum::detail::constexpr_switch duplicated hash found, please report it: https://github.com/Neargye/magic_enum/issues.");
   constexpr std::array values = *GlobValues;
   constexpr std::size_t size = values.size();
   constexpr std::array cases = calculate_cases<GlobValues, hash_t>(Page);
@@ -1768,26 +1659,9 @@ constexpr std::invoke_result_t<ResultGetterType> constexpr_switch(
   return def();
 }
 
-#undef MAGIC_ENUM_FOR_EACH_256
 #undef MAGIC_ENUM_CASE
 
-template <typename E, typename Lambda, std::size_t... I>
-constexpr auto for_each(Lambda&& lambda, std::index_sequence<I...>) {
-  static_assert(is_enum_v<E>, "magic_enum::detail::for_each requires enum type.");
-  constexpr bool has_void_return = (std::is_void_v<std::invoke_result_t<Lambda, enum_constant<values_v<E>[I]>>> || ...);
-  constexpr bool all_same_return = (std::is_same_v<std::invoke_result_t<Lambda, enum_constant<values_v<E>[0]>>, std::invoke_result_t<Lambda, enum_constant<values_v<E>[I]>>> && ...);
-
-  if constexpr (has_void_return) {
-    (lambda(enum_constant<values_v<E>[I]>{}), ...);
-  } else if constexpr (all_same_return) {
-    return std::array{lambda(enum_constant<values_v<E>[I]>{})...};
-  } else {
-    return std::tuple{lambda(enum_constant<values_v<E>[I]>{})...};
-  }
-}
-
-template <typename E, typename Lambda, typename D = std::decay_t<E>>
-using for_each_t = decltype(for_each<D>(std::declval<Lambda>(), std::make_index_sequence<count_v<D>>{}));
+#endif
 
 } // namespace magic_enum::detail
 
@@ -1834,40 +1708,44 @@ template <typename E>
 }
 
 // Returns number of enum values.
-template <typename E>
+template <typename E, detail::enum_subtype S = detail::subtype_v<E>>
 [[nodiscard]] constexpr auto enum_count() noexcept -> detail::enable_if_t<E, std::size_t> {
-  return detail::count_v<std::decay_t<E>>;
+  return detail::count_v<std::decay_t<E>, S>;
 }
 
 // Returns enum value at specified index.
 // No bounds checking is performed: the behavior is undefined if index >= number of enum values.
-template <typename E>
+template <typename E, detail::enum_subtype S = detail::subtype_v<E>>
 [[nodiscard]] constexpr auto enum_value(std::size_t index) noexcept -> detail::enable_if_t<E, std::decay_t<E>> {
   using D = std::decay_t<E>;
+  static_assert(detail::is_reflected_v<D, S>, "magic_enum requires enum implementation and valid max and min.");
 
-  if constexpr (detail::is_sparse_v<D>) {
-    return assert((index < detail::count_v<D>)), detail::values_v<D>[index];
+  if constexpr (detail::is_sparse_v<D, S>) {
+    return MAGIC_ENUM_ASSERT(index < detail::count_v<D, S>), detail::values_v<D, S>[index];
   } else {
-    constexpr bool is_flag = detail::is_flags_v<D>;
-    constexpr auto min = is_flag ? detail::log2(detail::min_v<D>) : detail::min_v<D>;
+    constexpr auto min = (S == detail::enum_subtype::flags) ? detail::log2(detail::min_v<D, S>) : detail::min_v<D, S>;
 
-    return assert((index < detail::count_v<D>)), detail::value<D, min, is_flag>(index);
+    return MAGIC_ENUM_ASSERT(index < detail::count_v<D, S>), detail::value<D, min, S>(index);
   }
 }
 
 // Returns enum value at specified index.
-template <typename E, std::size_t I>
+template <typename E, std::size_t I, detail::enum_subtype S = detail::subtype_v<E>>
 [[nodiscard]] constexpr auto enum_value() noexcept -> detail::enable_if_t<E, std::decay_t<E>> {
   using D = std::decay_t<E>;
-  static_assert(I < detail::count_v<D>, "magic_enum::enum_value out of range.");
+  static_assert(detail::is_reflected_v<D, S>, "magic_enum requires enum implementation and valid max and min.");
+  static_assert(I < detail::count_v<D, S>, "magic_enum::enum_value out of range.");
 
-  return enum_value<D>(I);
+  return enum_value<D, S>(I);
 }
 
 // Returns std::array with enum values, sorted by enum value.
-template <typename E>
-[[nodiscard]] constexpr auto enum_values() noexcept -> detail::enable_if_t<E, detail::values_t<E>> {
-  return detail::values_v<std::decay_t<E>>;
+template <typename E, detail::enum_subtype S = detail::subtype_v<E>>
+[[nodiscard]] constexpr auto enum_values() noexcept -> detail::enable_if_t<E, detail::values_t<E, S>> {
+  using D = std::decay_t<E>;
+  static_assert(detail::is_reflected_v<D, S>, "magic_enum requires enum implementation and valid max and min.");
+
+  return detail::values_v<D, S>;
 }
 
 // Returns integer value from enum value.
@@ -1875,7 +1753,6 @@ template <typename E>
 [[nodiscard]] constexpr auto enum_integer(E value) noexcept -> detail::enable_if_t<E, underlying_type_t<E>> {
   return static_cast<underlying_type_t<E>>(value);
 }
-
 
 // Returns underlying value from enum value.
 template <typename E>
@@ -1885,25 +1762,54 @@ template <typename E>
 
 // Obtains index in enum values from enum value.
 // Returns optional with index.
-template <typename E>
+template <typename E, detail::enum_subtype S = detail::subtype_v<E>>
 [[nodiscard]] constexpr auto enum_index(E value) noexcept -> detail::enable_if_t<E, optional<std::size_t>> {
   using D = std::decay_t<E>;
   using U = underlying_type_t<D>;
+  static_assert(detail::is_reflected_v<D, S>, "magic_enum requires enum implementation and valid max and min.");
 
-  if constexpr (detail::count_v<D> == 0) {
-    return {}; // Empty enum.
-  } else if constexpr (detail::is_sparse_v<D> || detail::is_flags_v<D>) {
-    return detail::constexpr_switch<&detail::values_v<D>, detail::case_call_t::index>(
+  if constexpr (detail::is_sparse_v<D, S> || (S == detail::enum_subtype::flags)) {
+#if defined(MAGIC_ENUM_ENABLE_HASH)
+    return detail::constexpr_switch<&detail::values_v<D, S>, detail::case_call_t::index>(
         [](std::size_t i) { return optional<std::size_t>{i}; },
         value,
         detail::default_result_type_lambda<optional<std::size_t>>);
+#else
+    for (std::size_t i = 0; i < detail::count_v<D, S>; ++i) {
+      if (enum_value<D, S>(i) == value) {
+        return i;
+      }
+    }
+    return {}; // Invalid value or out of range.
+#endif
   } else {
     const auto v = static_cast<U>(value);
-    if (v >= detail::min_v<D> && v <= detail::max_v<D>) {
-      return static_cast<std::size_t>(v - detail::min_v<D>);
+    if (v >= detail::min_v<D, S> && v <= detail::max_v<D, S>) {
+      return static_cast<std::size_t>(v - detail::min_v<D, S>);
     }
     return {}; // Invalid value or out of range.
   }
+}
+
+// Obtains index in enum values from enum value.
+// Returns optional with index.
+template <detail::enum_subtype S, typename E>
+[[nodiscard]] constexpr auto enum_index(E value) noexcept -> detail::enable_if_t<E, optional<std::size_t>> {
+  using D = std::decay_t<E>;
+  static_assert(detail::is_reflected_v<D, S>, "magic_enum requires enum implementation and valid max and min.");
+
+  return enum_index<D, S>(value);
+}
+
+// Obtains index in enum values from static storage enum variable.
+template <auto V, detail::enum_subtype S = detail::subtype_v<std::decay_t<decltype(V)>>>
+[[nodiscard]] constexpr auto enum_index() noexcept -> detail::enable_if_t<decltype(V), std::size_t> {\
+  using D = std::decay_t<decltype(V)>;
+  static_assert(detail::is_reflected_v<D, S>, "magic_enum requires enum implementation and valid max and min.");
+  constexpr auto index = enum_index<D, S>(V);
+  static_assert(index, "magic_enum::enum_index enum value does not have a index.");
+
+  return *index;
 }
 
 // Returns name from static storage enum variable.
@@ -1918,354 +1824,170 @@ template <auto V>
 
 // Returns name from enum value.
 // If enum value does not have name or value out of range, returns empty string.
-template <typename E>
+template <typename E, detail::enum_subtype S = detail::subtype_v<E>>
 [[nodiscard]] constexpr auto enum_name(E value) noexcept -> detail::enable_if_t<E, string_view> {
   using D = std::decay_t<E>;
+  static_assert(detail::is_reflected_v<D, S>, "magic_enum requires enum implementation and valid max and min.");
 
-  if (const auto i = enum_index<D>(value)) {
-    return detail::names_v<D>[*i];
+  if (const auto i = enum_index<D, S>(value)) {
+    return detail::names_v<D, S>[*i];
   }
   return {};
 }
 
-// Returns name from enum-flags value.
-// If enum-flags value does not have name or value out of range, returns empty string.
-template <typename E>
-[[nodiscard]] auto enum_flags_name(E value) -> detail::enable_if_t<E, string> {
+// Returns name from enum value.
+// If enum value does not have name or value out of range, returns empty string.
+template <detail::enum_subtype S, typename E>
+[[nodiscard]] constexpr auto enum_name(E value) -> detail::enable_if_t<E, string_view> {
   using D = std::decay_t<E>;
-  using U = underlying_type_t<D>;
+  static_assert(detail::is_reflected_v<D, S>, "magic_enum requires enum implementation and valid max and min.");
 
-  if constexpr (detail::is_flags_v<D>) {
-    string name;
-    auto check_value = U{0};
-    for (std::size_t i = 0; i < detail::count_v<D>; ++i) {
-      if (const auto v = static_cast<U>(enum_value<D>(i)); (static_cast<U>(value) & v) != 0) {
-        check_value |= v;
-        const auto n = detail::names_v<D>[i];
-        if (!name.empty()) {
-          name.append(1, '|');
-        }
-        name.append(n.data(), n.size());
-      }
-    }
-
-    if (check_value != 0 && check_value == static_cast<U>(value)) {
-      return name;
-    }
-
-    return {}; // Invalid value or out of range.
-  } else {
-    return string{enum_name(value)};
-  }
+  return enum_name<D, S>(value);
 }
 
 // Returns std::array with names, sorted by enum value.
-template <typename E>
-[[nodiscard]] constexpr auto enum_names() noexcept -> detail::enable_if_t<E, detail::names_t<E>> {
-  return detail::names_v<std::decay_t<E>>;
+template <typename E, detail::enum_subtype S = detail::subtype_v<E>>
+[[nodiscard]] constexpr auto enum_names() noexcept -> detail::enable_if_t<E, detail::names_t<E, S>> {
+  using D = std::decay_t<E>;
+  static_assert(detail::is_reflected_v<D, S>, "magic_enum requires enum implementation and valid max and min.");
+
+  return detail::names_v<D, S>;
 }
 
 // Returns std::array with pairs (value, name), sorted by enum value.
-template <typename E>
-[[nodiscard]] constexpr auto enum_entries() noexcept -> detail::enable_if_t<E, detail::entries_t<E>> {
-  return detail::entries_v<std::decay_t<E>>;
+template <typename E, detail::enum_subtype S = detail::subtype_v<E>>
+[[nodiscard]] constexpr auto enum_entries() noexcept -> detail::enable_if_t<E, detail::entries_t<E, S>> {
+  using D = std::decay_t<E>;
+  static_assert(detail::is_reflected_v<D, S>, "magic_enum requires enum implementation and valid max and min.");
+
+  return detail::entries_v<D, S>;
 }
+
+// Allows you to write magic_enum::enum_cast<foo>("bar", magic_enum::case_insensitive);
+inline constexpr auto case_insensitive = detail::case_insensitive<>{};
 
 // Obtains enum value from integer value.
 // Returns optional with enum value.
-template <typename E>
+template <typename E, detail::enum_subtype S = detail::subtype_v<E>>
 [[nodiscard]] constexpr auto enum_cast(underlying_type_t<E> value) noexcept -> detail::enable_if_t<E, optional<std::decay_t<E>>> {
   using D = std::decay_t<E>;
-  using U = underlying_type_t<D>;
+  static_assert(detail::is_reflected_v<D, S>, "magic_enum requires enum implementation and valid max and min.");
 
-  if constexpr (detail::count_v<D> == 0) {
-    return {}; // Empty enum.
-  } else if constexpr (detail::is_sparse_v<D>) {
-    if constexpr (detail::is_flags_v<D>) {
-      constexpr auto count = detail::count_v<D>;
-      auto check_value = U{0};
-      for (std::size_t i = 0; i < count; ++i) {
-        if (const auto v = static_cast<U>(enum_value<D>(i)); (value & v) != 0) {
-          check_value |= v;
-        }
-      }
-
-      if (check_value != 0 && check_value == value) {
+  if constexpr (detail::is_sparse_v<D, S> || (S == detail::enum_subtype::flags)) {
+#if defined(MAGIC_ENUM_ENABLE_HASH)
+    return detail::constexpr_switch<&detail::values_v<D, S>, detail::case_call_t::value>(
+        [](D v) { return optional<D>{v}; },
+        static_cast<D>(value),
+        detail::default_result_type_lambda<optional<D>>);
+#else
+    for (std::size_t i = 0; i < detail::count_v<D, S>; ++i) {
+      if (value == static_cast<underlying_type_t<D>>(enum_value<D, S>(i))) {
         return static_cast<D>(value);
       }
-      return {}; // Invalid value or out of range.
-    } else {
-      return detail::constexpr_switch<&detail::values_v<D>, detail::case_call_t::value>(
-          [](D v) { return optional<D>{v}; },
-          static_cast<D>(value),
-          detail::default_result_type_lambda<optional<D>>);
     }
+    return {}; // Invalid value or out of range.
+#endif
   } else {
-    constexpr auto min = detail::min_v<D>;
-    constexpr auto max = detail::is_flags_v<D> ? detail::values_ors<D>() : detail::max_v<D>;
-
-    if (value >= min && value <= max) {
+    if (value >= detail::min_v<D, S> && value <= detail::max_v<D, S>) {
       return static_cast<D>(value);
     }
     return {}; // Invalid value or out of range.
   }
 }
 
-// Allows you to write magic_enum::enum_cast<foo>("bar", magic_enum::case_insensitive);
-inline constexpr auto case_insensitive = detail::case_insensitive{};
-
 // Obtains enum value from name.
 // Returns optional with enum value.
-template <typename E, typename BinaryPredicate = std::equal_to<>>
-[[nodiscard]] constexpr auto enum_cast(string_view value, [[maybe_unused]] BinaryPredicate&& p = {}) noexcept(detail::is_nothrow_invocable<BinaryPredicate>()) -> detail::enable_if_t<E, optional<std::decay_t<E>>, BinaryPredicate> {
-  static_assert(std::is_invocable_r_v<bool, BinaryPredicate, char, char>, "magic_enum::enum_cast requires bool(char, char) invocable predicate.");
+template <typename E, detail::enum_subtype S = detail::subtype_v<E>, typename BinaryPredicate = std::equal_to<>>
+[[nodiscard]] constexpr auto enum_cast(string_view value, [[maybe_unused]] BinaryPredicate p = {}) noexcept(detail::is_nothrow_invocable<BinaryPredicate>()) -> detail::enable_if_t<E, optional<std::decay_t<E>>, BinaryPredicate> {
   using D = std::decay_t<E>;
-  using U = underlying_type_t<D>;
+  static_assert(detail::is_reflected_v<D, S>, "magic_enum requires enum implementation and valid max and min.");
 
-  if constexpr (detail::count_v<D> == 0) {
-    return {}; // Empty enum.
-  } else if constexpr (detail::is_flags_v<D>) {
-    auto result = U{0};
-    while (!value.empty()) {
-      const auto d = detail::find(value, '|');
-      const auto s = (d == string_view::npos) ? value : value.substr(0, d);
-      auto f = U{0};
-      for (std::size_t i = 0; i < detail::count_v<D>; ++i) {
-        if (detail::cmp_equal(s, detail::names_v<D>[i], p)) {
-          f = static_cast<U>(enum_value<D>(i));
-          result |= f;
-          break;
-        }
-      }
-      if (f == U{0}) {
-        return {}; // Invalid value or out of range.
-      }
-      value.remove_prefix((d == string_view::npos) ? value.size() : d + 1);
-    }
-
-    if (result != U{0}) {
-      return static_cast<D>(result);
-    }
-    return {}; // Invalid value or out of range.
-  } else if constexpr (detail::count_v<D> > 0) {
-    if constexpr (detail::is_default_predicate<BinaryPredicate>()) {
-      return detail::constexpr_switch<&detail::names_v<D>, detail::case_call_t::index>(
-          [](std::size_t i) { return optional<D>{detail::values_v<D>[i]}; },
-          value,
-          detail::default_result_type_lambda<optional<D>>,
-          [&p](string_view lhs, string_view rhs) { return detail::cmp_equal(lhs, rhs, p); });
-    } else {
-      for (std::size_t i = 0; i < detail::count_v<D>; ++i) {
-        if (detail::cmp_equal(value, detail::names_v<D>[i], p)) {
-          return enum_value<D>(i);
-        }
-      }
-      return {}; // Invalid value or out of range.
+#if defined(MAGIC_ENUM_ENABLE_HASH)
+  if constexpr (detail::is_default_predicate<BinaryPredicate>()) {
+    return detail::constexpr_switch<&detail::names_v<D, S>, detail::case_call_t::index>(
+        [](std::size_t i) { return optional<D>{detail::values_v<D, S>[i]}; },
+        value,
+        detail::default_result_type_lambda<optional<D>>,
+        [&p](string_view lhs, string_view rhs) { return detail::cmp_equal(lhs, rhs, p); });
+  }
+#endif
+  for (std::size_t i = 0; i < detail::count_v<D, S>; ++i) {
+    if (detail::cmp_equal(value, detail::names_v<D, S>[i], p)) {
+      return enum_value<D, S>(i);
     }
   }
+  return {}; // Invalid value or out of range.
 }
 
-// Obtains index in enum values from static storage enum variable.
-template <auto V>
-[[nodiscard]] constexpr auto enum_index() noexcept -> detail::enable_if_t<decltype(V), std::size_t> {
-  constexpr auto index = enum_index<std::decay_t<decltype(V)>>(V);
-  static_assert(index, "magic_enum::enum_index enum value does not have a index.");
-
-  return *index;
-}
-
-// Checks whether enum contains enumerator with such enum value.
-template <typename E>
+// Checks whether enum contains value with such value.
+template <typename E, detail::enum_subtype S = detail::subtype_v<E>>
 [[nodiscard]] constexpr auto enum_contains(E value) noexcept -> detail::enable_if_t<E, bool> {
   using D = std::decay_t<E>;
   using U = underlying_type_t<D>;
 
-  return static_cast<bool>(enum_cast<D>(static_cast<U>(value)));
+  return static_cast<bool>(enum_cast<D, S>(static_cast<U>(value)));
 }
 
-// Checks whether enum contains enumerator with such integer value.
-template <typename E>
-[[nodiscard]] constexpr auto enum_contains(underlying_type_t<E> value) noexcept -> detail::enable_if_t<E, bool> {
-  using D = std::decay_t<E>;
-
-  return static_cast<bool>(enum_cast<D>(value));
-}
-
-// Checks whether enum contains enumerator with such name.
-template <typename E, typename BinaryPredicate = std::equal_to<>>
-[[nodiscard]] constexpr auto enum_contains(string_view value, BinaryPredicate&& p = {}) noexcept(detail::is_nothrow_invocable<BinaryPredicate>()) -> detail::enable_if_t<E, bool, BinaryPredicate> {
-  static_assert(std::is_invocable_r_v<bool, BinaryPredicate, char, char>, "magic_enum::enum_contains requires bool(char, char) invocable predicate.");
-  using D = std::decay_t<E>;
-
-  return static_cast<bool>(enum_cast<D>(value, std::forward<BinaryPredicate>(p)));
-}
-
-template <typename Result = void, typename E, typename Lambda>
-constexpr auto enum_switch(Lambda&& lambda, E value) -> detail::enable_if_t<E, Result> {
-  using D = std::decay_t<E>;
-
-  return detail::constexpr_switch<&detail::values_v<D>, detail::case_call_t::value>(
-      std::forward<Lambda>(lambda),
-      value,
-      detail::default_result_type_lambda<Result>);
-}
-
-template <typename Result, typename E, typename Lambda>
-constexpr auto enum_switch(Lambda&& lambda, E value, Result&& result) -> detail::enable_if_t<E, Result> {
-  using D = std::decay_t<E>;
-
-  return detail::constexpr_switch<&detail::values_v<D>, detail::case_call_t::value>(
-      std::forward<Lambda>(lambda),
-      value,
-      [&result] { return std::forward<Result>(result); });
-}
-
-template <typename E, typename Result = void, typename BinaryPredicate = std::equal_to<>, typename Lambda>
-constexpr auto enum_switch(Lambda&& lambda, string_view name, BinaryPredicate&& p = {}) -> detail::enable_if_t<E, Result, BinaryPredicate> {
-  static_assert(std::is_invocable_r_v<bool, BinaryPredicate, char, char>, "magic_enum::enum_switch requires bool(char, char) invocable predicate.");
-  using D = std::decay_t<E>;
-
-  if (const auto v = enum_cast<D>(name, std::forward<BinaryPredicate>(p))) {
-    return enum_switch<Result, D>(std::forward<Lambda>(lambda), *v);
-  }
-  return detail::default_result_type_lambda<Result>();
-}
-
-template <typename E, typename Result, typename BinaryPredicate = std::equal_to<>, typename Lambda>
-constexpr auto enum_switch(Lambda&& lambda, string_view name, Result&& result, BinaryPredicate&& p = {}) -> detail::enable_if_t<E, Result, BinaryPredicate> {
-  static_assert(std::is_invocable_r_v<bool, BinaryPredicate, char, char>, "magic_enum::enum_switch requires bool(char, char) invocable predicate.");
-  using D = std::decay_t<E>;
-
-  if (const auto v = enum_cast<D>(name, std::forward<BinaryPredicate>(p))) {
-    return enum_switch<Result, D>(std::forward<Lambda>(lambda), *v, std::forward<Result>(result));
-  }
-  return std::forward<Result>(result);
-}
-
-template <typename E, typename Result = void, typename Lambda>
-constexpr auto enum_switch(Lambda&& lambda, underlying_type_t<E> value) -> detail::enable_if_t<E, Result> {
-  using D = std::decay_t<E>;
-
-  if (const auto v = enum_cast<D>(value)) {
-    return enum_switch<Result, D>(std::forward<Lambda>(lambda), *v);
-  }
-  return detail::default_result_type_lambda<Result>();
-}
-
-template <typename E, typename Result, typename Lambda>
-constexpr auto enum_switch(Lambda&& lambda, underlying_type_t<E> value, Result&& result) -> detail::enable_if_t<E, Result> {
-  using D = std::decay_t<E>;
-
-  if (const auto v = enum_cast<D>(value)) {
-    return enum_switch<Result, D>(std::forward<Lambda>(lambda), *v, std::forward<Result>(result));
-  }
-  return std::forward<Result>(result);
-}
-
-template <typename E, typename Lambda>
-constexpr auto enum_for_each(Lambda&& lambda) -> detail::enable_if_t<E, detail::for_each_t<E, Lambda>> {
-  using D = std::decay_t<E>;
-
-  return detail::for_each<D>(std::forward<Lambda>(lambda), std::make_index_sequence<detail::count_v<D>>{});
-}
-
-namespace detail {
-
-template <typename E>
-constexpr optional<std::uintmax_t> fuse_one_enum(optional<std::uintmax_t> hash, E value) noexcept {
-  if (hash) {
-    if (const auto index = enum_index(value)) {
-      return (*hash << log2(enum_count<E>() + 1)) | *index;
-    }
-  }
-  return {};
-}
-
-template <typename E>
-constexpr optional<std::uintmax_t> fuse_enum(E value) noexcept {
-  return fuse_one_enum(0, value);
-}
-
-template <typename E, typename... Es>
-constexpr optional<std::uintmax_t> fuse_enum(E head, Es... tail) noexcept {
-  return fuse_one_enum(fuse_enum(tail...), head);
-}
-
-template <typename... Es>
-constexpr auto typesafe_fuse_enum(Es... values) noexcept {
-  enum class enum_fuse_t : std::uintmax_t;
-  const auto fuse = fuse_enum(values...);
-  if (fuse) {
-    return optional<enum_fuse_t>{static_cast<enum_fuse_t>(*fuse)};
-  }
-  return optional<enum_fuse_t>{};
-}
-
-} // namespace magic_enum::detail
-
-// Returns a bijective mix of several enum values. This can be used to emulate 2D switch/case statements.
-template <typename... Es>
-[[nodiscard]] constexpr auto enum_fuse(Es... values) noexcept {
-  static_assert((std::is_enum_v<std::decay_t<Es>> && ...), "magic_enum::enum_fuse requires enum type.");
-  static_assert(sizeof...(Es) >= 2, "magic_enum::enum_fuse requires at least 2 values.");
-  static_assert((detail::log2(enum_count<Es>() + 1) + ...) <= (sizeof(std::uintmax_t) * 8), "magic_enum::enum_fuse does not work for large enums");
-#if defined(MAGIC_ENUM_NO_TYPESAFE_ENUM_FUSE)
-  const auto fuse = detail::fuse_enum<std::decay_t<Es>...>(values...);
-#else
-  const auto fuse = detail::typesafe_fuse_enum<std::decay_t<Es>...>(values...);
-#endif
-  return assert(fuse), fuse;
-}
-
-namespace ostream_operators {
-
-template <typename Char, typename Traits, typename E, detail::enable_if_t<E, int> = 0>
-std::basic_ostream<Char, Traits>& operator<<(std::basic_ostream<Char, Traits>& os, E value) {
+// Checks whether enum contains value with such value.
+template <detail::enum_subtype S, typename E>
+[[nodiscard]] constexpr auto enum_contains(E value) noexcept -> detail::enable_if_t<E, bool> {
   using D = std::decay_t<E>;
   using U = underlying_type_t<D>;
 
-  if constexpr (detail::supported<D>::value) {
-    if (const auto name = enum_flags_name<D>(value); !name.empty()) {
-      for (const auto c : name) {
-        os.put(c);
-      }
-      return os;
-    }
-  }
-  return (os << static_cast<U>(value));
+  return static_cast<bool>(enum_cast<D, S>(static_cast<U>(value)));
 }
 
-template <typename Char, typename Traits, typename E, detail::enable_if_t<E, int> = 0>
-std::basic_ostream<Char, Traits>& operator<<(std::basic_ostream<Char, Traits>& os, optional<E> value) {
-  return value ? (os << *value) : os;
-}
-
-} // namespace magic_enum::ostream_operators
-
-namespace istream_operators {
-
-template <typename Char, typename Traits, typename E, detail::enable_if_t<E, int> = 0>
-std::basic_istream<Char, Traits>& operator>>(std::basic_istream<Char, Traits>& is, E& value) {
+// Checks whether enum contains value with such integer value.
+template <typename E, detail::enum_subtype S = detail::subtype_v<E>>
+[[nodiscard]] constexpr auto enum_contains(underlying_type_t<E> value) noexcept -> detail::enable_if_t<E, bool> {
   using D = std::decay_t<E>;
 
-  std::basic_string<Char, Traits> s;
-  is >> s;
-  if (const auto v = enum_cast<D>(s)) {
-    value = *v;
-  } else {
-    is.setstate(std::ios::failbit);
-  }
-  return is;
+  return static_cast<bool>(enum_cast<D, S>(value));
 }
 
-} // namespace magic_enum::istream_operators
+// Checks whether enum contains enumerator with such name.
+template <typename E, detail::enum_subtype S = detail::subtype_v<E>, typename BinaryPredicate = std::equal_to<>>
+[[nodiscard]] constexpr auto enum_contains(string_view value, BinaryPredicate p = {}) noexcept(detail::is_nothrow_invocable<BinaryPredicate>()) -> detail::enable_if_t<E, bool, BinaryPredicate> {
+  using D = std::decay_t<E>;
 
-namespace iostream_operators {
+  return static_cast<bool>(enum_cast<D, S>(value, std::move(p)));
+}
 
-using namespace ostream_operators;
-using namespace istream_operators;
+// Returns true if the enum integer value is in the range of values that can be reflected.
+template <typename E, detail::enum_subtype S = detail::subtype_v<E>>
+[[nodiscard]] constexpr auto enum_reflected(underlying_type_t<E> value) noexcept -> detail::enable_if_t<E, bool> {
+  using D = std::decay_t<E>;
 
-} // namespace magic_enum::iostream_operators
+  if constexpr (detail::is_reflected_v<D, S>) {
+    constexpr auto min = detail::reflected_min<E, S>();
+    constexpr auto max = detail::reflected_max<E, S>();
+    return value >= min && value <= max;
+  } else {
+    return false;
+  }
+}
+
+// Returns true if the enum value is in the range of values that can be reflected.
+template <typename E, detail::enum_subtype S = detail::subtype_v<E>>
+[[nodiscard]] constexpr auto enum_reflected(E value) noexcept -> detail::enable_if_t<E, bool> {
+  using D = std::decay_t<E>;
+
+  return enum_reflected<D, S>(static_cast<underlying_type_t<D>>(value));
+}
+
+// Returns true if the enum value is in the range of values that can be reflected.
+template <detail::enum_subtype S, typename E>
+[[nodiscard]] constexpr auto enum_reflected(E value) noexcept -> detail::enable_if_t<E, bool> {
+  using D = std::decay_t<E>;
+
+  return enum_reflected<D, S>(value);
+}
+
+template <bool AsFlags = true>
+inline constexpr auto as_flags = AsFlags ? detail::enum_subtype::flags : detail::enum_subtype::common;
+
+template <bool AsFlags = true>
+inline constexpr auto as_common = AsFlags ? detail::enum_subtype::common : detail::enum_subtype::flags;
 
 namespace bitwise_operators {
 
@@ -2315,6 +2037,12 @@ constexpr E& operator^=(E& lhs, E rhs) noexcept {
 #elif defined(_MSC_VER)
 #  pragma warning(pop)
 #endif
+
+#undef MAGIC_ENUM_GET_ENUM_NAME_BUILTIN
+#undef MAGIC_ENUM_GET_TYPE_NAME_BUILTIN
+#undef MAGIC_ENUM_VS_2017_WORKAROUND
+#undef MAGIC_ENUM_ARRAY_CONSTEXPR
+#undef MAGIC_ENUM_FOR_EACH_256
 
 #endif // NEARGYE_MAGIC_ENUM_HPP
 
@@ -2413,6 +2141,7 @@ template <typename T> struct is_stl_container {
 
 #pragma once
 #include <string>
+#include <string_view>
 
 namespace structopt {
 
@@ -2427,38 +2156,39 @@ static inline bool string_replace(std::string &str, const std::string &from,
   return true;
 }
 
-inline std::string string_to_kebab(std::string str) {
+inline std::string string_to_kebab(std::string_view str) {
   // Generate kebab case and present as option
-  details::string_replace(str, "_", "-");
-  return str;
+  std::string str2(str.begin(), str.end());
+  details::string_replace(str2, "_", "-");
+  return str2;
 }
 
 } // namespace details
 
 } // namespace structopt
 #pragma once
-#include <string>
+#include <string_view>
 
 namespace structopt {
 
 namespace details {
 
-static inline bool is_binary_notation(std::string const &input) {
+static inline bool is_binary_notation(std::string_view input) {
   return input.compare(0, 2, "0b") == 0 && input.size() > 2 &&
-         input.find_first_not_of("01", 2) == std::string::npos;
+         input.find_first_not_of("01", 2) == std::string_view::npos;
 }
 
-static inline bool is_hex_notation(std::string const &input) {
+static inline bool is_hex_notation(std::string_view input) {
   return input.compare(0, 2, "0x") == 0 && input.size() > 2 &&
-         input.find_first_not_of("0123456789abcdefABCDEF", 2) == std::string::npos;
+         input.find_first_not_of("0123456789abcdefABCDEF", 2) == std::string_view::npos;
 }
 
-static inline bool is_octal_notation(std::string const &input) {
+static inline bool is_octal_notation(std::string_view input) {
   return input.compare(0, 1, "0") == 0 && input.size() > 1 &&
-         input.find_first_not_of("01234567", 1) == std::string::npos;
+         input.find_first_not_of("01234567", 1) == std::string_view::npos;
 }
 
-static inline bool is_valid_number(const std::string &input) {
+static inline bool is_valid_number(std::string_view input) {
   if (is_binary_notation(input) || is_hex_notation(input) || is_octal_notation(input)) {
     return true;
   }
@@ -2550,6 +2280,7 @@ static inline bool is_valid_number(const std::string &input) {
 #include <optional>
 #include <queue>
 #include <string>
+#include <string_view>
 // #include <structopt/is_specialization.hpp>
 // #include <structopt/string.hpp>
 // #include <structopt/third_party/visit_struct/visit_struct.hpp>
@@ -2566,27 +2297,28 @@ struct visitor {
   std::string name;
   std::string version;
   std::optional<std::string> help;
-  std::vector<std::string> field_names;
-  std::deque<std::string> positional_field_names; // mutated by parser
-  std::deque<std::string> positional_field_names_for_help;
-  std::deque<std::string> vector_like_positional_field_names;
-  std::deque<std::string> flag_field_names;
-  std::deque<std::string> optional_field_names;
-  std::deque<std::string> nested_struct_field_names;
+  std::vector<std::string_view> field_names;
+  std::deque<std::string_view> positional_field_names; // mutated by parser
+  std::deque<std::string_view> positional_field_names_for_help;
+  std::deque<std::string_view> vector_like_positional_field_names;
+  std::deque<std::string_view> flag_field_names;
+  std::deque<std::string_view> optional_field_names;
+  std::deque<std::string_view> nested_struct_field_names;
 
   visitor() = default;
 
-  explicit visitor(const std::string &name, const std::string &version)
-      : name(name), version(version) {}
+  explicit visitor(std::string name, std::string version)
+      : name(std::move(name)), version(std::move(version)) {}
 
-  explicit visitor(const std::string &name, const std::string &version, const std::string& help)
-      : name(name), version(version), help(help) {}
+  explicit visitor(std::string name, std::string version, std::string help)
+      : name(std::move(name)), version(std::move(version)),
+        help(std::move(help)) {}
 
   // Visitor function for std::optional - could be an option or a flag
   template <typename T>
   inline typename std::enable_if<structopt::is_specialization<T, std::optional>::value,
                                  void>::type
-  operator()(const char *name, T &) {
+  operator()(std::string_view name, T &) {
     field_names.push_back(name);
     if constexpr (std::is_same<typename T::value_type, bool>::value) {
       flag_field_names.push_back(name);
@@ -2600,7 +2332,7 @@ struct visitor {
   inline typename std::enable_if<!structopt::is_specialization<T, std::optional>::value &&
                                      !visit_struct::traits::is_visitable<T>::value,
                                  void>::type
-  operator()(const char *name, T &) {
+  operator()(std::string_view name, T &) {
     field_names.push_back(name);
     positional_field_names.push_back(name);
     positional_field_names_for_help.push_back(name);
@@ -2623,12 +2355,12 @@ struct visitor {
   // Visitor function for nested structs
   template <typename T>
   inline typename std::enable_if<visit_struct::traits::is_visitable<T>::value, void>::type
-  operator()(const char *name, T &) {
+  operator()(std::string_view name, T &) {
     field_names.push_back(name);
     nested_struct_field_names.push_back(name);
   }
 
-  bool is_field_name(const std::string &field_name) {
+  bool is_field_name(std::string_view field_name) {
     return std::find(field_names.begin(), field_names.end(), field_name) !=
            field_names.end();
   }
@@ -2789,11 +2521,13 @@ public:
 #include <algorithm>
 #include <array>
 #include <cctype>
+#include <initializer_list>
 #include <iostream>
 #include <iterator>
 #include <set>
 #include <sstream>
 #include <string>
+#include <string_view>
 // #include <structopt/array_size.hpp>
 // #include <structopt/exception.hpp>
 // #include <structopt/is_number.hpp>
@@ -2810,6 +2544,13 @@ namespace structopt {
 
 namespace details {
 
+// Effectively s1.replace('-', '_') == s2
+inline bool equal_strings_replace_hyphens(std::string_view s1, std::string_view s2) {
+  return std::equal(s1.begin(), s1.end(), s2.begin(), s2.end(), [](char c1, char c2) {
+    return c1 == c2 || (c1 == '-' && c2 == '_');
+  });
+}
+
 struct parser {
   structopt::details::visitor visitor;
   std::vector<std::string> arguments;
@@ -2819,7 +2560,7 @@ struct parser {
   bool sub_command_invoked{false};
   std::string already_invoked_subcommand_name{""};
 
-  bool is_optional(const std::string &name) {
+  bool is_optional(std::string_view name) {
     if (double_dash_encountered) {
       return false;
     } else if (name == "--") {
@@ -2843,36 +2584,37 @@ struct parser {
     return result;
   }
 
-  bool is_kebab_case(const std::string &next, const std::string &field_name) {
-    bool result = false;
+  bool is_kebab_case(std::string_view next, std::string_view field_name) {
     auto maybe_kebab_case = next;
     if (maybe_kebab_case.size() > 1 && maybe_kebab_case[0] == '-') {
       // remove first dash
-      maybe_kebab_case.erase(0, 1);
+      maybe_kebab_case.remove_prefix(1);
       if (maybe_kebab_case[0] == '-') {
         // there is a second leading dash
         // remove it
-        maybe_kebab_case.erase(0, 1);
+        maybe_kebab_case.remove_prefix(1);
       }
-      std::replace(maybe_kebab_case.begin(), maybe_kebab_case.end(), '-', '_');
-      if (maybe_kebab_case == field_name) {
-        result = true;
+      if (equal_strings_replace_hyphens(maybe_kebab_case, field_name)) {
+        return true;
       }
     }
-    return result;
+    return false;
   }
 
-  bool is_optional_field(const std::string &next, const std::string &field_name) {
-    bool result = false;
-    if (next == "-" + field_name || next == "--" + field_name ||
-        next == "-" + std::string(1, field_name[0]) || is_kebab_case(next, field_name)) {
-      // okay `next` matches _a_ field name (which is an optional field)
-      result = true;
+  bool is_optional_field(std::string_view next, std::string_view field_name) {
+    if (next.rfind("-", 0) == 0 && next.substr(1) == field_name) {
+      return true;
     }
-    return result;
+    if (next.rfind("--", 0) == 0 && next.substr(2) == field_name) {
+      return true;
+    }
+    if (next == std::data({'-', field_name[0], '\0'})) {
+      return true;
+    }
+    return is_kebab_case(next, field_name);
   }
 
-  bool is_optional_field(const std::string &next) {
+  bool is_optional_field(std::string_view next) {
     if (!is_optional(next)) {
       return false;
     }
@@ -2892,14 +2634,14 @@ struct parser {
   // and it is delimited by one of the two allowed delimiters: `=` and `:`
   //
   // if true, the return value includes the delimiter that was used
-  std::pair<bool, char> is_delimited_optional_argument(const std::string &next) {
+  std::pair<bool, char> is_delimited_optional_argument(std::string_view next) {
     bool success = false;
     char delimiter = '\0';
 
     auto equal_pos = next.find('=');
     auto colon_pos = next.find(':');
 
-    if (equal_pos == std::string::npos && colon_pos == std::string::npos) {
+    if (equal_pos == std::string_view::npos && colon_pos == std::string_view::npos) {
       // not delimited
       return {success, delimiter};
     } else {
@@ -2935,7 +2677,7 @@ struct parser {
   }
 
   std::pair<std::string, std::string> split_delimited_argument(char delimiter,
-                                                               const std::string &next) {
+                                                               std::string_view next) {
     std::string key, value;
     bool delimiter_found = false;
     for (size_t i = 0; i < next.size(); i++) {
@@ -2952,28 +2694,11 @@ struct parser {
     return {key, value};
   }
 
-  // Strip the initial dashes on the left of an optional argument
-  // e.g., --verbose => verbose
-  // e.g., -log-level => log-level
-  std::string lstrip_dashes(const std::string& next) {
-    std::string result;
-    bool prefix_dashes_ended = false;
-    for (auto& c : next) {
-      if (prefix_dashes_ended == false && c != '-') {
-        prefix_dashes_ended = true;
-      }
-      if (prefix_dashes_ended) {
-        result += c;
-      }
-    }
-    return result;
-  }
-
   // Get the optional field name if any from 
   // e.g., `-v` => `verbose`
   // e.g., `-log-level` => `log_level`
-  std::optional<std::string> get_full_optional_field_name(const std::string& next) {
-    std::optional<std::string> result;
+  std::optional<std::string_view> get_full_optional_field_name(std::string_view next) {
+    std::optional<std::string_view> result;
 
     if (next.size() == 2 && next[0] == '-') {
       // short form of optional argument
@@ -2988,14 +2713,11 @@ struct parser {
       // long form of optional argument
 
       // strip dashes on the left
-      std::string potential_field_name = lstrip_dashes(next);
-
-      // replace `-` in the middle with `_`
-      std::replace(potential_field_name.begin(), potential_field_name.end(), '-', '_');
+      const auto potential_field_name = next.substr(next.find_first_not_of('-'));
 
       // check if `potential_field_name` is in the optional field names list
       for (auto& oarg : visitor.optional_field_names) {
-        if (oarg == potential_field_name) {
+        if (equal_strings_replace_hyphens(potential_field_name, oarg)) {
           result = oarg;
           break;
         }
@@ -3006,7 +2728,7 @@ struct parser {
     return result;
   }
 
-  template <typename T> std::pair<T, bool> parse_argument(const char *name) {
+  template <typename T> std::pair<T, bool> parse_argument(std::string_view name) {
     if (next_index >= arguments.size()) {
       return {T(), false};
     }
@@ -3047,7 +2769,7 @@ struct parser {
     return {result, success};
   }
 
-  template <typename T> std::optional<T> parse_optional_argument(const char *name) {
+  template <typename T> std::optional<T> parse_optional_argument(std::string_view name) {
     next_index += 1;
     std::optional<T> result;
     if (next_index < arguments.size()) {
@@ -3073,7 +2795,7 @@ struct parser {
   // Not a visitable type, i.e., a nested struct
   template <typename T>
   inline typename std::enable_if<!visit_struct::traits::is_visitable<T>::value, T>::type
-  parse_single_argument(const char *) {
+  parse_single_argument(std::string_view) {
     std::string argument = arguments[next_index];
     std::istringstream ss(argument);
     T result;
@@ -3099,7 +2821,7 @@ struct parser {
   // Nested visitable struct
   template <typename T>
   inline typename std::enable_if<visit_struct::traits::is_visitable<T>::value, T>::type
-  parse_nested_struct(const char *name) {
+  parse_nested_struct(std::string_view name) {
 
     T argument_struct;
 
@@ -3170,7 +2892,7 @@ struct parser {
           // this positional argument is not a vector-like argument
           // it expects value(s)
           throw structopt::exception("Error: expected value for positional argument `" +
-                                         field_name + "`.",
+                                         std::string(field_name) + "`.",
                                      argument_struct.visitor_);
         }
       }
@@ -3185,7 +2907,7 @@ struct parser {
 
   // Pair argument
   template <typename T1, typename T2>
-  std::pair<T1, T2> parse_pair_argument(const char *name) {
+  std::pair<T1, T2> parse_pair_argument(std::string_view name) {
     std::pair<T1, T2> result;
     {
       // Pair first
@@ -3234,13 +2956,13 @@ struct parser {
 
   // Array argument
   template <typename T, std::size_t N>
-  std::array<T, N> parse_array_argument(const char *name) {
+  std::array<T, N> parse_array_argument(std::string_view name) {
     std::array<T, N> result{};
 
     const auto arguments_left = arguments.size() - next_index;
     if (arguments_left == 0 || arguments_left < N) {
       throw structopt::exception("Error: expected " + std::to_string(N) +
-                                     " values for std::array argument `" + name +
+                                     " values for std::array argument `" + std::string(name) +
                                      "` - instead got only " +
                                      std::to_string(arguments_left) + " arguments.",
                                  visitor);
@@ -3270,7 +2992,7 @@ struct parser {
 
   // Parse single tuple element
   template <typename T>
-  void parse_tuple_element(const char *name, std::size_t index, std::size_t size,
+  void parse_tuple_element(std::string_view name, std::size_t index, std::size_t size,
                            T &&result) {
     auto [value, success] = parse_argument<typename std::remove_reference<T>::type>(name);
     if (success) {
@@ -3295,7 +3017,7 @@ struct parser {
   }
 
   // Tuple argument
-  template <typename Tuple> Tuple parse_tuple_argument(const char *name) {
+  template <typename Tuple> Tuple parse_tuple_argument(std::string_view name) {
     Tuple result;
     std::size_t i = 0;
     constexpr auto tuple_size = std::tuple_size<Tuple>::value;
@@ -3307,15 +3029,15 @@ struct parser {
   }
 
   // Vector, deque, list
-  template <typename T> T parse_vector_like_argument(const char *name) {
+  template <typename T> T parse_vector_like_argument(std::string_view name) {
     T result;
 
     // Parse from current till end
     while (next_index < arguments.size()) {
-      const auto next = arguments[next_index];
-      if (is_optional_field(next) || std::string{next} == "--" ||
+      const std::string_view next = arguments[next_index];
+      if (is_optional_field(next) || next == "--" ||
           is_delimited_optional_argument(next).first) {
-        if (std::string{next} == "--") {
+        if (next == "--") {
           double_dash_encountered = true;
           next_index += 1;
         }
@@ -3331,14 +3053,14 @@ struct parser {
   }
 
   // stack, queue, priority_queue
-  template <typename T> T parse_container_adapter_argument(const char *name) {
+  template <typename T> T parse_container_adapter_argument(std::string_view name) {
     T result;
     // Parse from current till end
     while (next_index < arguments.size()) {
-      const auto next = arguments[next_index];
-      if (is_optional_field(next) || std::string{next} == "--" ||
+      const std::string_view next = arguments[next_index];
+      if (is_optional_field(next) || next == "--" ||
           is_delimited_optional_argument(next).first) {
-        if (std::string{next} == "--") {
+        if (next == "--") {
           double_dash_encountered = true;
           next_index += 1;
         }
@@ -3354,14 +3076,14 @@ struct parser {
   }
 
   // Set, multiset, unordered_set, unordered_multiset
-  template <typename T> T parse_set_argument(const char *name) {
+  template <typename T> T parse_set_argument(std::string_view name) {
     T result;
     // Parse from current till end
     while (next_index < arguments.size()) {
-      const auto next = arguments[next_index];
-      if (is_optional_field(next) || std::string{next} == "--" ||
+      const std::string_view next = arguments[next_index];
+      if (is_optional_field(next) || next == "--" ||
           is_delimited_optional_argument(next).first) {
-        if (std::string{next} == "--") {
+        if (next == "--") {
           double_dash_encountered = true;
           next_index += 1;
         }
@@ -3377,7 +3099,7 @@ struct parser {
   }
 
   // Enum class
-  template <typename T> T parse_enum_argument(const char *name) {
+  template <typename T> T parse_enum_argument(std::string_view name) {
     T result;
     auto maybe_enum_value = magic_enum::enum_cast<T>(arguments[next_index]);
     if (maybe_enum_value.has_value()) {
@@ -3406,14 +3128,14 @@ struct parser {
   // Visitor function for nested struct
   template <typename T>
   inline typename std::enable_if<visit_struct::traits::is_visitable<T>::value, void>::type
-  operator()(const char *name, T &value) {
+  operator()(std::string_view name, T &value) {
     if (next_index > current_index) {
       current_index = next_index;
     }
 
     if (current_index < arguments.size()) {
       const auto next = arguments[current_index];
-      const auto field_name = std::string{name};
+      const auto field_name = std::string_view{name};
 
       // Check if `next` is the start of a subcommand
       if (visitor.is_field_name(next) && next == field_name) {
@@ -3428,7 +3150,7 @@ struct parser {
   inline typename std::enable_if<!structopt::is_specialization<T, std::optional>::value &&
                                      !visit_struct::traits::is_visitable<T>::value,
                                  void>::type
-  operator()(const char *name, T &result) {
+  operator()(std::string_view name, T &result) {
     if (next_index > current_index) {
       current_index = next_index;
     }
@@ -3462,7 +3184,7 @@ struct parser {
       // Remove from the positional field list as it is about to be parsed
       visitor.positional_field_names.pop_front();
 
-      auto [value, success] = parse_argument<T>(field_name.c_str());
+      auto [value, success] = parse_argument<T>(field_name);
       if (success) {
         result = value;
       } else {
@@ -3476,7 +3198,7 @@ struct parser {
   template <typename T>
   inline typename std::enable_if<structopt::is_specialization<T, std::optional>::value,
                                  void>::type
-  operator()(const char *name, T &value) {
+  operator()(std::string_view name, T &value) {
     if (next_index > current_index) {
       current_index = next_index;
     }
@@ -3619,7 +3341,7 @@ struct parser {
 };
 
 // Specialization for std::string
-template <> inline std::string parser::parse_single_argument<std::string>(const char *) {
+template <> inline std::string parser::parse_single_argument<std::string>(std::string_view) {
   return arguments[next_index];
 }
 
@@ -3627,7 +3349,7 @@ template <> inline std::string parser::parse_single_argument<std::string>(const 
 // yes, YES, on, 1, true, TRUE, etc. = true
 // no, NO, off, 0, false, FALSE, etc. = false
 // Converts argument to lower case before check
-template <> inline bool parser::parse_single_argument<bool>(const char *name) {
+template <> inline bool parser::parse_single_argument<bool>(std::string_view name) {
   if (next_index > current_index) {
     current_index = next_index;
   }
@@ -3684,8 +3406,8 @@ class app {
   details::visitor visitor;
 
 public:
-  explicit app(const std::string &name, const std::string &version = "", const std::string& help = "")
-      : visitor(name, version, help) {}
+  explicit app(std::string name, std::string version = "", std::string help = "")
+      : visitor(std::move(name), std::move(version), std::move(help)) {}
 
   template <typename T> T parse(const std::vector<std::string> &arguments) {
     T argument_struct = T();
@@ -3735,7 +3457,7 @@ public:
           // this positional argument is not a vector-like argument
           // it expects value(s)
           throw structopt::exception("Error: expected value for positional argument `" +
-                                         field_name + "`.",
+                                         std::string(field_name) + "`.",
                                      parser.visitor);
         }
       }
